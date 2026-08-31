@@ -16,12 +16,14 @@ __pycache__/
 .venv/
 venv/
 
-# LaTeX build artifacts
+# LaTeX build artifacts (PDFs are regenerated via `make` in each latex/ subfolder)
 *.aux
 *.toc
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+*.log
+*.pdf
 
 # OS / editor
 .DS_Store
