@@ -1,0 +1,139 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  11pt,
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Project Proposal (Week 2), Indoor Air Quality (CO2) Management},
+  pdfauthor={Oscar},
+  colorlinks=true,
+  linkcolor={RoyalBlue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{newunicodechar}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\newunicodechar{°}{\textdegree}
+\newunicodechar{₂}{\textsubscript{2}}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≥}{\ensuremath{\geq}}
+\newunicodechar{≈}{\ensuremath{\approx}}
+\newunicodechar{✓}{\ensuremath{\checkmark}}
+\newunicodechar{–}{--}
+\newunicodechar{—}{---}
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\footnotesize}
+\AtBeginEnvironment{tabular}{\footnotesize}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\rhead{\small D7065E\,--\,Project Proposal}
+\lhead{\small Indoor Air Quality (CO2) Management}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
+\usepackage{microtype}
+\setlength{\emergencystretch}{2em}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Project Proposal (Week 2), Indoor Air Quality (CO2) Management}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{D7065E, Embedded Intelligence at the Edge}
+\author{Oscar}
+\date{}
+
+\begin{document}
+\maketitle
+
+% Section structure follows lab-assignment/proposal_guide's "what it must
+% answer" list, mirrored from proposal_example's section order.
+
+\subsection{Summary}\label{summary}
+% TODO: 3-5 sentences: the use case, the closed loop, the data-driven
+% component, and what "done" looks like for the proposal stage.
+
+\subsection{1. Use case, and why}\label{use-case-and-why}
+% TODO: indoor air quality (CO2) management -- why this use case, briefly.
+
+\subsection{2. Scenario}\label{scenario}
+% TODO: the concrete room/building scenario this system will demonstrate.
+
+\subsection{3. What will be built (rough)}\label{what-will-be-built-rough}
+% TODO: rough component list -- sensor process(es), ventilation actuator,
+% forecast service, decision service, data pipeline, dashboard.
+
+\subsection{4. Simulating the building}\label{simulating-the-building}
+% TODO: the CO2 buildup/decay model and how occupancy drives it.
+
+\subsection{5. The autonomous part}\label{the-autonomous-part}
+% TODO: forecast model + decision rule, and why that counts as data-driven.
+
+\subsection{6. Biggest unknowns \& risks}\label{biggest-unknowns-risks}
+% TODO.
+hello
+
+\subsection{7. First step \& rough plan}\label{first-step-rough-plan}
+% TODO.
+
+\end{document}
