@@ -31,3 +31,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Local notes
+notes.txt
