@@ -12,12 +12,7 @@ shared building-state backend.
   course notes (`course-notes/`), hands-on tutorials (`tutorials/`), the
   proposal/final-report LaTeX+D2 toolchain and worked examples
   (`lab-assignment/`), and the BuildSim source itself (`buildingsim/`).
-- Canvas page exports (Introduction, Grading, Use case examples) live in
-  `canvas/` in this repo — the authoritative requirements and grading
-  reference for this project specifically.
-- Working solo. The course default is pairs of 2;
-  the individual oral-exam requirement (explain and defend the whole system
-  from memory) is unchanged by working solo.
+- Working solo. The course default is pairs of 2.
 
 ## Use case
 
