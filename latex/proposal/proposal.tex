@@ -80,7 +80,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}\fancyhf{}
 \rhead{\small D7065E\,--\,Project Proposal}
-\lhead{\small Indoor Air Quality (CO2) Management}
+\lhead{\small Indoor Air Quality (CO\textsubscript{2}) Management}
 \cfoot{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 \usepackage{titlesec}
@@ -92,7 +92,7 @@
   \usepackage{selnolig}  % disable illegal ligatures
 \fi
 
-\title{Project Proposal (Week 2), Indoor Air Quality (CO2) Management}
+\title{Project Proposal (Week 2), Indoor Air Quality (CO\textsubscript{2}) Management}
 \usepackage{etoolbox}
 \makeatletter
 \providecommand{\subtitle}[1]{% add subtitle to \maketitle
@@ -100,8 +100,8 @@
 }
 \makeatother
 \subtitle{D7065E, Embedded Intelligence at the Edge}
-\author{Oscar}
-\date{}
+\author{Oscar Lundqvist Engelmark\\ \texttt{osceng-8@student.ltu.se}}
+\date{\today}
 
 \begin{document}
 \maketitle
@@ -110,30 +110,143 @@
 % answer" list, mirrored from proposal_example's section order.
 
 \subsection{Summary}\label{summary}
-% TODO: 3-5 sentences: the use case, the closed loop, the data-driven
-% component, and what "done" looks like for the proposal stage.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.3000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7000}}@{}}
+\toprule
+\endhead
+\textbf{Team} & Oscar Lundqvist Engelmark (solo) \\
+\textbf{Use case} & Indoor air quality (CO\textsubscript{2}) management \\
+\textbf{Pitch} & Forecast CO\textsubscript{2} per room and act on
+ventilation before a threshold is crossed, catching the delay a plain
+reactive rule can't. \\
+\textbf{Repository} & \url{https://github.com/OscarEngelmark/smart-ventilation} \\
+\bottomrule
+\end{longtable}
 
 \subsection{1. Use case, and why}\label{use-case-and-why}
-% TODO: indoor air quality (CO2) management -- why this use case, briefly.
+
+This project manages indoor air quality (CO\textsubscript{2}) in BuildSim rooms. It was
+chosen because forecasting becomes a useful component: ventilation
+only affects CO\textsubscript{2} with a delay, so a plain reactive threshold is either
+too late for a fast-filling room or too cautious for a slowly filling one,
+while a short-horizon forecast can (in theory) give the right lead time for the
+situation.
 
 \subsection{2. Scenario}\label{scenario}
-% TODO: the concrete room/building scenario this system will demonstrate.
+
+A room fills with people; CO\textsubscript{2} rises; the forecast model predicts it will
+cross the threshold within the forecast horizon and the decision service
+turns on ventilation early, holding CO\textsubscript{2} below the limit. When the room
+empties, ventilation drops back to a low baseline. The same loop runs
+independently in each room.
 
 \subsection{3. What will be built (rough)}\label{what-will-be-built-rough}
-% TODO: rough component list -- sensor process(es), ventilation actuator,
-% forecast service, decision service, data pipeline, dashboard.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.20}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.28}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.24}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.28}}@{}}
+\toprule
+\textbf{Component} & \textbf{Input} & \textbf{Processing} & \textbf{Output} \\
+\midrule
+\endhead
+Physical-model process & Occupancy (source TBD); room's ventilation setting (from BuildSim) &
+  Mass-balance CO\textsubscript{2} physics &
+  True CO\textsubscript{2} level, written to BuildSim \\
+\addlinespace
+Sensor process (one per room) & True CO\textsubscript{2} level (from BuildSim) &
+  Converts to a sensed reading &
+  Sensed CO\textsubscript{2} reading, published \\
+\addlinespace
+Forecast service & Sensed CO\textsubscript{2} reading &
+  Short-horizon prediction (e.g.\ exponential smoothing / regression) &
+  Predicted CO\textsubscript{2} value, published \\
+\addlinespace
+Decision service & Predicted CO\textsubscript{2} value &
+  Compares to threshold &
+  Ventilation command, sent to the room's actuator \\
+\addlinespace
+Actuator process (one per room) & Ventilation command &
+  Sets ventilation state &
+  New ventilation setting, written to BuildSim \\
+\bottomrule
+\end{longtable}
+
+Each component
+runs as its own container. The build stays to one sensed variable and one control
+loop, rather than adding a second variable such as heating, so effort
+goes into testing, evaluation, and justification rather than component
+count. Whether the decision service is a single instance handling all
+rooms or one instance per room, along with data storage and any
+user-facing view beyond BuildSim's own, is left open for now and will be
+settled once the first end-to-end loop (one room) is working.
 
 \subsection{4. Simulating the building}\label{simulating-the-building}
-% TODO: the CO2 buildup/decay model and how occupancy drives it.
+
+CO\textsubscript{2} is modelled with a simple physics-based mass balance: concentration
+rises roughly 40 ppm per occupant per hour and decays toward an outdoor
+baseline at a rate set by the ventilation level. This is chosen over
+replaying a fixed CO\textsubscript{2} dataset, since CO\textsubscript{2} is the variable the
+actuator controls and a pre-recorded trace cannot respond to it.
+
+Occupancy is a separate quantity that the actuator does not affect, so it
+does not carry the same constraint. It is generated from a simple
+time-of-day schedule (arrivals, a meeting block, departures) with some
+added randomness, rather than replaying a public occupancy dataset
+(e.g.\ the UCI Occupancy Detection set) or moving individual people along
+BuildSim's navigation graph. Kept simple for now so scenarios (e.g.\ a
+fast-filling meeting) are easy to shape directly. The plan is to start with a
+schedule + randomness; escalate to a public occupancy dataset if the
+generated dynamics prove too simple to be considered realistic.
 
 \subsection{5. The autonomous part}\label{the-autonomous-part}
-% TODO: forecast model + decision rule, and why that counts as data-driven.
+
+The decision service compares the short-horizon CO\textsubscript{2} forecast to a fixed 
+threshold and switches on ventilation before the threshold is crossed,
+rather than reacting after the fact. The forecast is this project's
+data-driven component and stays load-bearing in every decision.
+The starting approach is to use the simplest model that produces a usable
+forecast (e.g.\ exponential smoothing or a small regression over recent
+readings), escalating only if it does not hold up.
 
 \subsection{6. Biggest unknowns \& risks}\label{biggest-unknowns-risks}
-% TODO.
-hello
+
+\begin{itemize}
+\tightlist
+\item
+  Whether limited experience with distributed-systems design leads to poor architectural 
+  choices --- mitigated by keeping the initial design as simple as possible.
+\item
+  Whether a schedule-based occupancy generator produces CO\textsubscript{2} dynamics
+  realistic enough for the forecast and decision to be meaningful.
+\item
+  Whether the simplest forecasting approach is accurate enough at this
+  horizon to meaningfully outperform a plain reactive threshold, which is
+  what would justify keeping a data-driven component in the loop at all.
+\item
+  Whether communication between the decision service and the ventilation
+  actuators holds up if a call is dropped or delayed, since each
+  component is an independently restartable process rather than part of
+  one program.
+\item
+  Whether the decision service's architecture (one instance per room, or
+  one instance handling several) scales cleanly to multiple rooms without
+  becoming a different problem.
+\end{itemize}
 
 \subsection{7. First step \& rough plan}\label{first-step-rough-plan}
-% TODO.
+
+The first step is to get one room working: physical-model → sensor →
+forecast service → decision service → actuator → BuildSim, feeding back into
+the physical-model's next cycle, in order to prove that the loop closes and
+that a ventilation change actually shows up in the next reading. Then the
+loop is replicated across more rooms,
+the physics/occupancy model is tuned toward believable dynamics, the
+forecast model is fitted and evaluated against a plain reactive baseline,
+and failure-mode testing (bad readings, a component going down, delayed
+communication) is added toward the design checkpoint and the final demo.
 
 \end{document}
