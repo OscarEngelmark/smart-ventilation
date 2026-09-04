@@ -153,7 +153,8 @@ independently in each room.
 \textbf{Component} & \textbf{Input} & \textbf{Processing} & \textbf{Output} \\
 \midrule
 \endhead
-Physical-model process & Occupancy (source TBD); room's ventilation setting (from BuildSim) &
+Physical-model process & Occupancy (source TBD); room's ventilation setting 
+  (from BuildSim) &
   Mass-balance CO\textsubscript{2} physics &
   True CO\textsubscript{2} level, written to BuildSim \\
 \addlinespace
@@ -189,8 +190,8 @@ settled once the first end-to-end loop (one room) is working.
 CO\textsubscript{2} is modelled with a simple physics-based mass balance: concentration
 rises roughly 40 ppm per occupant per hour and decays toward an outdoor
 baseline at a rate set by the ventilation level. This is chosen over
-replaying a fixed CO\textsubscript{2} dataset, since CO\textsubscript{2} is the variable the
-actuator controls and a pre-recorded trace cannot respond to it.
+replaying a fixed CO\textsubscript{2} dataset, since CO\textsubscript{2} is the variable 
+the actuator controls and a pre-recorded trace cannot respond to it.
 
 Occupancy is a separate quantity that the actuator does not affect, so it
 does not carry the same constraint. It is generated from a simple
