@@ -47,13 +47,17 @@ _(nothing yet)_
   - Useful for: §4.2, §9.
 
 - **Decided: Go for the networked services (sensors, actuators, decision
-  service); Python only for the forecast service.** Go for goroutine-based
-  concurrency and small, fast-starting binaries, since the whole system has to
-  run on one laptop at once. Python for the forecasting ecosystem
-  (statsmodels, scikit-learn), where Go has no mature equivalent. Rejected:
-  all-Go (no mature forecasting libraries) and all-Python (loses the
-  small-binary/concurrency argument for the service layer). Decided by
-  2026-09-02.
+  service, physical-model process); Python only for the forecast service.**
+  Go for goroutine-based concurrency and small, fast-starting binaries, since
+  the whole system has to run on one laptop at once. Python for the
+  forecasting ecosystem (statsmodels, scikit-learn), where Go has no mature
+  equivalent. Rejected: all-Go (no mature forecasting libraries) and
+  all-Python (loses the small-binary/concurrency argument for the service
+  layer). Decided by 2026-09-02.
+  - The physical-model process wasn't covered by this decision at the time;
+    added 2026-09-15 on the same reasoning — it talks to BuildSim over REST
+    like sensor/actuator, and its mass-balance calculation needs nothing from
+    Python's forecasting ecosystem.
   - Useful for: §4.4, §9.
 
 - **Decided: the three Go services (sensor, actuator, decision) share one Go
