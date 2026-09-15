@@ -25,6 +25,12 @@ _(nothing yet)_
   a second controlled variable. Proposal section 3, 2026-09-04.
   - Useful for: §2, §4.4, §13.
 
+- **Decided: the target room for the first end-to-end loop is A125**
+  (BuildSim id 155, level0, 29.8 m²) — office-sized, and confirmed as a
+  real, current LTU room via LTU's own room locator (map.ltu.se). Decided
+  2026-09-15.
+  - Useful for: §2, §6.
+
 ## 3. Requirements
 
 _(nothing yet)_
