@@ -64,13 +64,33 @@ _(nothing yet)_
   no handling designed yet.
   - Useful for: §5, §8.1, §10 (timing/delay failure tests), §13.
 
-- **Deferred, not yet decided: how components communicate — request/response
-  (REST) or publish/subscribe messaging.** Proposal section 3 describes
-  readings and forecasts as "published", while the plan for the Python
-  forecast service had the decision service calling it over REST. Neither has
-  been chosen or justified against the other. Related to the proposal
-  feedback on data transmission (see *Deferred, not yet decided: the data
-  pipeline*, §7).
+- **Decided: two different communication patterns, chosen per link rather
+  than one pattern system-wide.** Sensor → forecast → decision runs over
+  publish/subscribe through a message broker; decision → actuator is a direct
+  REST call. Reasoning: the sensor→forecast→decision stream may gain future
+  consumers (dashboard, evaluation) that shouldn't require changing the
+  producer, and the system already tolerates a late or dropped reading (see
+  *Known caveat — services aren't synchronized*, above) — a fit for pub/sub's
+  weaker, decoupled delivery. Decision→actuator is one producer to one fixed
+  consumer, low frequency, and a lost command has a real effect with no
+  self-correcting next reading — a fit for an explicit REST call retried
+  until the actuator acknowledges it, rather than a broadcast that can
+  silently drop when the subscriber is offline. Rejected: REST throughout
+  (loses producer/consumer decoupling; requires hand-rolling delivery/retry
+  logic per link) and broker throughout (a 1:1 low-frequency command doesn't
+  get the multi-consumer benefit that justifies broker overhead, and plain
+  pub/sub delivery can silently drop it). Replaces the earlier undecided
+  single-pattern framing. Decided 2026-09-15.
+  - **Decided: MQTT as the broker implementation**, over Kafka (built for
+    high-throughput distributed streaming at a scale this system doesn't
+    reach — a handful of topics on one laptop) and Redis pub/sub
+    (fire-and-forget only, nothing delivered to a subscriber offline at
+    publish time). MQTT is built for small, constrained-device messaging,
+    matching this system's shape, and is the course's own example
+    justification (Canvas Introduction page: "we used MQTT because the
+    publish/subscribe model decouples sensors from agents, allowing the
+    agent to restart without disrupting sensor data publishing"). Decided
+    2026-09-15.
   - Useful for: §4.4, §5, §7.2.
 
 - **Deferred, not yet decided: one decision-service instance per room, or one
