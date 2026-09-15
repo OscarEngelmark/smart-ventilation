@@ -56,6 +56,18 @@ _(nothing yet)_
   2026-09-02.
   - Useful for: §4.4, §9.
 
+- **Decided: the three Go services (sensor, actuator, decision) share one Go
+  module, built as separate binaries under `cmd/`.** One `go.mod`/`go.sum`
+  keeps their dependency versions in sync and lets them share small internal
+  packages (a BuildSim REST client, an MQTT wrapper) without duplication;
+  each still builds and deploys as its own container, so this doesn't affect
+  process independence. Rejected: a separate Go module per service —
+  stronger isolation (a change to shared code can't silently affect a
+  service you didn't touch), but for three small services built solo, that
+  wasn't worth duplicating shared code three times or the extra
+  private-module/replace-directive setup. Decided 2026-09-15.
+  - Useful for: §4.4, §4.2, §9.
+
 - **Decided: BuildSim is the only store of physical state; the physical-model
   process keeps no values of its own between cycles (e.g. the previous CO2
   level).** Each cycle reads the current state from BuildSim, computes the
