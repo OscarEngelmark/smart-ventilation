@@ -101,7 +101,25 @@ _(nothing yet)_
 
 ## 5. Interfaces and data contracts
 
-_(nothing yet)_
+- **Decided: data contracts are written as JSON Schema documents, one per
+  message type, in `schemas/`.** Payloads are JSON, matching BuildSim's own
+  API and needing no extra tooling at this project's scale (rejected:
+  Protobuf/MessagePack — smaller and faster, but add a schema-compiler step
+  not justified here). JSON Schema was chosen over writing plain example
+  payloads because a schema can be loaded by a validation library and used to
+  reject a malformed message at runtime, which the invalid-sensor-data test
+  (see *Decided: failure testing covers a sensor giving bad readings, a
+  component going down, and delayed or dropped communication*, §10) needs
+  anyway; a bare example payload is only documentation, nothing checks
+  against it. Four schemas exist so far: `co2_reading` and `co2_forecast`
+  (the two MQTT payloads) and `ventilation_command` /
+  `ventilation_command_response` (the REST request/response for the
+  decision→actuator link, see *Decided: two different communication
+  patterns...*, §4). Decided and implemented 2026-09-15.
+  - **Revisit:** `ventilation_command`'s `level` field (normalized 0–1) is a
+    placeholder, not a decision — the actual control range depends on the
+    actuator/physical model, which isn't designed yet.
+  - Useful for: §5, §7.2, §10.
 
 ## 6. Simulating the sensor values (the physical model)
 
