@@ -198,14 +198,28 @@ _(nothing yet)_
     in proposal section 6).
   - Useful for: §7.1, §11, §13.
 
-- **Deferred, not yet decided: the data pipeline** — how readings are
-  collected, transmitted, stored, and served to the decision service (and any
-  dashboard), and what is kept for how long. The proposal left this out; the
-  feedback on accepting it (around 2026-09-15) was "Do not forget the data
-  pipeline and how sensor data is transmitted", so the report must cover it
-  explicitly. See also *Deferred, not yet decided: how components
-  communicate*, §4.
-  - Useful for: §5, §7.2.
+- **Decided: readings are persisted in SQLite, accessed only through a small
+  storage interface** ("save a reading," "get readings for room X since time
+  Y") — no component writes SQL directly. Chosen because nothing in the
+  actual requirements needs more at this project's current scale (one room),
+  and it adds no new infrastructure on top of Go, Docker, and MQTT, all new
+  to this project at once. Rejected: InfluxDB — the better fit for
+  time-series data and for multi-room scale (a course-named storage option,
+  Canvas Introduction page), but that scale isn't planned before the
+  deadline, and running it is a real cost (a separate service, a new query
+  interface to learn) with no current payoff. The interface is what keeps
+  this reversible: swapping to InfluxDB later means one new implementation
+  of it, not a rewrite. Decided 2026-09-15.
+  - **Replaces** an earlier same-day decision to use InfluxDB directly,
+    reversed once the storage interface made a later swap cheap enough that
+    committing to InfluxDB now wasn't buying anything.
+  - **Deferred, not yet decided:** which component writes readings (a new
+    process, or the forecast service as it consumes each MQTT reading), the
+    retention policy, and how the decision service and any dashboard read
+    from it. The proposal left the data pipeline out entirely; the feedback
+    on accepting it (2026-09-15) was "Do not forget the data pipeline and how
+    sensor data is transmitted", so the report must cover it explicitly.
+  - Useful for: §4.4, §5, §7.2.
 
 ## 8. Behaviour
 
