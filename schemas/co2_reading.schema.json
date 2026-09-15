@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/co2_reading.schema.json",
+  "title": "CO2 reading",
+  "description": "Published by a sensor process to MQTT topic co2/<room_id>/reading; consumed by the forecast service.",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Room identifier, matching BuildSim's room key."
+    },
+    "ppm": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Sensed CO2 concentration, in parts per million."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the reading was taken (RFC 3339)."
+    }
+  },
+  "required": ["room_id", "ppm", "ts"],
+  "additionalProperties": false
+}

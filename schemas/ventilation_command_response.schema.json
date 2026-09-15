@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/ventilation_command_response.schema.json",
+  "title": "Ventilation command acknowledgement",
+  "description": "Response body an actuator process returns once it has accepted a ventilation command (not necessarily reached the target level yet).",
+  "type": "object",
+  "properties": {
+    "accepted": {
+      "type": "boolean",
+      "description": "Whether the command was valid and accepted for execution."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the response was sent."
+    }
+  },
+  "required": ["accepted", "ts"],
+  "additionalProperties": false
+}

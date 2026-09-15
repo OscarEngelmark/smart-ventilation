@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/co2_forecast.schema.json",
+  "title": "CO2 forecast",
+  "description": "Published by the forecast service to MQTT topic co2/<room_id>/forecast; consumed by the decision service.",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Room identifier, matching BuildSim's room key."
+    },
+    "ppm_forecast": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Predicted CO2 concentration at ts + horizon_min."
+    },
+    "horizon_min": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Minutes ahead the forecast targets. Working figure is 30; not yet validated (see project_notes.md §7)."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the forecast was produced."
+    }
+  },
+  "required": ["room_id", "ppm_forecast", "horizon_min", "ts"],
+  "additionalProperties": false
+}

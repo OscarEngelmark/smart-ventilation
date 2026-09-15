@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/ventilation_command.schema.json",
+  "title": "Ventilation command",
+  "description": "Request body the decision service sends directly (REST, not the broker — see project_notes.md §4) to an actuator process's command endpoint.",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Room identifier, matching BuildSim's room key."
+    },
+    "level": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Target ventilation level, normalized 0 (baseline) to 1 (full). Illustrative — the actual control range depends on the physical/actuator model, not yet finalized."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the decision was made."
+    }
+  },
+  "required": ["room_id", "level", "ts"],
+  "additionalProperties": false
+}
