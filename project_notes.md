@@ -235,10 +235,10 @@ _(nothing yet)_
     also stop storage, instead of the two failing independently, which the
     fault-injection tests need to tell apart). Decided 2026-09-16.
   - **Deferred, not yet decided:** the retention policy, and how the
-    decision service and any dashboard read from storage. The proposal left
-    the data pipeline out entirely; the feedback on accepting it
-    (2026-09-15) was "Do not forget the data pipeline and how sensor data is
-    transmitted", so the report must cover it explicitly.
+    dashboard reads from storage. The proposal left the data pipeline out
+    entirely; the feedback on accepting it (2026-09-15) was "Do not forget
+    the data pipeline and how sensor data is transmitted", so the report
+    must cover it explicitly.
   - Useful for: §4.4, §5, §7.2.
 
 ## 8. Behaviour
