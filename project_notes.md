@@ -234,11 +234,19 @@ _(nothing yet)_
     persistence, and couple their failures (a forecast-service outage would
     also stop storage, instead of the two failing independently, which the
     fault-injection tests need to tell apart). Decided 2026-09-16.
-  - **Deferred, not yet decided:** the retention policy, and how the
-    dashboard reads from storage. The proposal left the data pipeline out
-    entirely; the feedback on accepting it (2026-09-15) was "Do not forget
-    the data pipeline and how sensor data is transmitted", so the report
-    must cover it explicitly.
+  - **Decided: no retention policy — stored readings are kept
+    indefinitely.** At this project's actual scale (one room, a few weeks of
+    data before the deadline), storage size never becomes a real problem.
+    Rejected: time-window deletion and downsampling — both solve a
+    storage-growth problem this project's data volume doesn't reach. Decided
+    2026-09-16.
+    - **Revisit:** if scale changes (see the rejected InfluxDB alternative
+      above), retention becomes a real requirement again — InfluxDB has one
+      built in.
+  - **Deferred, not yet decided:** how the dashboard reads from storage. The
+    proposal left the data pipeline out entirely; the feedback on accepting
+    it (2026-09-15) was "Do not forget the data pipeline and how sensor data
+    is transmitted", so the report must cover it explicitly.
   - Useful for: §4.4, §5, §7.2.
 
 ## 8. Behaviour
