@@ -113,6 +113,19 @@ _(nothing yet)_
     publish/subscribe model decouples sensors from agents, allowing the
     agent to restart without disrupting sensor data publishing"). Decided
     2026-09-15.
+  - **Decided: the decision service also publishes each command to MQTT**
+    (a `ventilation_command` topic), alongside the REST call to the
+    actuator. REST stays the actual delivery path — it's the link that needs
+    confirmed delivery and confirmed execution, which MQTT would need extra
+    machinery (a persistent session, a second confirmation topic) to match.
+    The MQTT copy is for consumers that only need visibility (the
+    storage-writer, later the dashboard), which can tolerate a missed
+    message the same way readings can. Rejected: replacing REST with MQTT
+    for decision→actuator directly — even with guaranteed eventual delivery,
+    a command queued while the actuator is offline can arrive stale (the
+    situation it was decided for may no longer hold), and delivery to the
+    actuator isn't the same as confirmation the command was executed.
+    Decided 2026-09-16.
   - Useful for: §4.4, §5, §7.2.
 
 - **Deferred, not yet decided: one decision-service instance per room, or one
@@ -213,12 +226,19 @@ _(nothing yet)_
   - **Replaces** an earlier same-day decision to use InfluxDB directly,
     reversed once the storage interface made a later swap cheap enough that
     committing to InfluxDB now wasn't buying anything.
-  - **Deferred, not yet decided:** which component writes readings (a new
-    process, or the forecast service as it consumes each MQTT reading), the
-    retention policy, and how the decision service and any dashboard read
-    from it. The proposal left the data pipeline out entirely; the feedback
-    on accepting it (2026-09-15) was "Do not forget the data pipeline and how
-    sensor data is transmitted", so the report must cover it explicitly.
+  - **Decided: a dedicated storage-writer process does the writing** —
+    subscribing to the `co2_reading`, `co2_forecast`, and
+    `ventilation_command` MQTT topics and writing each through the storage
+    interface. Rejected: folding this into the forecast service, which
+    already subscribes to readings — it would mix forecasting logic with
+    persistence, and couple their failures (a forecast-service outage would
+    also stop storage, instead of the two failing independently, which the
+    fault-injection tests need to tell apart). Decided 2026-09-16.
+  - **Deferred, not yet decided:** the retention policy, and how the
+    decision service and any dashboard read from storage. The proposal left
+    the data pipeline out entirely; the feedback on accepting it
+    (2026-09-15) was "Do not forget the data pipeline and how sensor data is
+    transmitted", so the report must cover it explicitly.
   - Useful for: §4.4, §5, §7.2.
 
 ## 8. Behaviour
