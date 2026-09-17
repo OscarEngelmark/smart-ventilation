@@ -331,7 +331,14 @@ _(nothing yet)_
 
 ## 9. Deployment and component view
 
-_(nothing yet)_
+- **Decided: one `docker-compose.yml` starts the whole system, BuildSim
+  included.** BuildSim is built straight from the course repository at a
+  pinned commit, so no local copy is needed and its behavior can't change
+  mid-project. Rejected: running BuildSim by hand outside Docker — one more
+  manual step before every run and demo. Pinning to a commit is an unchecked
+  default rather than a weighed choice. Decided and implemented 2026-09-17
+  (BuildSim, Mosquitto, storage-service so far).
+  - Useful for: §4.2, §9.
 
 ## 10. Test plan
 
