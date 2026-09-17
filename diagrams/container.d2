@@ -1,0 +1,45 @@
+# C4 Container diagram. Rationale for each choice: project_notes.md, section 4.
+# Dashed boxes and arrows are not decided yet. REST arrows point from the
+# caller to the service it calls; the response data flows back.
+direction: down
+
+bs: "BuildSim\n[Software System, external]\nShared building state (room CO2,\noccupancy, ventilation level)"
+
+sys: "Smart Ventilation  [System]" {
+  style.stroke-dash: 4
+  style.fill: transparent
+
+  model: "Physical model\n[Container: Go]\nEach cycle: reads state, steps the\nCO2 mass balance, writes it back"
+  sensor: "CO2 sensor\n[Container: Go]\nReads room CO2 from BuildSim,\npublishes it"
+  broker: "Message broker\n[Container: MQTT]\nDecouples publishers from subscribers" {
+    shape: queue
+  }
+  forecast: "Forecast service\n[Container: Python]\nPredicts CO2 a short horizon ahead"
+  decision: "Decision service\n[Container: Go]\nForecast vs. threshold ->\nventilation command"
+  actuator: "Ventilation actuator\n[Container: Go]\nApplies commands to BuildSim"
+  storage: "Storage service\n[Container: Go]\nPersists readings, forecasts,\ncommands; serves reads"
+  db: "Readings store\n[SQLite]\nAccessed only via store.Store" {
+    shape: cylinder
+  }
+  dash: "Dashboard\n[Container: not yet decided]" {
+    style.stroke-dash: 4
+  }
+}
+
+sys.model <-> bs: "reads state, writes next CO2 [REST]"
+sys.sensor -> bs: "reads room CO2 [REST]"
+sys.sensor -> sys.broker: "co2/+/reading [MQTT]"
+sys.broker -> sys.forecast: "co2/+/reading [MQTT]"
+sys.forecast -> sys.broker: "co2/+/forecast [MQTT]"
+sys.broker -> sys.decision: "co2/+/forecast [MQTT]"
+sys.decision -> sys.actuator: "command, retried until ack [REST]"
+sys.decision -> sys.broker: "ventilation/+/command (copy) [MQTT]"
+sys.actuator -> bs: "set ventilation level [REST, not yet decided]" {
+  style.stroke-dash: 4
+}
+sys.broker -> sys.storage: "all three topics [MQTT]"
+sys.storage <-> sys.db: "save / read [store.Store]"
+sys.forecast -> sys.storage: "requests recent readings after restart [REST]"
+sys.dash -> sys.db: "reads [path not yet decided]" {
+  style.stroke-dash: 4
+}

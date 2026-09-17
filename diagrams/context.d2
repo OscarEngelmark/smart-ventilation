@@ -1,0 +1,19 @@
+# C4 Context diagram. Rationale for each choice: project_notes.md, section 4.
+direction: down
+
+operator: "Operator\n[Person]\nWatches CO2, forecasts,\nand ventilation decisions" {
+  shape: person
+}
+occupants: "Room occupants\n[Person, simulated]\nRaise CO2 by being in the room" {
+  shape: person
+}
+
+sys: "Smart Ventilation\n[Software System]\nForecasts CO2 and ventilates\nbefore the threshold is crossed"
+
+bs: "BuildSim\n[Software System, external]\nShared building state:\nsensor values, actuator state"
+
+occupants -> sys: "presence (from a time-of-day schedule)"
+operator -> sys: "monitors [dashboard, not yet designed]" {
+  style.stroke-dash: 4
+}
+sys <-> bs: "reads/writes room and actuator state [REST]"
