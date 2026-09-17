@@ -198,8 +198,66 @@ _(nothing yet)_
   2026-09-04.
   - **Revisit:** the 40 ppm/occupant/hour figure isn't sourced yet, and it
     implicitly assumes a room size (the same person raises CO2 faster in a
-    smaller room).
+    smaller room). Superseded in practice by the equation and parameters
+    below, which use a per-person CO2 rate and the room's own volume; the
+    difference from the 40 ppm figure should be explained in the report.
   - Useful for: §6.
+
+- **Decided: the mass balance is `V·dC/dt = G·N − Q·(C − C_out)`, stepped
+  forward each cycle as `C_next = C + Δt·(G·N/V − (Q/V)·(C − C_out))`.**
+  `C` is room CO2 (ppm), `N` the number of people, `C_out` outdoor CO2
+  (about 420 ppm), `G` the CO2 one person breathes out per unit time, and
+  `Q` the airflow through the room. Decided 2026-09-17; not implemented yet.
+  - **Room volume `V` ≈ 71.5 m³ and maximum occupancy `N_max` = 6 are
+    derived from the room's floor area in BuildSim**, as `V = area · 2.4 m`
+    and `N_max = round(area / 5 m²)`, rather than configured per room.
+    BuildSim already holds the building, so this keeps one source for the
+    room's size and lets a second room be added without new configuration.
+    Rejected: writing `V` and `N_max` into `docker-compose.yml` or a `.env`
+    file — a volume and a maximum occupancy would then have to be written
+    down by hand for every room. Decided 2026-09-17.
+  - **Decided: the two constants behind those formulas (2.4 m ceiling
+    height, 5 m² per person) live in one shared Go package**, together with
+    the equation that uses them, so every service computes the same numbers.
+    Rejected: passing them as environment variables — that allows changing
+    an assumption and restarting instead of rebuilding, but these are
+    assumptions about the building that were looked up and sourced (see the
+    two sub-bullets below), not settings expected to change while the system
+    runs. Decided 2026-09-17.
+  - **Ceiling height 2.4 m:** BuildSim gives no height. 2.4 m
+    is the minimum room height the Swedish Work Environment Authority
+    advises for workplaces (general advice to section 5 of AFS 2023:12,
+    https://www.av.se/globalassets/filer/publikationer/foreskrifter/utformning-av-arbetsplatser-afs2023-12.pdf;
+    2.7 m for teaching rooms or rooms for many people). Being a minimum,
+    it gives the smallest plausible volume and so the fastest CO2 rise — a
+    demanding case for the control. Rejected: an unsourced 3 m guess.
+  - **5 m² per person** for `N_max` is an estimate, not a sourced figure —
+    roughly what a meeting room allows, and it gives 6 people in A125, enough
+    to drive CO2 up quickly in a demo. The Swedish workplace rules used for
+    the ceiling height give no area or air volume per person.
+  - **Airflow `Q = Q_min + damper·(Q_max − Q_min)`.** `Q_max` is chosen from
+    the steady state `C_steady = C_out + G·N/Q`: with the damper fully open
+    and the room at its busiest, CO2 should settle below the decision
+    threshold, so `Q_max > G·N_max / (C_threshold − C_out)`. Rejected:
+    taking `Q_max` from a real ventilation device — the exact device doesn't
+    matter for the simulation. `Q_min` is a small leak (air through gaps
+    with the damper shut); without it, a closed damper gives `Q = 0` and CO2
+    rises without limit.
+  - **CO2 per person `G` = 0.0056 L/s** (about 280 ppm/h per person in A125
+    with no ventilation). Source: Persily & de Jonge, "Carbon Dioxide
+    Generation Rates from Building Occupants", Healthy Buildings 2017 Europe
+    (https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=922955; journal
+    version in Indoor Air 27(5), https://doi.org/10.1111/ina.12383). The
+    paper uses 1.5 met for office work; its Table 2 has only 1.4 and 1.6
+    met columns, whose average over adults aged 21–60 is about 0.0058 L/s
+    (men) and 0.0045 L/s (women), mean ≈ 0.0052 L/s — matching the
+    0.0052 L/s the paper cites from ASHRAE Standard 62.1. The table's
+    volumes are at 273 K; scaled to room temperature (293 K) this gives
+    0.0056 L/s. `G` is a volume rate rather than ppm/s because the ppm rise
+    depends on `V`.
+  - **Revisit:** `N_max`, `C_threshold`, and the values of `Q_min` and `Δt`
+    are still open.
+  - Useful for: §4.4, §6, §13.
 
 - **Decided: occupancy comes from a time-of-day schedule (arrivals, a meeting
   block, departures) plus some randomness.** Rejected: replaying a public
