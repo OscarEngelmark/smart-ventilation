@@ -25,6 +25,9 @@ venv/
 *.log
 *.pdf
 
+# Rendered diagrams (regenerated from the .d2 sources)
+diagrams/*.svg
+
 # OS / editor
 .DS_Store
 Thumbs.db
