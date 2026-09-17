@@ -168,14 +168,25 @@ _(nothing yet)_
   `ventilation_command_response` (the REST request/response for the
   decision→actuator link, see *Decided: two different communication
   patterns...*, §4). Decided and implemented 2026-09-15.
-  - **Revisit:** `ventilation_command`'s `level` field (normalized 0–1) is a
-    placeholder, not a decision — the actual control range depends on the
-    actuator/physical model, which isn't designed yet.
+  - `ventilation_command`'s `level` field (0–1) was a placeholder; now
+    settled to match the damper state in BuildSim (see *Decided: room A125's
+    devices in BuildSim...*, below).
   - Runtime validation against the schemas is implemented in the
     storage-service (2026-09-17, `schemas/schemas.go`).
     - **Revisit:** the forecast and decision services will need the same
       check when they're written.
   - Useful for: §5, §7.2, §10.
+
+- **Decided: room A125's devices in BuildSim are a CO2 sensor `A125-co2`
+  (value in ppm) and a ventilation damper `A125-damper` (state 0–1, 0 closed,
+  1 fully open).** The physical model writes the sensor value and reads the
+  damper state; BuildSim stores both as text, so each side converts to and
+  from a number. The 0–1 range matches `ventilation_command`'s `level`, so a
+  command passes to the damper unchanged. Chosen as simple defaults, not
+  weighed against alternatives. Settled now so the physical model can be
+  built before the sensor and actuator processes, registering the devices by
+  hand until then. Decided 2026-09-17.
+  - Useful for: §5, §6.
 
 ## 6. Simulating the sensor values (the physical model)
 
