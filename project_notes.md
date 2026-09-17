@@ -154,6 +154,9 @@ _(nothing yet)_
   - **Revisit:** `ventilation_command`'s `level` field (normalized 0–1) is a
     placeholder, not a decision — the actual control range depends on the
     actuator/physical model, which isn't designed yet.
+  - **Revisit:** runtime validation against the schemas isn't implemented
+    in the storage-service yet (see *Deferred, not yet decided: issues and
+    implicit choices found reviewing `cmd/storage-service`...*, §7).
   - Useful for: §5, §7.2, §10.
 
 ## 6. Simulating the sensor values (the physical model)
@@ -270,6 +273,39 @@ _(nothing yet)_
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data
     is transmitted", so the report must cover it explicitly.
   - Useful for: §4.4, §5, §7.2.
+
+- **Deferred, not yet decided: issues and implicit choices found reviewing
+  `cmd/storage-service` and `internal/store`, to fix or decide one by one.**
+  Noted 2026-09-17.
+  - **Revisit (bug):** payloads aren't validated against the JSON schemas. A
+    message with missing fields is saved with zero values (e.g. 0 ppm, empty
+    `room_id`), contradicting *Decided: data contracts are written as JSON
+    Schema documents*, §5.
+  - **Revisit (bug):** after a broker restart, the MQTT client reconnects but
+    doesn't resubscribe, so the service keeps running and silently saves
+    nothing.
+  - **Revisit:** subscriptions use QoS 1 (at-least-once) with no dedup and no
+    unique key, so a message can be stored twice; with no persistent session,
+    messages published while the service is down are lost.
+  - **Revisit:** a bad payload or failed save is logged and dropped, never
+    retried.
+  - **Revisit:** only the sender's timestamp is stored (as text, whole
+    seconds), not the receive time — pipeline latency can't be measured from
+    stored data.
+  - **Revisit:** the SQLite file defaults to the container's working
+    directory, so data is lost when the container is recreated unless a
+    volume is mounted.
+  - **Revisit:** pure-Go SQLite driver (`modernc.org/sqlite`) chosen over
+    `mattn/go-sqlite3` without discussion — no C compiler needed in the
+    Docker build, at some speed cost.
+  - **Revisit:** configuration comes from environment variables (broker URL,
+    database path) with local defaults.
+  - **Revisit:** if the broker is unreachable at startup the process exits,
+    relying on Docker's restart policy.
+  - **Revisit:** no graceful shutdown — on container stop the database isn't
+    closed and the client doesn't disconnect (each insert is already
+    committed, so no data is lost).
+  - Useful for: §5, §7.2, §9, §10.
 
 ## 8. Behaviour
 
