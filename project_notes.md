@@ -119,7 +119,7 @@ _(nothing yet)_
     confirmed delivery and confirmed execution, which MQTT would need extra
     machinery (a persistent session, a second confirmation topic) to match.
     The MQTT copy is for consumers that only need visibility (the
-    storage-writer, later the dashboard), which can tolerate a missed
+    storage-service, later the dashboard), which can tolerate a missed
     message the same way readings can. Rejected: replacing REST with MQTT
     for decision→actuator directly — even with guaranteed eventual delivery,
     a command queued while the actuator is offline can arrive stale (the
@@ -227,15 +227,23 @@ _(nothing yet)_
   - **Replaces** an earlier same-day decision to use InfluxDB directly,
     reversed once the storage interface made a later swap cheap enough that
     committing to InfluxDB now wasn't buying anything.
-  - **Decided: a dedicated storage-writer process does the writing** —
-    subscribing to the `co2_reading`, `co2_forecast`, and
-    `ventilation_command` MQTT topics and writing each through the storage
-    interface. Rejected: folding this into the forecast service, which
-    already subscribes to readings — it would mix forecasting logic with
+  - **Decided: a dedicated storage-service process owns storage** — it
+    subscribes to the `co2_reading`, `co2_forecast`, and
+    `ventilation_command` MQTT topics and writes each through the storage
+    interface, and answers read requests from other components over REST.
+    Rejected: folding writing into the forecast service, which already
+    subscribes to readings — it would mix forecasting logic with
     persistence, and couple their failures (a forecast-service outage would
     also stop storage, instead of the two failing independently, which the
-    fault-injection tests need to tell apart). Decided and implemented
-    2026-09-16 (`cmd/storage-writer`).
+    fault-injection tests need to tell apart). Rejected: a separate
+    storage-reader container for reads — writing and reading would fail
+    independently, but it adds a container to build, test, and draw. With
+    both in one process, an outage stops both, which only matters if it
+    happens while the forecast service is restarting. Writing decided and
+    implemented 2026-09-16 (`cmd/storage-service`); reads decided
+    2026-09-17, not implemented.
+    - **Replaces** the write-only storage-writer (2026-09-16), renamed when
+      it took on reads.
   - **Decided: no retention policy — stored readings are kept
     indefinitely.** At this project's actual scale (one room, a few weeks of
     data before the deadline), storage size never becomes a real problem.
@@ -245,14 +253,18 @@ _(nothing yet)_
     - **Revisit:** if scale changes (see the rejected InfluxDB alternative
       above), retention becomes a real requirement again — InfluxDB has one
       built in.
-  - **Decided: the forecast service reads recent readings from storage** to
-    rebuild its window of recent readings after a restart. Rejected: keeping
-    the window only in memory, filled from the `co2_reading` topic — after a
-    restart the window is empty, and there's no forecast until it refills.
-    Decided before 2026-09-16 (logged 2026-09-16); not implemented.
-    - **Revisit:** how it reads is open. `store.Store` is a Go interface with
-      no read methods yet, and the forecast service is Python, so it can't
-      query SQLite directly without breaking the storage-interface rule.
+  - **Decided: the forecast service reads recent readings from the
+    storage-service over REST** to rebuild its window of recent readings
+    after a restart. If the read fails, it retries a few times, then fills
+    its window from the `co2_reading` topic instead. Rejected: keeping the
+    window only in memory — after a restart the window is empty, and there's
+    no forecast until it refills. Rejected: request/reply over MQTT — MQTT
+    has no built-in reply, so matching replies to requests and timing out
+    would be hand-built, while a REST call returns the readings or an
+    immediate error. Rejected: the Python service querying SQLite directly —
+    it breaks the storage-interface rule. Reading from storage decided before
+    2026-09-16; REST via the storage-service decided 2026-09-17. Not
+    implemented (`store.Store` has no read methods yet).
   - **Deferred, not yet decided:** how the dashboard reads from storage. The
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data
