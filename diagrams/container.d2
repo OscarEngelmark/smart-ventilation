@@ -11,7 +11,7 @@ sys: "Smart Ventilation  [System]" {
 
   model: "Physical model\n[Container: Go]\nEach cycle: reads state, steps the\nCO2 mass balance, writes it back"
   sensor: "CO2 sensor\n[Container: Go]\nReads room CO2 from BuildSim,\npublishes it"
-  broker: "Message broker\n[Container: MQTT]\nDecouples publishers from subscribers" {
+  broker: "Message broker\n[Container: Mosquitto, MQTT]\nDecouples publishers from subscribers" {
     shape: queue
   }
   forecast: "Forecast service\n[Container: Python]\nPredicts CO2 a short horizon ahead"
