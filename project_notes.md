@@ -80,6 +80,19 @@ _(nothing yet)_
     down at the time — fill them in before this goes into §4.4.
   - Useful for: §4.4, §6.
 
+- **Decided: each device process registers its own device with BuildSim on
+  startup** — the sensor process registers the CO2 sensor, the actuator
+  process registers the damper. BuildSim keeps devices only in memory and
+  starts with none, so they must be registered before any value can be
+  written or read. Rejected: the physical-model process registering all
+  devices — setting up devices isn't part of calculating CO2, and a restarted
+  sensor or actuator would depend on another process to exist again, while
+  the course expects a crashed process to re-register itself and continue.
+  Trade-off: the physical model can't write a CO2 value until the sensor
+  process has registered the sensor, so it has to wait and retry. Decided
+  2026-09-17.
+  - Useful for: §4.4, §5, §8.2.
+
 - **Known caveat — services aren't synchronized: each runs on its own
   schedule.** Any component can therefore see a reading that is stale,
   repeated, or skips a step, and has to tolerate that. Noted by 2026-09-05;
