@@ -158,9 +158,10 @@ _(nothing yet)_
   - **Revisit:** `ventilation_command`'s `level` field (normalized 0–1) is a
     placeholder, not a decision — the actual control range depends on the
     actuator/physical model, which isn't designed yet.
-  - **Revisit:** runtime validation against the schemas isn't implemented
-    in the storage-service yet (see *Deferred, not yet decided: issues and
-    implicit choices found reviewing `cmd/storage-service`...*, §7).
+  - Runtime validation against the schemas is implemented in the
+    storage-service (2026-09-17, `schemas/schemas.go`).
+    - **Revisit:** the forecast and decision services will need the same
+      check when they're written.
   - Useful for: §5, §7.2, §10.
 
 ## 6. Simulating the sensor values (the physical model)
@@ -281,10 +282,18 @@ _(nothing yet)_
 - **Deferred, not yet decided: issues and implicit choices found reviewing
   `cmd/storage-service` and `internal/store`, to fix or decide one by one.**
   Noted 2026-09-17.
-  - **Revisit (bug):** payloads aren't validated against the JSON schemas. A
-    message with missing fields is saved with zero values (e.g. 0 ppm, empty
-    `room_id`), contradicting *Decided: data contracts are written as JSON
-    Schema documents*, §5.
+  - **Fixed 2026-09-17 (bug):** payloads weren't validated against the JSON
+    schemas, so a message with missing fields was saved with zero values
+    (e.g. 0 ppm). Each message is now checked against its schema before
+    saving; an invalid one is logged with the reason and dropped. The
+    schemas are built into the program (`schemas/schemas.go`), so the
+    `.json` files stay the only definition of a valid message. Rejected:
+    hand-written checks in Go — the same rules would live in two places and
+    drift apart. Verified with Mosquitto: a valid reading was saved; a
+    missing `ppm`, a negative `ppm`, an invalid `ts`, and a `level` of 7
+    were each rejected with a clear log line.
+  - **Revisit:** the room in the topic (`co2/155/reading`) isn't compared to
+    the `room_id` inside the message; the message's value is trusted.
   - **Fixed 2026-09-17 (bug):** after a broker restart, the MQTT client
     reconnected but didn't resubscribe (the default clean session makes the
     broker forget subscriptions), so the service kept running and silently

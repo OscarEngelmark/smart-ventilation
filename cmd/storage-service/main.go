@@ -11,9 +11,19 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/store"
+	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
+
+// payloadSchemas holds the schema each incoming message is checked against
+// before it is saved.
+type payloadSchemas struct {
+	reading  *jsonschema.Schema
+	forecast *jsonschema.Schema
+	command  *jsonschema.Schema
+}
 
 type co2ReadingPayload struct {
 	RoomID string    `json:"room_id"`
@@ -46,12 +56,18 @@ func main() {
 	}
 	defer db.Close()
 
+	sch := payloadSchemas{
+		reading:  mustLoadSchema("co2_reading.schema.json"),
+		forecast: mustLoadSchema("co2_forecast.schema.json"),
+		command:  mustLoadSchema("ventilation_command.schema.json"),
+	}
+
 	// Subscribing here rather than once after Connect: the client reconnects
 	// automatically, but with a clean session the broker forgets
 	// subscriptions on disconnect, so they must be renewed on every connect.
 	onConnect := func(client mqtt.Client) {
 		log.Printf("connected to broker, subscribing")
-		subscribeAll(client, db)
+		subscribeAll(client, db, sch)
 	}
 	onConnectionLost := func(_ mqtt.Client, err error) {
 		log.Printf("connection to broker lost: %v", err)
@@ -71,9 +87,15 @@ func main() {
 	select {}
 }
 
-// subscribeAll subscribes to every topic this service stores.
-func subscribeAll(client mqtt.Client, db store.Store) {
+// subscribeAll subscribes to every topic this service stores. Each message is
+// checked against its schema first, so an invalid one is logged and dropped
+// instead of being saved with zero values for missing fields.
+func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 	subscribe(client, "co2/+/reading", func(payload []byte) {
+		if err := schemas.Validate(sch.reading, payload); err != nil {
+			log.Printf("reading: invalid payload: %v", err)
+			return
+		}
 		var p co2ReadingPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			log.Printf("reading: bad payload: %v", err)
@@ -87,6 +109,10 @@ func subscribeAll(client mqtt.Client, db store.Store) {
 	})
 
 	subscribe(client, "co2/+/forecast", func(payload []byte) {
+		if err := schemas.Validate(sch.forecast, payload); err != nil {
+			log.Printf("forecast: invalid payload: %v", err)
+			return
+		}
 		var p co2ForecastPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			log.Printf("forecast: bad payload: %v", err)
@@ -100,6 +126,10 @@ func subscribeAll(client mqtt.Client, db store.Store) {
 	})
 
 	subscribe(client, "ventilation/+/command", func(payload []byte) {
+		if err := schemas.Validate(sch.command, payload); err != nil {
+			log.Printf("command: invalid payload: %v", err)
+			return
+		}
 		var p ventilationCommandPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			log.Printf("command: bad payload: %v", err)
@@ -121,6 +151,16 @@ func subscribe(client mqtt.Client, topic string, handle func(payload []byte)) {
 	if err := token.Error(); err != nil {
 		log.Fatalf("subscribe %s: %v", topic, err)
 	}
+}
+
+// mustLoadSchema exits the process if a schema can't be loaded, so the
+// service never runs without checking messages.
+func mustLoadSchema(name string) *jsonschema.Schema {
+	sch, err := schemas.Load(name)
+	if err != nil {
+		log.Fatalf("load schema: %v", err)
+	}
+	return sch
 }
 
 func getEnv(key, fallback string) string {
