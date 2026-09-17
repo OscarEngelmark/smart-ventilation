@@ -1,0 +1,7 @@
+# Keep the image build to the Go source; canvas/ also holds private course material.
+canvas
+latex
+diagrams
+*.md
+*.db
+.git

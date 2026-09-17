@@ -1,0 +1,25 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    # Default config without login, so services can connect without passwords.
+    command: mosquitto -c /mosquitto-no-auth.conf
+    ports:
+      - "1883:1883"
+
+  storage-service:
+    build:
+      context: .
+      dockerfile: cmd/storage-service/Dockerfile
+    environment:
+      MQTT_BROKER_URL: tcp://mosquitto:1883
+      SQLITE_PATH: /data/storage-service.db
+    volumes:
+      - storage-data:/data
+    depends_on:
+      - mosquitto
+    # The service exits if the broker isn't ready yet at startup; Docker then
+    # starts it again.
+    restart: unless-stopped
+
+volumes:
+  storage-data:

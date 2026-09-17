@@ -310,9 +310,9 @@ _(nothing yet)_
   - **Revisit:** only the sender's timestamp is stored (as text, whole
     seconds), not the receive time — pipeline latency can't be measured from
     stored data.
-  - **Revisit:** the SQLite file defaults to the container's working
-    directory, so data is lost when the container is recreated unless a
-    volume is mounted.
+  - Fixed 2026-09-17: the SQLite file was lost whenever the container was
+    recreated. `docker-compose.yml` now stores it in a Docker volume (storage
+    kept outside the container), so readings survive a restart or rebuild.
   - **Revisit:** pure-Go SQLite driver (`modernc.org/sqlite`) chosen over
     `mattn/go-sqlite3` without discussion — no C compiler needed in the
     Docker build, at some speed cost.
