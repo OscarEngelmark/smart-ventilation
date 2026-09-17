@@ -113,6 +113,10 @@ _(nothing yet)_
     publish/subscribe model decouples sensors from agents, allowing the
     agent to restart without disrupting sensor data publishing"). Decided
     2026-09-15.
+  - **Decided: Eclipse Mosquitto as the MQTT broker**, run from its official
+    Docker image. Chosen as the common default for small setups; no other
+    broker was compared. Low stakes: every client speaks plain MQTT, so a
+    different broker would need no code changes. Decided 2026-09-17.
   - **Decided: the decision service also publishes each command to MQTT**
     (a `ventilation_command` topic), alongside the REST call to the
     actuator. REST stays the actual delivery path — it's the link that needs
