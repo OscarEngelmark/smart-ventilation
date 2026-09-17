@@ -211,9 +211,10 @@ _(nothing yet)_
     in proposal section 6).
   - Useful for: §7.1, §11, §13.
 
-- **Decided: readings are persisted in SQLite, accessed only through a small
-  storage interface** ("save a reading," "get readings for room X since time
-  Y") — no component writes SQL directly. Chosen because nothing in the
+- **Decided: readings, forecasts, and commands are persisted in SQLite,
+  accessed only through a small storage interface** (`store.Store` in
+  `internal/store` — a typed `Save` method per message kind, no read methods
+  yet) — no component writes SQL directly. Chosen because nothing in the
   actual requirements needs more at this project's current scale (one room),
   and it adds no new infrastructure on top of Go, Docker, and MQTT, all new
   to this project at once. Rejected: InfluxDB — the better fit for
@@ -222,7 +223,7 @@ _(nothing yet)_
   deadline, and running it is a real cost (a separate service, a new query
   interface to learn) with no current payoff. The interface is what keeps
   this reversible: swapping to InfluxDB later means one new implementation
-  of it, not a rewrite. Decided 2026-09-15.
+  of it, not a rewrite. Decided 2026-09-15, implemented 2026-09-16.
   - **Replaces** an earlier same-day decision to use InfluxDB directly,
     reversed once the storage interface made a later swap cheap enough that
     committing to InfluxDB now wasn't buying anything.
@@ -233,7 +234,8 @@ _(nothing yet)_
     already subscribes to readings — it would mix forecasting logic with
     persistence, and couple their failures (a forecast-service outage would
     also stop storage, instead of the two failing independently, which the
-    fault-injection tests need to tell apart). Decided 2026-09-16.
+    fault-injection tests need to tell apart). Decided and implemented
+    2026-09-16 (`cmd/storage-writer`).
   - **Decided: no retention policy — stored readings are kept
     indefinitely.** At this project's actual scale (one room, a few weeks of
     data before the deadline), storage size never becomes a real problem.
@@ -243,6 +245,14 @@ _(nothing yet)_
     - **Revisit:** if scale changes (see the rejected InfluxDB alternative
       above), retention becomes a real requirement again — InfluxDB has one
       built in.
+  - **Decided: the forecast service reads recent readings from storage** to
+    rebuild its window of recent readings after a restart. Rejected: keeping
+    the window only in memory, filled from the `co2_reading` topic — after a
+    restart the window is empty, and there's no forecast until it refills.
+    Decided before 2026-09-16 (logged 2026-09-16); not implemented.
+    - **Revisit:** how it reads is open. `store.Store` is a Go interface with
+      no read methods yet, and the forecast service is Python, so it can't
+      query SQLite directly without breaking the storage-interface rule.
   - **Deferred, not yet decided:** how the dashboard reads from storage. The
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data
