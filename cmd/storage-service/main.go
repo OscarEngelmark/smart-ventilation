@@ -46,13 +46,33 @@ func main() {
 	}
 	defer db.Close()
 
-	opts := mqtt.NewClientOptions().AddBroker(brokerURL).SetClientID("storage-service")
+	// Subscribing here rather than once after Connect: the client reconnects
+	// automatically, but with a clean session the broker forgets
+	// subscriptions on disconnect, so they must be renewed on every connect.
+	onConnect := func(client mqtt.Client) {
+		log.Printf("connected to broker, subscribing")
+		subscribeAll(client, db)
+	}
+	onConnectionLost := func(_ mqtt.Client, err error) {
+		log.Printf("connection to broker lost: %v", err)
+	}
+
+	opts := mqtt.NewClientOptions().
+		AddBroker(brokerURL).
+		SetClientID("storage-service").
+		SetOnConnectHandler(onConnect).
+		SetConnectionLostHandler(onConnectionLost)
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatalf("connect to broker: %v", token.Error())
 	}
 	defer client.Disconnect(250)
 
+	select {}
+}
+
+// subscribeAll subscribes to every topic this service stores.
+func subscribeAll(client mqtt.Client, db store.Store) {
 	subscribe(client, "co2/+/reading", func(payload []byte) {
 		var p co2ReadingPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
@@ -91,8 +111,6 @@ func main() {
 			log.Printf("command: save failed: %v", err)
 		}
 	})
-
-	select {}
 }
 
 func subscribe(client mqtt.Client, topic string, handle func(payload []byte)) {

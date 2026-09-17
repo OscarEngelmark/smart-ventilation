@@ -285,9 +285,14 @@ _(nothing yet)_
     message with missing fields is saved with zero values (e.g. 0 ppm, empty
     `room_id`), contradicting *Decided: data contracts are written as JSON
     Schema documents*, §5.
-  - **Revisit (bug):** after a broker restart, the MQTT client reconnects but
-    doesn't resubscribe, so the service keeps running and silently saves
-    nothing.
+  - **Fixed 2026-09-17 (bug):** after a broker restart, the MQTT client
+    reconnected but didn't resubscribe (the default clean session makes the
+    broker forget subscriptions), so the service kept running and silently
+    saved nothing. Now subscribes in the on-connect handler, which runs on
+    every reconnect. Verified by restarting a Mosquitto container mid-run: a
+    reading published after the restart was stored. Rejected: a persistent
+    session instead — Mosquitto keeps sessions in memory by default, so a
+    broker restart would still lose the subscriptions.
   - **Revisit:** subscriptions use QoS 1 (at-least-once) with no dedup and no
     unique key, so a message can be stored twice; with no persistent session,
     messages published while the service is down are lost.
