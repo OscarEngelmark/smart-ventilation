@@ -34,3 +34,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Private scratch files (e.g. equations to view in Markdown preview)
+scratch/
