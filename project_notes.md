@@ -76,10 +76,21 @@ _(nothing yet)_
 - **Decided: BuildSim is the only store of physical state; the physical-model
   process keeps no values of its own between cycles (e.g. the previous CO2
   level).** Each cycle reads the current state from BuildSim, computes the
-  next step, and writes it back. Noted by 2026-09-05.
-  - **Revisit:** the reasoning and the rejected alternative weren't written
-    down at the time — fill them in before this goes into §4.4.
-  - Useful for: §4.4, §6.
+  next step, and writes it back. The physical model stands in for the
+  physical world, outside the system: in a real building it wouldn't
+  exist, and the sensor, decision service, and actuator only ever see
+  BuildSim. Rejected: the model keeping the true CO2 internally and
+  publishing it to BuildSim at a fixed interval. It matches "the model is
+  reality" more literally, but a crash loses the value and needs restart
+  logic, while here nothing is lost because the value always lives in
+  BuildSim. It was first proposed to keep the model accurate when the room
+  runs faster than real time; the exact solution in the mass-balance entry
+  (§6) does that in this design too. Noted by 2026-09-05; reasoning and
+  alternative added 2026-09-18.
+  - **Revisit:** where the physical model sits in the C4 diagrams. It is
+    conceptually outside the system but is still built and deployed as a
+    container.
+  - Useful for: §4.1, §4.4, §6.
 
 - **Decided: each device process registers its own device with BuildSim on
   startup** — the sensor process registers the CO2 sensor, the actuator
@@ -201,19 +212,41 @@ _(nothing yet)_
     in the report.
   - Useful for: §6.
 
-- **Decided: the mass balance is `V·dC/dt = G·N − Q·(C − C_out)`, stepped
-  forward each cycle as `C_next = C + Δt·(G·N/V − (Q/V)·(C − C_out))`.**
-  `C` is room CO2 (ppm), `N` the number of people, `C_out` outdoor CO2
-  (about 420 ppm), `G` the CO2 one person breathes out per unit time, and
-  `Q` the airflow through the room. Decided 2026-09-17; not implemented yet.
+- **Decided: the mass balance is `V·dC/dt = G·N − Q·(C − C_out)`, advanced
+  each cycle with its exact solution `C_next = C_steady + (C − C_steady) ·
+  exp(−Q·Δt/V)`, where `C_steady = C_out + G·N/Q`.** `C` is room CO2 (ppm),
+  `N` the number of people, `C_out` outdoor CO2 (about 420 ppm), `G` the CO2
+  one person breathes out per unit time, `Q` the airflow through the room,
+  and `Δt` the room time between cycles. `N` and the damper are read once
+  per cycle and held fixed within it, so the solution is exact for any `Δt`:
+  accuracy doesn't depend on the cycle length or on running the room faster
+  than real time. What `Δt` still sets is how late the model notices a
+  change in `N` or the damper. Decided 2026-09-17, exact solution
+  2026-09-18; not implemented yet.
+  - Replaces forward-Euler stepping, `C_next = C + Δt·(G·N/V − (Q/V)·(C −
+    C_out))`. That is only accurate while `Δt` is much smaller than the time
+    constant `τ = V/Q` (≈ 20 min in A125 with the damper open), so a faster
+    room would have needed more cycles, and more requests to BuildSim, to
+    stay accurate.
   - **`V` and `N_max` are computed from the room's floor area in BuildSim**
     (`V = area · 2.4 m`, `N_max = round(area / 5 m²)`; for A125: 71.5 m³ and
     6 people), so a second room needs no new configuration. Rejected:
     writing both values per room into `docker-compose.yml` or a `.env` file.
-  - **The two constants (2.4 m, 5 m² per person) live in one shared Go
-    package**, so every service computes the same numbers. Rejected:
-    environment variables — changeable without a rebuild, but these are
-    sourced assumptions about the building, not runtime settings.
+  - **Values not read from BuildSim are environment variables, loaded by
+    Docker Compose from one shared file**, so each value is written once
+    and every service that uses it reads the same number. This covers
+    ceiling height, area per person, outdoor CO2, `G`, the minimum airflow
+    per m², and `Δt` (describing the simulation), and the threshold and
+    forecast horizon (settings of the system itself). Only values from
+    BuildSim count as facts about the building; the rest are assumptions,
+    so they should be changeable between runs without a rebuild. Rejected:
+    a shared config file (YAML/JSON) mounted into each container — allows
+    grouping and comments, but needs parsing code in both Go and Python.
+    Decided 2026-09-18.
+    - Replaces fixing ceiling height and area per person as constants in a
+      shared Go package, which treated them as facts about the building
+      rather than assumptions.
+    - **Revisit:** how the variables are split into files and named.
   - **Ceiling height 2.4 m:** BuildSim gives no height. This is the minimum
     the Swedish Work Environment Authority advises for workplaces (general
     advice to section 5 of AFS 2023:12,
@@ -225,9 +258,21 @@ _(nothing yet)_
   - **Airflow `Q = Q_min + damper·(Q_max − Q_min)`.** `Q_max` follows from
     the steady state `C_steady = C_out + G·N/Q`: fully open at `N_max`, CO2
     must settle below the threshold, so `Q_max > G·N_max /
-    (C_threshold − C_out)`. `Q_min` is a small leak; without it a closed
-    damper gives `Q = 0` and CO2 rises without limit. Rejected: taking
+    (C_threshold − C_out)`. `Q_min` is the airflow with the damper closed;
+    without it `Q = 0` and CO2 rises without limit. Rejected: taking
     `Q_max` from a real ventilation device.
+  - **`Q_min` = 0.35 L/s per m² of floor area** (≈ 10 L/s in A125), so it
+    is computed from floor area like `V` and `N_max`. Both FoHMFS 2014:18
+    (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf)
+    and AFS 2023:12, chapter 5, section 4, give this as the minimum outdoor
+    airflow per m² of floor, on top of the airflow per person. It covers
+    pollution from building materials. A closed damper therefore means
+    ventilation at a low background level, not fully off. With it, CO2 in
+    A125 settles around 3650 ppm for 6 people and around 960 ppm for one
+    person. Rejected: a fixed share of `Q_max` (e.g. 10%), which is simpler
+    but has no source; and leakage through the building shell, which
+    matches "closed" literally but has no source checked yet. Decided
+    2026-09-18.
   - **CO2 per person `G` = 0.0056 L/s** (≈ 280 ppm/h per person in A125 with
     no ventilation). Table 2 of Persily & de Jonge, "Carbon Dioxide
     Generation Rates from Building Occupants", Healthy Buildings 2017 Europe
@@ -236,10 +281,25 @@ _(nothing yet)_
     ≈ 0.0052 L/s averaged over adults aged 21–60 at the paper's 1.5 met for
     office work, matching the ASHRAE 62.1 value it cites; scaled from the
     table's 273 K to room temperature this is 0.0056 L/s.
-  - **Revisit:** `Q_min` and `Δt` are still open. `C_threshold` is set in
+  - **`Δt` = 10 s of room time**, not real time, so the model notices a
+    change in `N` or the damper within the same room time at any speed;
+    only the real wait between cycles (and so the traffic to BuildSim)
+    shrinks as the room runs faster. 10 s is a default chosen to be short
+    compared with how often people arrive or leave (minutes), not tuned.
+    Rejected: `Δt` in real time, where a faster room would notice changes
+    later in room time. Decided 2026-09-18.
+  - `C_threshold` is set in
     *Decided: the decision service compares a short-horizon CO2 forecast to
     a fixed threshold …*, §7.
   - Useful for: §4.4, §6, §13.
+
+- **Deferred, not yet decided: whether room time runs faster than real
+  time.** At normal speed, CO2 with 6 people in A125 takes about 20 minutes
+  to reach the threshold, longer than the 10-minute demo. Running faster
+  shows the loop within the demo, but stretches the system's real delays in
+  room time (a 1 s delay becomes a minute at 60×), so it misrepresents how
+  the system would perform in a real building. Noted 2026-09-18.
+  - Useful for: §6, §11.
 
 - **Decided: occupancy comes from a time-of-day schedule (arrivals, a meeting
   block, departures) plus some randomness.** Rejected: replaying a public
