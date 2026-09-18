@@ -235,7 +235,9 @@ _(nothing yet)_
     ≈ 0.0052 L/s averaged over adults aged 21–60 at the paper's 1.5 met for
     office work, matching the ASHRAE 62.1 value it cites; scaled from the
     table's 273 K to room temperature this is 0.0056 L/s.
-  - **Revisit:** `C_threshold`, `Q_min`, and `Δt` are still open.
+  - **Revisit:** `Q_min` and `Δt` are still open. `C_threshold` is set in
+    *Decided: the decision service compares a short-horizon CO2 forecast to
+    a fixed threshold …*, §7.
   - Useful for: §4.4, §6, §13.
 
 - **Decided: occupancy comes from a time-of-day schedule (arrivals, a meeting
@@ -267,9 +269,17 @@ _(nothing yet)_
   behind a plain threshold. Rejected: a plain reactive threshold (which also
   serves as the comparison in evaluation). Proposal sections 1 and 5,
   2026-09-04.
+  - **Threshold `C_threshold` = 1000 ppm.** The Public Health Agency of
+    Sweden's general advice on ventilation, FoHMFS 2014:18
+    (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf),
+    treats CO2 regularly above 1000 ppm in normal use as a sign of
+    inadequate ventilation (stated for schools and childcare premises). The
+    workplace rules cited for the ceiling height (AFS 2023:12) give no CO2
+    limit, only a minimum outdoor airflow per person and per m². No
+    alternative value was weighed. Decided 2026-09-18.
   - **Revisit:** the forecast horizon (30 minutes is the working figure,
-    not yet checked) and the threshold value are not chosen or justified yet.
-  - Useful for: §7.1, §11.
+    not yet checked) is not chosen or justified yet.
+  - Useful for: §6, §7.1, §11.
 
 - **Decided: start with the simplest forecasting model that produces a usable
   forecast** (e.g. exponential smoothing or a small regression over recent
