@@ -8,6 +8,7 @@ it to report sections (§ numbers follow the final report template in the
 course repository, https://github.com/eislab-cps/D7065E,
 `lab-assignment/final_report_template/`). Open items are marked
 **Revisit:**, **Deferred, not yet decided**, or **Idea, not yet evaluated**.
+A final section, after §13, records where AI advice was wrong.
 
 "The proposal" means `latex/proposal/proposal.tex`. Its own section numbers
 are written out ("proposal section 3") to keep them apart from report §
@@ -430,3 +431,18 @@ _(nothing yet)_
 ## 13. Risks and critical reflection
 
 _(nothing yet)_
+
+## Where AI advice was wrong
+
+Cases where advice from the AI coding assistant turned out wrong, and how it
+was caught. Kept for the report's reflection and the oral exam.
+
+- **The 1000 ppm CO2 threshold was attributed to the wrong source.** The
+  assistant suggested it came from the workplace rules already cited for the
+  ceiling height (AFS 2023:12). Reading that document showed it has no CO2
+  limit, only a minimum outdoor airflow. The figure actually comes from
+  FoHMFS 2014:18 (see the threshold in *Decided: the decision service
+  compares a short-horizon CO2 forecast to a fixed threshold …*, §7). Caught
+  because the value was checked against the source before it was logged.
+  Noted 2026-09-18.
+  - Useful for: §13.
