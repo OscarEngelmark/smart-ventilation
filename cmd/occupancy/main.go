@@ -1,12 +1,7 @@
-// occupancy simulates the people in the target room and writes them to
-// BuildSim, where every other process reads them from. It stands in for the
-// physical world alongside the physical-model process, and is kept separate
-// from it so the CO2 model never has to know how people are generated (see
-// project_notes.md §4).
-//
-// It is the only process allowed to write occupancy: BuildSim replaces the
-// occupancy of the whole building on every write, so a second writer would
-// erase this one's rooms.
+// occupancy writes the people in the target room to BuildSim, following a
+// time-of-day schedule. It must stay the only process that writes occupancy:
+// BuildSim replaces the whole building's occupancy on every write.
+// Reasoning: project_notes.md §4.
 package main
 
 import (
@@ -18,8 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	// The container image carries no timezone database, so without this the
-	// TZ setting would be ignored and the schedule would silently run on UTC.
+	// The image carries no timezone database, so TZ is otherwise ignored.
 	_ "time/tzdata"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
@@ -36,10 +30,7 @@ func main() {
 	client := buildsim.New(baseURL)
 	ctx := context.Background()
 
-	// BuildSim holds the building, so the room's area — and with it how many
-	// people the room holds — is read from it rather than configured here.
-	// The process exits if BuildSim isn't up yet and Docker starts it again,
-	// the same way the storage service waits for the broker.
+	// Read the room's area from BuildSim; it sets how many people fit.
 	area, err := client.RoomArea(ctx, level, room)
 	if err != nil {
 		log.Fatalf("read area of %s: %v", buildsim.RoomKey(level, room), err)
@@ -53,21 +44,18 @@ func main() {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
-		// Room time is the wall clock: the simulation runs at real speed for
-		// now, so the schedule's times are the times of day it is run at.
+		// Room time is the wall clock: the simulation runs at real speed.
 		present := occupancy.PeopleAt(time.Now(), capacity)
 		if err := publish(ctx, client, level, room, people[:present]); err != nil {
-			// A failed write leaves BuildSim showing the previous occupancy
-			// until the next cycle, which is a better outcome than stopping.
+			// Skip this cycle; BuildSim keeps the occupancy it already has.
 			log.Printf("write occupancy: %v", err)
 		}
 		<-ticker.C
 	}
 }
 
-// publish writes the room's people to BuildSim. Every other room is left out
-// of the payload, so this also asserts that they are empty — which holds
-// while the project simulates one room.
+// publish sets who is in the room. Rooms left out of the payload are emptied
+// by BuildSim, which is correct while the project simulates one room.
 func publish(
 	ctx context.Context,
 	client *buildsim.Client,
@@ -82,9 +70,8 @@ func publish(
 	})
 }
 
-// namePeople builds the room's full set of occupants once, so that a person
-// keeps the same identity between cycles instead of being renamed whenever
-// the count changes.
+// namePeople builds the room's full set of occupants once, so a person keeps
+// the same identity as the count changes.
 func namePeople(room string, capacity int) []buildsim.Person {
 	people := make([]buildsim.Person, capacity)
 	for i := range people {

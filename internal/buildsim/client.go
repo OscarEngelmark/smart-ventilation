@@ -1,7 +1,5 @@
-// Package buildsim is a small REST client for BuildSim, the shared
-// building-state backend. It covers only the calls this project makes.
-// BuildSim is a fixed external dependency and is never modified, so this
-// package follows its payloads rather than defining its own.
+// Package buildsim is a REST client for BuildSim, covering only the calls
+// this project makes. Its types follow BuildSim's payloads.
 package buildsim
 
 import (
@@ -14,16 +12,14 @@ import (
 	"time"
 )
 
-// Person is one occupant of a room. BuildSim also accepts an icon and a
-// position; both are optional and left out here, so the 3D view places the
-// person itself.
+// Person is one occupant of a room. BuildSim's optional icon and position
+// are left out, so its 3D view places the person itself.
 type Person struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-// Alien is part of BuildSim's occupancy payload. Nothing in this project
-// produces one, but the field is always sent as an empty list.
+// Alien is part of BuildSim's occupancy payload; always sent empty here.
 type Alien struct {
 	ID string `json:"id"`
 }
@@ -40,8 +36,7 @@ type Client struct {
 	http    *http.Client
 }
 
-// New returns a client for the BuildSim at baseURL, e.g.
-// "http://buildsim:9090".
+// New returns a client for the BuildSim at baseURL, e.g. "http://buildsim:9090".
 func New(baseURL string) *Client {
 	return &Client{
 		baseURL: baseURL,
@@ -49,9 +44,8 @@ func New(baseURL string) *Client {
 	}
 }
 
-// RoomKey is how BuildSim names a room wherever a whole collection is
-// written, e.g. "level0/A125". Room names repeat between floors, so the
-// level is always included.
+// RoomKey names a room the way BuildSim does, e.g. "level0/A125". Room names
+// repeat between floors, so the level is always included.
 func RoomKey(level, room string) string {
 	return level + "/" + room
 }
@@ -63,9 +57,7 @@ type floorData struct {
 	} `json:"rooms"`
 }
 
-// RoomArea returns a room's floor area in m². Room volume and the number of
-// people a room holds are both derived from it, so it is read from BuildSim
-// rather than configured per room.
+// RoomArea returns a room's floor area in m².
 func (c *Client) RoomArea(ctx context.Context, level, room string) (float64, error) {
 	var floor floorData
 	url := fmt.Sprintf("%s/api/building/floors/%s", c.baseURL, level)
@@ -80,18 +72,16 @@ func (c *Client) RoomArea(ctx context.Context, level, room string) (float64, err
 	return 0, fmt.Errorf("room %q not found on %s", room, level)
 }
 
-// SetOccupancy replaces the occupancy of the whole building. Every room left
-// out of occ is emptied, so only one process may call this.
+// SetOccupancy replaces the occupancy of the whole building: rooms left out
+// of occ are emptied, so only one process may call this.
 func (c *Client) SetOccupancy(ctx context.Context, occ map[string]RoomOccupancy) error {
-	url := c.baseURL + "/api/occupancy"
-	return c.do(ctx, http.MethodPut, url, occ, nil)
+	return c.do(ctx, http.MethodPut, c.baseURL+"/api/occupancy", occ, nil)
 }
 
-// Occupancy returns the occupancy of every room, keyed as RoomKey builds it.
+// Occupancy returns every room's occupancy, keyed as RoomKey builds it.
 func (c *Client) Occupancy(ctx context.Context) (map[string]RoomOccupancy, error) {
 	var occ map[string]RoomOccupancy
-	url := c.baseURL + "/api/occupancy"
-	if err := c.do(ctx, http.MethodGet, url, nil, &occ); err != nil {
+	if err := c.do(ctx, http.MethodGet, c.baseURL+"/api/occupancy", nil, &occ); err != nil {
 		return nil, err
 	}
 	return occ, nil
@@ -124,9 +114,7 @@ func (c *Client) do(ctx context.Context, method, url string, body, out any) erro
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		// BuildSim explains a rejected request in the body, and its
-		// occupancy errors name the offending room key, so it is worth
-		// keeping in the message.
+		// BuildSim names the offending room key in the body, so keep it.
 		detail, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		return fmt.Errorf("%s %s: %s: %s", method, url, resp.Status, detail)
 	}

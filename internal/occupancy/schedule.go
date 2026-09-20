@@ -1,9 +1,6 @@
 // Package occupancy turns a moment in time into the number of people in a
-// room. The pattern is a weekday office day with a midday meeting; the
-// schedule and the reasons behind it are in project_notes.md §6.
-//
-// The room's capacity is passed in rather than stored here, because it is
-// derived from the room's floor area in BuildSim.
+// room, following a weekday office day with a midday meeting. The schedule
+// and the reasons behind it are in project_notes.md §6.
 package occupancy
 
 import (
@@ -11,10 +8,7 @@ import (
 	"time"
 )
 
-// The fixed points of the weekday pattern, as time of day. Regulars come in
-// one at a time between arrivalStart and arrivalEnd and leave the same way
-// between departStart and departEnd. The lunch window is shared, so the room
-// empties around midday rather than thinning out.
+// The fixed points of the weekday pattern, as time of day.
 const (
 	arrivalStart = 7 * time.Hour
 	arrivalEnd   = 9 * time.Hour
@@ -38,9 +32,9 @@ type personJitter struct {
 }
 
 // PeopleAt returns how many people are in the room at t, where capacity is
-// the most the room holds. Half of the capacity, rounded up, are regulars
-// who are in for the working day; the rest only join the midday meeting, so
-// the room reaches capacity exactly once a day.
+// the most the room holds. Half the capacity, rounded up, are regulars in
+// for the working day; the rest only join the meeting, so the room reaches
+// capacity once a day.
 func PeopleAt(t time.Time, capacity int) int {
 	if capacity <= 0 {
 		return 0
@@ -77,21 +71,21 @@ func regularPresent(since time.Duration, i, n int, j personJitter) bool {
 	if since < arrive || since >= leave {
 		return false
 	}
+	// The lunch window is shared, so the room empties rather than thins out.
 	if since >= lunchStart+j.lunchOut && since < lunchEnd+j.lunchIn {
 		return false
 	}
 	return true
 }
 
-// spread places person i of n across a window so that they arrive or leave
-// one at a time rather than all at once.
+// spread places person i of n across a window, so they arrive or leave one
+// at a time rather than all at once.
 func spread(window time.Duration, i, n int) time.Duration {
 	return window * time.Duration(i) / time.Duration(n)
 }
 
-// dayJitter draws every person's offsets for the day t falls in. The seed is
-// the calendar date, so the same day always plays out the same way and a
-// demo or a test can be repeated.
+// dayJitter draws every person's offsets for the day t falls in. Seeding
+// from the calendar date makes a day repeatable.
 func dayJitter(t time.Time, people int) []personJitter {
 	year, month, day := t.Date()
 	seed := uint64(year)*10000 + uint64(month)*100 + uint64(day)
