@@ -27,8 +27,8 @@ func main() {
 	areaPerPerson := getEnvFloat("AREA_PER_PERSON_M2", 5)
 	interval := getEnvDuration("OCCUPANCY_INTERVAL", 10*time.Second)
 
-	client := buildsim.New(baseURL)
-	ctx := context.Background()
+	client := buildsim.New(baseURL) // this program's link to BuildSim
+	ctx := context.Background()     // empty context, no cancellation or timeout
 
 	// Read the room's area from BuildSim; it sets how many people fit.
 	area, err := client.RoomArea(ctx, level, room)
@@ -42,7 +42,6 @@ func main() {
 	people := namePeople(room, capacity)
 
 	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
 	for {
 		// Room time is the wall clock: the simulation runs at real speed.
 		present := occupancy.PeopleAt(time.Now(), capacity)
@@ -50,7 +49,7 @@ func main() {
 			// Skip this cycle; BuildSim keeps the occupancy it already has.
 			log.Printf("write occupancy: %v", err)
 		}
-		<-ticker.C
+		<-ticker.C // wait for the next tick
 	}
 }
 
