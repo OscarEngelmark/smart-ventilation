@@ -110,7 +110,9 @@ _(nothing yet)_
   processes stand in for the physical world and sit outside the system
   boundary, so the same open question about where they belong in the C4
   diagrams applies to both (see *Decided: BuildSim is the only store of
-  physical state*, above). Decided 2026-09-20; not implemented yet.
+  physical state*, above). Decided and implemented 2026-09-20,
+  `cmd/occupancy/`; the BuildSim calls it shares with the other Go services
+  live in `internal/buildsim`.
   - The occupancy process covers the whole building rather than one room:
     BuildSim has no per-room occupancy endpoint, and a write replaces every
     room, erasing any left out — so exactly one process can own occupancy.
@@ -274,7 +276,12 @@ _(nothing yet)_
     - Replaces fixing ceiling height and area per person as constants in a
       shared Go package, which treated them as facts about the building
       rather than assumptions.
-    - **Revisit:** how the variables are split into files and named.
+    - Implemented 2026-09-20 as `sim.env`, read by Docker Compose through
+      `env_file`. It holds only what more than one service needs (so far the
+      target room and the floor area per person); a service's own wiring,
+      such as the BuildSim URL and its update interval, stays in its
+      `environment` block in `docker-compose.yml`.
+      - **Revisit:** naming, once more of the values exist.
   - **Ceiling height 2.4 m:** BuildSim gives no height. This is the minimum
     the Swedish Work Environment Authority advises for workplaces (general
     advice to section 5 of AFS 2023:12,
@@ -327,6 +334,15 @@ _(nothing yet)_
   shows the loop within the demo, but stretches the system's real delays in
   room time (a 1 s delay becomes a minute at 60×), so it misrepresents how
   the system would perform in a real building. Noted 2026-09-18.
+  - Running faster also needs a rule for what the room time *is*, which
+    running at normal speed does not. Two processes now depend on it — the
+    occupancy simulator reads the time of day from the schedule, and the
+    physical model advances CO2 by it — and they start at different moments,
+    so room time can't be counted from each process's own start. It has to
+    be a function of the wall clock that both compute the same way, which
+    means agreeing on a fixed wall-clock instant to anchor it to. At normal
+    speed none of this is needed, because room time is the wall clock; the
+    occupancy simulator assumes that today (2026-09-20).
   - Useful for: §6, §11.
 
 - **Decided: occupancy comes from a time-of-day schedule (arrivals, a meeting
@@ -354,7 +370,10 @@ _(nothing yet)_
     is the case where CO2 climbs fast enough to cross the threshold, so it
     is what the forecast has to catch early. Times are room time, so they
     follow the simulation speed. Plausible office hours, not taken from a
-    source or a measured building. Decided 2026-09-20; not implemented yet.
+    source or a measured building. Decided and implemented 2026-09-20,
+    `internal/occupancy/schedule.go`, with unit tests covering the counts at
+    known times, the weekend, the lunch dip, and that the room fills to
+    capacity exactly once a day.
   - **Revisit:** adopt a different occupancy source later if the schedule
     turns out too simple to be realistic (a risk in proposal section 6) —
     either the course's `occupancysim/` or a public occupancy dataset.

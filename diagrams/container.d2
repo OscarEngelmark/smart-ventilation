@@ -10,6 +10,7 @@ sys: "Smart Ventilation  [System]" {
   style.fill: transparent
 
   model: "Physical model\n[Container: Go]\nEach cycle: reads state, steps the\nCO2 mass balance, writes it back"
+  occ: "Occupancy simulator\n[Container: Go]\nTurns the time of day into the\npeople in the room; sole writer\nof occupancy"
   sensor: "CO2 sensor\n[Container: Go]\nReads room CO2 from BuildSim,\npublishes it"
   broker: "Message broker\n[Container: Mosquitto, MQTT]\nDecouples publishers from subscribers" {
     shape: queue
@@ -26,7 +27,8 @@ sys: "Smart Ventilation  [System]" {
   }
 }
 
-sys.model <-> bs: "reads state, writes next CO2 [REST]"
+sys.occ -> bs: "sets who is in each room [REST]"
+sys.model <-> bs: "reads CO2, damper, occupancy;\nwrites next CO2 [REST]"
 sys.sensor -> bs: "reads room CO2 [REST]"
 sys.sensor -> sys.broker: "co2/+/reading [MQTT]"
 sys.broker -> sys.forecast: "co2/+/reading [MQTT]"

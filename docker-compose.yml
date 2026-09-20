@@ -17,6 +17,23 @@ services:
     ports:
       - "1883:1883"
 
+  occupancy:
+    build:
+      context: .
+      dockerfile: cmd/occupancy/Dockerfile
+    # Simulation values shared with other services come from sim.env; the
+    # settings below are this service's own wiring.
+    env_file:
+      - sim.env
+    environment:
+      BUILDSIM_URL: http://buildsim:9090
+      OCCUPANCY_INTERVAL: 10s
+    depends_on:
+      - buildsim
+    # The service exits if BuildSim isn't ready yet at startup; Docker then
+    # starts it again.
+    restart: unless-stopped
+
   storage-service:
     build:
       context: .
