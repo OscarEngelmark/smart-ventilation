@@ -25,3 +25,10 @@ func MaxAirflow(floorArea, areaPerPerson, G, Cthres, Cout, margin float64) float
 	justEnough := 1e6 * G * float64(Nmax) / (Cthres - Cout) // holds Nmax at Cthres
 	return margin * justEnough
 }
+
+// Airflow (Q) is the airflow in L/s at this damper position, where 0 is
+// closed and 1 fully open. Positions outside that range are clamped.
+func Airflow(damper, Qmin, Qmax float64) float64 {
+	open := math.Min(math.Max(damper, 0), 1)
+	return Qmin + open*(Qmax-Qmin)
+}
