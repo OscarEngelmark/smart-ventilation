@@ -554,6 +554,16 @@ _(nothing yet)_
   Proposal, 2026-09-04.
   - Useful for: §10, §11, §13.
 
+- **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a
+  fan losing capacity — and measure how long the forecast stays wrong.** The
+  decision service never sees `Q_max`, `V` or `G`; it only sees CO2 readings
+  and damper positions, so the forecast model picks up how fast the room
+  clears from stored history rather than from the parameters. Changing
+  `Q_max` invalidates what it learned, and the recovery time is a measure of
+  how long the pipeline takes to catch up with a building that has changed.
+  Noted 2026-09-21.
+  - Useful for: §10, §11, §13.
+
 ## 11. Evaluation and results
 
 _(nothing yet)_
