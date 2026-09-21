@@ -185,6 +185,25 @@ _(nothing yet)_
     Decided 2026-09-16.
   - Useful for: §4.4, §5, §7.2.
 
+- **Decided: everything derived from a room's floor area lives in one
+  package, `internal/room`** — capacity `N_max`, volume `V`, and the airflow
+  limits `Q_min` and `Q_max`. The occupancy process needs the capacity and
+  the physical model needs all four, so the arithmetic is written once and
+  both import it, while neither depends on the other. Rejected: keeping the
+  capacity in `internal/occupancy`, which made the physical model import the
+  weekday schedule and its random jitter to find out how many people fit; and
+  putting it in `internal/co2`, which made the occupancy process depend on a
+  CO2 package for a number unrelated to CO2. `internal/co2` is left holding
+  only the mass balance. The Python forecast service can't import Go code
+  either way, so anything it needs comes from `sim.env` or BuildSim. Decided
+  2026-09-21.
+  - Replaces, the same day, `internal/occupancy` owning the capacity. The
+    argument for that was that one five-line function is not a subject and a
+    package without one collects whatever fits nowhere else. It stopped
+    holding once the volume and both airflow limits turned out to be the same
+    kind of value, derived the same way from the same input.
+  - Useful for: §4.3, §4.4.
+
 - **Deferred, not yet decided: one decision-service instance per room, or one
   instance handling all rooms.** Also open: data storage, and any user-facing
   view beyond BuildSim's own. Proposal sections 3 and 6 leave these until the
@@ -252,13 +271,13 @@ _(nothing yet)_
   accuracy doesn't depend on the cycle length or on running the room faster
   than real time. What `Δt` still sets is how late the model notices a
   change in `N` or the damper. Decided 2026-09-17, exact solution 2026-09-18,
-  implemented 2026-09-21 as `co2.Step` in `internal/co2/room.go`.
+  implemented 2026-09-21 as `co2.Step` in `internal/co2/massbalance.go`.
   - Replaces forward-Euler stepping, `C_next = C + Δt·(G·N/V − (Q/V)·(C −
     C_out))`. That is only accurate while `Δt` is much smaller than the time
     constant `τ = V/Q` (≈ 10 min in A125 with the damper open), so a faster
     room would have needed more cycles, and more requests to BuildSim, to
     stay accurate.
-  - The claim that `Δt` is free is tested: in `internal/co2/room_test.go`,
+  - The claim that `Δt` is free is tested: in `internal/co2/massbalance_test.go`,
     one 10-minute step and sixty 10-second steps agree to within 0.01 ppm.
     Under forward Euler those two would differ, so this is the test that
     distinguishes the two methods rather than just exercising the code.

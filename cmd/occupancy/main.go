@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"time"
@@ -18,12 +17,13 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/occupancy"
+	"github.com/OscarEngelmark/smart-ventilation/internal/room"
 )
 
 func main() {
 	baseURL := getEnv("BUILDSIM_URL", "http://localhost:9090")
 	level := getEnv("ROOM_LEVEL", "level0")
-	room := getEnv("ROOM_NAME", "A125")
+	roomName := getEnv("ROOM_NAME", "A125")
 	areaPerPerson := getEnvFloat("AREA_PER_PERSON_M2", 5)
 	interval := getEnvDuration("OCCUPANCY_INTERVAL", 10*time.Second)
 
@@ -31,21 +31,21 @@ func main() {
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
 	// Read the room's area from BuildSim; it sets how many people fit.
-	area, err := client.RoomArea(ctx, level, room)
+	area, err := client.RoomArea(ctx, level, roomName)
 	if err != nil {
-		log.Fatalf("read area of %s: %v", buildsim.RoomKey(level, room), err)
+		log.Fatalf("read area of %s: %v", buildsim.RoomKey(level, roomName), err)
 	}
-	capacity := int(math.Round(area / areaPerPerson))
+	capacity := room.Capacity(area, areaPerPerson)
 	log.Printf("room %s is %.1f m², holding up to %d people",
-		buildsim.RoomKey(level, room), area, capacity)
+		buildsim.RoomKey(level, roomName), area, capacity)
 
-	people := namePeople(room, capacity)
+	people := namePeople(roomName, capacity)
 
 	ticker := time.NewTicker(interval)
 	for {
 		// Room time is the wall clock: the simulation runs at real speed.
 		present := occupancy.PeopleAt(time.Now(), capacity)
-		if err := publish(ctx, client, level, room, people[:present]); err != nil {
+		if err := publish(ctx, client, level, roomName, people[:present]); err != nil {
 			// Skip this cycle; BuildSim keeps the occupancy it already has.
 			log.Printf("write occupancy: %v", err)
 		}
@@ -58,7 +58,7 @@ func main() {
 func publish(
 	ctx context.Context,
 	client *buildsim.Client,
-	level, room string,
+	level, roomName string,
 	present []buildsim.Person,
 ) error {
 	occupants := buildsim.RoomOccupancy{
@@ -66,18 +66,18 @@ func publish(
 		Aliens:  []buildsim.Alien{},
 	}
 	building := map[string]buildsim.RoomOccupancy{
-		buildsim.RoomKey(level, room): occupants,
+		buildsim.RoomKey(level, roomName): occupants,
 	}
 	return client.SetOccupancy(ctx, building)
 }
 
 // namePeople builds the room's full set of occupants once, so a person keeps
 // the same identity as the count changes.
-func namePeople(room string, capacity int) []buildsim.Person {
+func namePeople(roomName string, capacity int) []buildsim.Person {
 	people := make([]buildsim.Person, capacity)
 	for i := range people {
 		people[i] = buildsim.Person{
-			ID:   fmt.Sprintf("%s-person-%d", room, i+1),
+			ID:   fmt.Sprintf("%s-person-%d", roomName, i+1),
 			Name: fmt.Sprintf("Person %d", i+1),
 		}
 	}
