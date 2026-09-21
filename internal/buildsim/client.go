@@ -87,27 +87,29 @@ func (c *Client) Occupancy(ctx context.Context) (map[string]RoomOccupancy, error
 	return occ, nil
 }
 
-// do sends one request, encoding body as JSON when it is not nil and
-// decoding the response into out when out is not nil.
+// do carries out every REST call in this file, so request encoding, status
+// checking, and error wording stay in one place. It sends method to url with
+// body as a JSON payload when body is not nil, treats any non-2xx status as an
+// error, and decodes the JSON reply into out when out is not nil.
 func (c *Client) do(ctx context.Context, method, url string, body, out any) error {
-	var reader io.Reader
+	var reader io.Reader // interface http.NewRequest wants for the request body
 	if body != nil {
-		encoded, err := json.Marshal(body)
+		encoded, err := json.Marshal(body) // Go value -> JSON bytes
 		if err != nil {
 			return fmt.Errorf("encode request: %w", err)
 		}
 		reader = bytes.NewReader(encoded)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, url, reader)
+	req, err := http.NewRequestWithContext(ctx, method, url, reader) // build request
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", "application/json") // set JSON header
 	}
 
-	resp, err := c.http.Do(req)
+	resp, err := c.http.Do(req) // send request and get response
 	if err != nil {
 		return fmt.Errorf("%s %s: %w", method, url, err)
 	}

@@ -61,12 +61,14 @@ func publish(
 	level, room string,
 	present []buildsim.Person,
 ) error {
-	return client.SetOccupancy(ctx, map[string]buildsim.RoomOccupancy{
-		buildsim.RoomKey(level, room): {
-			Persons: present,
-			Aliens:  []buildsim.Alien{},
-		},
-	})
+	occupants := buildsim.RoomOccupancy{
+		Persons: present,
+		Aliens:  []buildsim.Alien{},
+	}
+	building := map[string]buildsim.RoomOccupancy{
+		buildsim.RoomKey(level, room): occupants,
+	}
+	return client.SetOccupancy(ctx, building)
 }
 
 // namePeople builds the room's full set of occupants once, so a person keeps
