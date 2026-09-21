@@ -251,13 +251,17 @@ _(nothing yet)_
   per cycle and held fixed within it, so the solution is exact for any `Δt`:
   accuracy doesn't depend on the cycle length or on running the room faster
   than real time. What `Δt` still sets is how late the model notices a
-  change in `N` or the damper. Decided 2026-09-17, exact solution
-  2026-09-18; not implemented yet.
+  change in `N` or the damper. Decided 2026-09-17, exact solution 2026-09-18,
+  implemented 2026-09-21 as `co2.Step` in `internal/co2/room.go`.
   - Replaces forward-Euler stepping, `C_next = C + Δt·(G·N/V − (Q/V)·(C −
     C_out))`. That is only accurate while `Δt` is much smaller than the time
     constant `τ = V/Q` (≈ 10 min in A125 with the damper open), so a faster
     room would have needed more cycles, and more requests to BuildSim, to
     stay accurate.
+  - The claim that `Δt` is free is tested: in `internal/co2/room_test.go`,
+    one 10-minute step and sixty 10-second steps agree to within 0.01 ppm.
+    Under forward Euler those two would differ, so this is the test that
+    distinguishes the two methods rather than just exercising the code.
   - **`V` and `N_max` are computed from the room's floor area in BuildSim**
     (`V = area · 2.4 m`, `N_max = round(area / 5 m²)`; for A125: 71.5 m³ and
     6 people), so a second room needs no new configuration. Rejected:
