@@ -255,7 +255,7 @@ _(nothing yet)_
   2026-09-18; not implemented yet.
   - Replaces forward-Euler stepping, `C_next = C + Δt·(G·N/V − (Q/V)·(C −
     C_out))`. That is only accurate while `Δt` is much smaller than the time
-    constant `τ = V/Q` (≈ 20 min in A125 with the damper open), so a faster
+    constant `τ = V/Q` (≈ 10 min in A125 with the damper open), so a faster
     room would have needed more cycles, and more requests to BuildSim, to
     stay accurate.
   - **`V` and `N_max` are computed from the room's floor area in BuildSim**
@@ -290,12 +290,27 @@ _(nothing yet)_
     guess.
   - **5 m² per person** is an estimate, not sourced — roughly what a meeting
     room allows; those workplace rules give no figure per person.
-  - **Airflow `Q = Q_min + damper·(Q_max − Q_min)`.** `Q_max` follows from
-    the steady state `C_steady = C_out + G·N/Q`: fully open at `N_max`, CO2
-    must settle below the threshold, so `Q_max > G·N_max /
-    (C_threshold − C_out)`. `Q_min` is the airflow with the damper closed;
-    without it `Q = 0` and CO2 rises without limit. Rejected: taking
-    `Q_max` from a real ventilation device.
+  - **Airflow `Q = Q_min + damper·(Q_max − Q_min)`, with `Q_max = 2 · G·N_max
+    / (C_threshold − C_out)`** (≈ 116 L/s in A125), so `Q_max` is computed
+    from floor area like `V`, `N_max` and `Q_min` and a second room needs no
+    new configuration. The lower bound `Q_max > G·N_max /
+    (C_threshold − C_out)` follows from the steady state `C_steady = C_out +
+    G·N/Q`: fully open at `N_max`, CO2 must settle below the threshold, or
+    the damper reaches its limit with the room still above it and the
+    decision service has nothing left to command. The factor 2 is an
+    unsourced margin. Sizing `Q_max` this way does not keep the room below
+    the threshold — with the damper closed it still settles far above it (≈
+    3650 ppm at `N_max` in A125) — it only makes opening the damper able to
+    bring it back under, which is what leaves the decision service something
+    to decide. `Q_min` is the airflow with the damper closed; without it
+    `Q = 0` and CO2 rises without limit. Rejected: taking `Q_max` from a real
+    ventilation device; and choosing a value per room, which doesn't carry
+    over to more rooms. Decided 2026-09-21.
+    - `V` and `Q_max` both scale with floor area, so they cancel in
+      `τ = V/Q_max`: every room clears at the same rate, ≈ 10 min with margin
+      2, and the forecast horizon needs no retuning per room. A larger margin
+      makes rooms respond faster, leaving a 30-minute forecast less to
+      anticipate.
   - **`Q_min` = 0.35 L/s per m² of floor area** (≈ 10 L/s in A125), so it
     is computed from floor area like `V` and `N_max`. Both FoHMFS 2014:18
     (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf)
