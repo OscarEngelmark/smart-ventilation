@@ -43,7 +43,7 @@ func main() {
 	Cout := getEnvFloat("OUTDOOR_CO2_PPM", 420)
 	Cthres := getEnvFloat("CO2_THRESHOLD_PPM", 1000)
 	minPerArea := getEnvFloat("MIN_AIRFLOW_LPS_PER_M2", 0.35)
-	margin := getEnvFloat("AIRFLOW_MARGIN", 2)
+	factor := getEnvFloat("MAX_AIRFLOW_FACTOR", 2)
 	dt := getEnvDuration("SIM_STEP", 10*time.Second)
 
 	client := buildsim.New(baseURL) // this program's link to BuildSim
@@ -62,7 +62,7 @@ func main() {
 		damperID: getEnv("DAMPER_ID", roomName+"-damper"),
 		V:        room.Volume(area, ceilingHeight),
 		Qmin:     room.MinAirflow(area, minPerArea),
-		Qmax:     room.MaxAirflow(area, areaPerPerson, G, Cthres, Cout, margin),
+		Qmax:     room.MaxAirflow(area, areaPerPerson, G, Cthres, Cout, factor),
 		G:        G,
 		Cout:     Cout,
 		dt:       dt,

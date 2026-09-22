@@ -20,10 +20,10 @@ func MinAirflow(floorArea, perArea float64) float64 {
 }
 
 // MaxAirflow (Q_max) is the airflow in L/s with the damper fully open.
-func MaxAirflow(floorArea, areaPerPerson, G, Cthres, Cout, margin float64) float64 {
+func MaxAirflow(floorArea, areaPerPerson, G, Cthres, Cout, factor float64) float64 {
 	Nmax := Capacity(floorArea, areaPerPerson)
 	justEnough := 1e6 * G * float64(Nmax) / (Cthres - Cout) // holds Nmax at Cthres
-	return margin * justEnough
+	return factor * justEnough
 }
 
 // Airflow (Q) is the airflow in L/s at this damper position, where 0 is
