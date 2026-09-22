@@ -20,6 +20,15 @@ _(nothing yet)_
 
 ## 2. Use case and building context
 
+- **Decided: the use case is indoor air quality (CO2) management, chosen over
+  fire and gas detection.** Fire/gas detection pulls in roughly four times the
+  component count — multi-sensor fusion, spatial diffusion physics, evacuation
+  routing — without reaching a higher grade ceiling. CO2 gives a loop tight
+  enough to trace end to end (occupancy → buildup → sensor → forecast →
+  ventilation command → actuator → next reading), built on physics that is
+  already familiar. Decided 2026-09-02.
+  - Useful for: §2, §4.4, §13.
+
 - **Decided: one sensed variable (CO2) and one control loop — no second
   variable such as heating.** Stated reason: effort goes into testing,
   evaluation, and justification rather than component count. Rejected: adding
