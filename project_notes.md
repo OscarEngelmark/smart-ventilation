@@ -154,7 +154,13 @@ _(nothing yet)_
   would make a restarted sensor or actuator depend on another process, where
   the course expects a crashed process to re-register itself. Trade-off: the
   physical model must wait and retry until the sensor exists. Decided
-  2026-09-17.
+  2026-09-17; the call is `buildsim.Client.Register`, implemented 2026-09-22.
+  Registration goes to `POST /api/equipment/bulk`, which skips IDs that
+  already exist, rather than `POST /api/equipment`, which answers 409 for
+  them. Re-registering is therefore a no-op: verified against a running
+  BuildSim that a second registration returns `{"created":0,"skipped":1}` and
+  leaves the value the device already holds untouched, which is what makes a
+  restart safe mid-run.
   - Useful for: §4.4, §5, §8.2.
 
 - **Known caveat — services aren't synchronized: each runs on its own

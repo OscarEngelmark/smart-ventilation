@@ -93,6 +93,45 @@ func (c *Client) Occupancy(ctx context.Context) (map[string]RoomOccupancy, error
 	return occ, nil
 }
 
+// Equipment is one device as BuildSim stores it: a record placed in a room,
+// holding the sensor or the actuator that carries its value.
+type Equipment struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Type      string     `json:"type"`     // sets the icon in the 3D view, e.g. "co2_sensor"
+	Category  string     `json:"category"` // "sensor" or "actuator"
+	Level     string     `json:"level"`
+	Room      string     `json:"room"`
+	Sensors   []Sensor   `json:"sensors"`
+	Actuators []Actuator `json:"actuators"`
+}
+
+// Sensor is a device that reports a value, nested in its Equipment record.
+type Sensor struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`      // the 3D view shades rooms by a type holding "co2"
+	DataType string `json:"data_type"` // "text" here; "binary" is for on/off devices
+	Unit     string `json:"unit"`
+}
+
+// Actuator is a device that is commanded, nested in its Equipment record.
+type Actuator struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// Register adds eq to BuildSim, and does nothing if a record with the same ID
+// is already there. A restarted process can therefore register again without
+// failing, and the value BuildSim holds for the device is left alone.
+func (c *Client) Register(ctx context.Context, eq Equipment) error {
+	// The bulk endpoint is the one that skips existing IDs; POST
+	// /api/equipment refuses them.
+	url := c.baseURL + "/api/equipment/bulk"
+	return c.do(ctx, http.MethodPost, url, []Equipment{eq}, nil)
+}
+
 type sensorData struct {
 	Value string `json:"value"`
 }
