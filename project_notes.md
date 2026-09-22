@@ -131,6 +131,21 @@ _(nothing yet)_
     `cmd/physical-model/main.go`.
   - Useful for: §4.2, §4.4, §6.
 
+- **Decided: robustness effort goes to the components inside the system
+  boundary; the physical model and occupancy get only enough to keep a run
+  going.** Both stand in for the physical world (see *Decided: BuildSim is
+  the only store of physical state*, above), and a real building's CO2 has no
+  failure modes to handle, so how well these two survive their own bugs isn't
+  a property of the system. What they need instead is to be controllable,
+  because the fault-injection tests work by making the simulated side
+  misbehave on purpose — a CO2 value frozen at a plausible level, a room
+  filling faster than the ventilation can clear it. Today that budget is
+  `restart: unless-stopped` plus a skipped cycle on a failed read, and it is
+  meant to stay there. Rejected: treating every process alike, which spends
+  the same effort on the two components whose failures a real building
+  doesn't have. Decided 2026-09-22.
+  - Useful for: §4.4, §8.2, §10, §13.
+
 - **Decided: each device process registers its own device with BuildSim on
   startup** — the sensor process registers the CO2 sensor, the actuator
   process registers the damper. BuildSim keeps devices only in memory and
