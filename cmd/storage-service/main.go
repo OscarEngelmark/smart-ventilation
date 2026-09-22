@@ -7,12 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
+	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/store"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
@@ -45,8 +45,8 @@ type ventilationCommandPayload struct {
 }
 
 func main() {
-	brokerURL := getEnv("MQTT_BROKER_URL", "tcp://localhost:1883")
-	dbPath := getEnv("SQLITE_PATH", "storage-service.db")
+	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
+	dbPath := env.String("SQLITE_PATH", "storage-service.db")
 
 	var db store.Store
 	var err error
@@ -161,11 +161,4 @@ func mustLoadSchema(name string) *jsonschema.Schema {
 		log.Fatalf("load schema: %v", err)
 	}
 	return sch
-}
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }

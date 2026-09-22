@@ -8,24 +8,23 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	// The image carries no timezone database, so TZ is otherwise ignored.
 	_ "time/tzdata"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
+	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/occupancy"
 	"github.com/OscarEngelmark/smart-ventilation/internal/room"
 )
 
 func main() {
-	baseURL := getEnv("BUILDSIM_URL", "http://localhost:9090")
-	level := getEnv("ROOM_LEVEL", "level0")
-	roomName := getEnv("ROOM_NAME", "A125")
-	areaPerPerson := getEnvFloat("AREA_PER_PERSON_M2", 5)
-	interval := getEnvDuration("OCCUPANCY_INTERVAL", 10*time.Second)
+	baseURL := env.String("BUILDSIM_URL", "http://localhost:9090")
+	level := env.String("ROOM_LEVEL", "level0")
+	roomName := env.String("ROOM_NAME", "A125")
+	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)
+	interval := env.Duration("OCCUPANCY_INTERVAL", 10*time.Second)
 
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
@@ -82,35 +81,4 @@ func namePeople(roomName string, capacity int) []buildsim.Person {
 		}
 	}
 	return people
-}
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func getEnvFloat(key string, fallback float64) float64 {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		log.Fatalf("%s: %v", key, err)
-	}
-	return parsed
-}
-
-func getEnvDuration(key string, fallback time.Duration) time.Duration {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	parsed, err := time.ParseDuration(v)
-	if err != nil {
-		log.Fatalf("%s: %v", key, err)
-	}
-	return parsed
 }

@@ -9,12 +9,11 @@ import (
 	"context"
 	"errors"
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/co2"
+	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/room"
 )
 
@@ -34,17 +33,17 @@ type model struct {
 }
 
 func main() {
-	baseURL := getEnv("BUILDSIM_URL", "http://localhost:9090")
-	level := getEnv("ROOM_LEVEL", "level0")
-	roomName := getEnv("ROOM_NAME", "A125")
-	areaPerPerson := getEnvFloat("AREA_PER_PERSON_M2", 5)
-	ceilingHeight := getEnvFloat("CEILING_HEIGHT_M", 2.4)
-	G := getEnvFloat("CO2_PER_PERSON_LPS", 0.0056)
-	Cout := getEnvFloat("OUTDOOR_CO2_PPM", 420)
-	Cthres := getEnvFloat("CO2_THRESHOLD_PPM", 1000)
-	minPerArea := getEnvFloat("MIN_AIRFLOW_LPS_PER_M2", 0.35)
-	factor := getEnvFloat("MAX_AIRFLOW_FACTOR", 2)
-	dt := getEnvDuration("SIM_STEP", 10*time.Second)
+	baseURL := env.String("BUILDSIM_URL", "http://localhost:9090")
+	level := env.String("ROOM_LEVEL", "level0")
+	roomName := env.String("ROOM_NAME", "A125")
+	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)
+	ceilingHeight := env.Float("CEILING_HEIGHT_M", 2.4)
+	G := env.Float("CO2_PER_PERSON_LPS", 0.0056)
+	Cout := env.Float("OUTDOOR_CO2_PPM", 420)
+	Cthres := env.Float("CO2_THRESHOLD_PPM", 1000)
+	minPerArea := env.Float("MIN_AIRFLOW_LPS_PER_M2", 0.35)
+	factor := env.Float("MAX_AIRFLOW_FACTOR", 2)
+	dt := env.Duration("SIM_STEP", 10*time.Second)
 
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
@@ -58,8 +57,8 @@ func main() {
 	m := &model{
 		client:   client,
 		roomKey:  roomKey,
-		sensorID: getEnv("CO2_SENSOR_ID", roomName+"-co2"),
-		damperID: getEnv("DAMPER_ID", roomName+"-damper"),
+		sensorID: env.String("CO2_SENSOR_ID", roomName+"-co2"),
+		damperID: env.String("DAMPER_ID", roomName+"-damper"),
 		V:        room.Volume(area, ceilingHeight),
 		Qmin:     room.MinAirflow(area, minPerArea),
 		Qmax:     room.MaxAirflow(area, areaPerPerson, G, Cthres, Cout, factor),
@@ -109,35 +108,4 @@ func (m *model) step(ctx context.Context) error {
 	Cnext := co2.Step(C, N, m.V, Q, m.G, m.Cout, m.dt)
 	log.Printf("%d people, damper %.2f, %.0f -> %.0f ppm", N, damper, C, Cnext)
 	return m.client.SetSensorValue(ctx, m.sensorID, Cnext)
-}
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func getEnvFloat(key string, fallback float64) float64 {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		log.Fatalf("%s: %v", key, err)
-	}
-	return parsed
-}
-
-func getEnvDuration(key string, fallback time.Duration) time.Duration {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	parsed, err := time.ParseDuration(v)
-	if err != nil {
-		log.Fatalf("%s: %v", key, err)
-	}
-	return parsed
 }
