@@ -296,6 +296,22 @@ _(nothing yet)_
   before the sensor and actuator processes exist. Decided 2026-09-17.
   - Useful for: §5, §6.
 
+- **Deferred, not yet decided: whether the BuildSim client exposes BuildSim's
+  nested `Equipment`/`Sensor`/`Actuator` shape or a single flat `Device` with
+  one register method per kind.** BuildSim's shape is general — one equipment
+  record can hold several sensors and actuators — but every device here is one
+  record holding one device, so a caller writes `ID`, `Name`, and `Type` twice
+  in two literals that have to agree. BuildSim accepts a record whose
+  equipment ID and sensor ID differ, so a mismatch fails silently: values are
+  written to an ID the 3D view is not reading. A flat `Device` plus
+  `RegisterSensor`/`RegisterActuator` makes that unrepresentable and drops two
+  fields that are always the same constant (`Category`, `DataType`), at the
+  cost of the client's exported types no longer mirroring BuildSim's API, and
+  of a `Unit` field that means nothing for actuators. The client currently
+  keeps BuildSim's shape. Left open until the sensor and actuator processes
+  are written and there are real call sites to judge it by. Noted 2026-09-22.
+  - Useful for: §5.
+
 ## 6. Simulating the sensor values (the physical model)
 
 - **Decided: CO2 comes from a simple mass-balance model, not a replayed
@@ -669,4 +685,18 @@ was caught. Kept for the report's reflection and the oral exam.
   compares a short-horizon CO2 forecast to a fixed threshold …*, §7). Caught
   because the value was checked against the source before it was logged.
   Noted 2026-09-18.
+  - Useful for: §13.
+
+- **The assistant argued against its own earlier refactor using an obstacle
+  that does not exist.** Asked to reassess merging the BuildSim client's
+  `Equipment`, `Sensor`, and `Actuator` structs into one `Device`, it claimed
+  the merge was unworkable because `type` means different things on the
+  equipment record (picks the 3D view's icon) and on the sensor record
+  (decides CO2 room shading), so one field could not serve both. Reading
+  BuildSim's viewer source showed the shading matches the substring `co2` or
+  `carbon` against `sensor.type || sensor.name || sensor.id`
+  (`web/modern/src/live.js`), so a single type string of `co2_sensor`
+  satisfies the icon and the shading at once. Caught by pushing back on the
+  reversal and checking the source. The only real cost of the merge is that
+  `Unit` is meaningless on actuators. Noted 2026-09-22.
   - Useful for: §13.
