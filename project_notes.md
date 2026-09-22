@@ -89,7 +89,8 @@ _(nothing yet)_
   BuildSim. It was first proposed to keep the model accurate when the room
   runs faster than real time; the exact solution in the mass-balance entry
   (§6) does that in this design too. Noted by 2026-09-05; reasoning and
-  alternative added 2026-09-18.
+  alternative added 2026-09-18; implemented 2026-09-22 as
+  `cmd/physical-model/`.
   - **Revisit:** where the physical model sits in the C4 diagrams. It is
     conceptually outside the system but is still built and deployed as a
     container.
@@ -118,8 +119,16 @@ _(nothing yet)_
     room, erasing any left out — so exactly one process can own occupancy.
     This constraint applies to occupancy only; sensor values are written one
     device at a time and don't have it.
-  - **Revisit:** what the physical model does on a cycle where it can't read
-    the occupancy.
+  - A cycle where the physical model can't read the occupancy — or the
+    damper, or the current CO2 — is skipped and logged, leaving the CO2 in
+    BuildSim as it was; the next cycle advances it by one `Δt` as usual, so
+    the room's clock loses that step. This also covers the ordinary startup
+    case, where the sensor and actuator processes haven't registered their
+    devices yet. Rejected: advancing by the real time since the last
+    successful cycle, which keeps room time honest but makes the process
+    keep a timestamp between cycles, against *Decided: BuildSim is the only
+    store of physical state*, above. Decided and implemented 2026-09-22,
+    `cmd/physical-model/main.go`.
   - Useful for: §4.2, §4.4, §6.
 
 - **Decided: each device process registers its own device with BuildSim on
