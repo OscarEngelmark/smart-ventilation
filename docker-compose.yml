@@ -1,3 +1,7 @@
+# The addresses containers reach each other by, written once and reused below.
+x-buildsim-url: &buildsim-url http://buildsim:9090
+x-broker-url: &broker-url tcp://mosquitto:1883
+
 services:
   buildsim:
     # Built straight from the course repository, pinned to one commit so
@@ -26,7 +30,7 @@ services:
     env_file:
       - sim.env
     environment:
-      BUILDSIM_URL: http://buildsim:9090
+      BUILDSIM_URL: *buildsim-url
       OCCUPANCY_INTERVAL: 10s
     depends_on:
       - buildsim
@@ -43,7 +47,7 @@ services:
     env_file:
       - sim.env
     environment:
-      BUILDSIM_URL: http://buildsim:9090
+      BUILDSIM_URL: *buildsim-url
     depends_on:
       - buildsim
     # The service exits if BuildSim isn't ready yet at startup; Docker then
@@ -59,8 +63,8 @@ services:
     env_file:
       - sim.env
     environment:
-      BUILDSIM_URL: http://buildsim:9090
-      MQTT_BROKER_URL: tcp://mosquitto:1883
+      BUILDSIM_URL: *buildsim-url
+      MQTT_BROKER_URL: *broker-url
       SENSOR_INTERVAL: 10s
     depends_on:
       - buildsim
@@ -74,7 +78,7 @@ services:
       context: .
       dockerfile: cmd/storage-service/Dockerfile
     environment:
-      MQTT_BROKER_URL: tcp://mosquitto:1883
+      MQTT_BROKER_URL: *broker-url
       SQLITE_PATH: /data/storage-service.db
     volumes:
       - storage-data:/data
