@@ -16,8 +16,8 @@ const minSpan = 5 * time.Minute
 
 // Predict fits a straight line to the readings from the last window before
 // the newest reading, and returns the level that line reaches horizon after
-// the newest reading, in ppm. The line is the least-squares fit
-// y = a + b*x, with x in seconds relative to the newest reading.
+// the newest reading, in ppm. Time is measured in seconds relative to the
+// newest reading, so the newest reading is at 0 and the forecast at horizon.
 //
 // ok is false when the readings in the window span less than minSpan, which
 // is too little to tell a trend from noise. The readings may come in any
@@ -51,16 +51,22 @@ func Predict(readings []Reading, window, horizon time.Duration) (ppm float64, ok
 		return 0, false
 	}
 
+	a, b := fitLine(x, y)
+	return a + b*horizon.Seconds(), true
+}
+
+// fitLine returns the intercept a and slope b of the least-squares line
+// y = a + b*x through the points. x must hold at least two distinct values.
+func fitLine(x, y []float64) (a, b float64) {
 	xMean, yMean := mean(x), mean(y)
 	var sxy, sxx float64
 	for i := range x {
 		sxy += (x[i] - xMean) * (y[i] - yMean)
 		sxx += (x[i] - xMean) * (x[i] - xMean)
 	}
-	b := sxy / sxx // slope, in ppm per second
-	a := yMean - b*xMean
-
-	return a + b*horizon.Seconds(), true
+	b = sxy / sxx
+	a = yMean - b*xMean
+	return a, b
 }
 
 // mean returns the average of v, which must not be empty.
