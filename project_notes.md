@@ -294,6 +294,19 @@ _(nothing yet)_
     which checks every command before writing the damper (2026-09-23).
     - **Revisit:** the forecast and decision services will need the same
       check when they're written.
+  - Only received messages are validated, not published ones: a publisher
+    fills a Go struct whose fields are the schema's fields, so its own output
+    can't fail the check, while a receiver is handed bytes another process
+    wrote and would otherwise let `json.Unmarshal` fill a missing field with
+    a zero — a command with no `level` reads as a valid "close the damper".
+    - **Revisit:** each message is therefore defined twice over, as a schema
+      and as a Go struct per service, and nothing catches the two drifting
+      apart: renaming a field in a schema leaves the publisher sending the
+      old name and every receiver rejecting it, at runtime. The cheap fix is
+      a test that marshals a filled struct and validates it against its
+      schema, failing `go test` instead; generating the structs from the
+      schemas would be stronger but adds a build step. Noted 2026-09-23, not
+      urgent while the schemas are stable.
   - Useful for: §5, §7.2, §10.
 
 - **Decided: room A125's devices in BuildSim are a CO2 sensor `A125-co2`
