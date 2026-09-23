@@ -59,14 +59,21 @@ _(nothing yet)_
     physical model* — a change to record in §1.
   - Useful for: §4.2, §9.
 
-- **Decided: Go for the networked services (sensors, actuators, decision
-  service, physical-model process); Python only for the forecast service.**
-  Go for goroutine-based concurrency and small, fast-starting binaries, since
-  the whole system has to run on one laptop at once. Python for the
-  forecasting ecosystem (statsmodels, scikit-learn), where Go has no mature
-  equivalent. Rejected: all-Go (no mature forecasting libraries) and
-  all-Python (loses the small-binary/concurrency argument for the service
-  layer). Decided by 2026-09-02.
+- **Decided: Go for every service, including the forecast service; Python
+  stays open for the forecast service if a later model needs its
+  libraries.** Go for goroutine-based concurrency and small, fast-starting
+  binaries, since the whole system has to run on one laptop at once. The
+  first forecast model is a straight-line fit (see *Decided: start with the
+  simplest forecasting model…*, §7), which needs no library, and the rest of
+  the forecast service is MQTT, REST, and schema-checking code the Go
+  services already have. Rejected: all-Python (loses the
+  small-binary/concurrency argument for the service layer). The forecast
+  service is its own container behind the `co2_forecast` topic, so moving it
+  to Python later changes one folder. Decided 2026-09-23.
+  - Replaces Python for the forecast service (decided by 2026-09-02, for
+    statsmodels and scikit-learn). Dropped once the model turned out to be
+    a straight line: Python would have added a second toolchain and a second
+    copy of the plumbing for libraries the model doesn't use.
   - The physical-model process wasn't covered by this decision at the time;
     added 2026-09-15 on the same reasoning — it talks to BuildSim over REST
     like sensor/actuator, and its mass-balance calculation needs nothing from
@@ -233,9 +240,7 @@ _(nothing yet)_
   weekday schedule and its random jitter to find out how many people fit; and
   putting it in `internal/co2`, which made the occupancy process depend on a
   CO2 package for a number unrelated to CO2. `internal/co2` is left holding
-  only the mass balance. The Python forecast service can't import Go code
-  either way, so anything it needs comes from `sim.env` or BuildSim. Decided
-  2026-09-21.
+  only the mass balance. Decided 2026-09-21.
   - Replaces, the same day, `internal/occupancy` owning the capacity. The
     argument for that was that one five-line function is not a subject and a
     package without one collects whatever fits nowhere else. It stopped
@@ -415,8 +420,8 @@ _(nothing yet)_
     BuildSim count as facts about the building; the rest are assumptions,
     so they should be changeable between runs without a rebuild. Rejected:
     a shared config file (YAML/JSON) mounted into each container — allows
-    grouping and comments, but needs parsing code in both Go and Python.
-    Decided 2026-09-18.
+    grouping and comments, but needed parsing code in both Go and Python,
+    the forecast service's planned language at the time. Decided 2026-09-18.
     - Replaces fixing ceiling height and area per person as constants in a
       shared Go package, which treated them as facts about the building
       rather than assumptions.
@@ -575,6 +580,38 @@ _(nothing yet)_
   forecast** (e.g. exponential smoothing or a small regression over recent
   readings), escalating only if it doesn't hold up. Chosen for simplicity,
   not by comparing models. Proposal section 5, 2026-09-04.
+  - **Decided: a least-squares straight line through the readings in the
+    window, extended by the horizon.** It gives no forecast while the
+    window holds less than 5 minutes of readings. With the damper closed
+    the real curve over 30 minutes is close to straight: in A125 the line
+    overshoots the real rise by about 12%, which errs toward opening early.
+    It fits the damper-open case worse, where the real curve flattens
+    within about 10 minutes. Rejected: Holt's exponential smoothing — the
+    same "trend continues" idea with two smoothing constants to tune
+    instead of one window length. Not tried first: a curve with the
+    mass-balance shape, the next model if the line doesn't hold up.
+    Decided and implemented 2026-09-23 (`internal/forecast`).
+  - **Decided: the forecast predicts where CO2 ends up if nothing changes,
+    from CO2 readings alone; it does not take the damper position.** It
+    tells the decision service what happens if it doesn't act, and the
+    decision service acts long before that forecast would come true. The
+    damper's current effect is already in the recent readings. Chosen as a
+    starting point, not by comparison: a model with the damper position as
+    an input is not rejected, only not tried first. It could predict the
+    effect of a damper change, but can't learn that effect from recent
+    readings in which the damper never moved, so it would need a long
+    history of damper changes joined with stored commands. Decided
+    2026-09-23.
+    - **Revisit:** try the damper-as-input model if the evaluation shows
+      the forecast failing where a damper change is involved.
+  - **Decided: how far back the forecast looks (its window) is kept short,
+    and chosen separately from how far ahead it predicts (its horizon).** A
+    window that spans a damper change fits one line to readings from before
+    and after it, and gets the slope wrong until the older readings drop
+    out; a short window drops them sooner. Trade-off: fewer readings make a
+    noisier slope. The window starts at 10 minutes (60 readings at the
+    sensor's 10-second interval), an untuned value to revisit in
+    evaluation; the horizon is not fixed yet. Decided 2026-09-23.
   - **Revisit:** whether it forecasts well enough to beat a plain reactive
     threshold — which is what justifies having it in the loop at all (a risk
     in proposal section 6).
@@ -640,7 +677,7 @@ _(nothing yet)_
     no forecast until it refills. Rejected: request/reply over MQTT — MQTT
     has no built-in reply, so matching replies to requests and timing out
     would be hand-built, while a REST call returns the readings or an
-    immediate error. Rejected: the Python service querying SQLite directly —
+    immediate error. Rejected: the forecast service querying SQLite directly —
     it breaks the storage-interface rule. Reading from storage decided before
     2026-09-16; REST via the storage-service decided 2026-09-17. The storage
     side is implemented (`store.ReadingsSince`, served as `GET /readings`);
