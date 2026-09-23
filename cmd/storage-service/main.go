@@ -1,12 +1,15 @@
 // storage-service subscribes to the co2 reading, co2 forecast, and
-// ventilation command MQTT topics, and saves each one through
-// internal/store. Serving reads over REST is not implemented yet.
+// ventilation command MQTT topics, saves each one through internal/store,
+// and serves stored readings back to other components over REST.
+// Reasoning: project_notes.md §7.
 package main
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -47,6 +50,7 @@ type ventilationCommandPayload struct {
 func main() {
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	dbPath := env.String("SQLITE_PATH", "storage-service.db")
+	addr := env.String("STORAGE_ADDR", ":8081")
 
 	var db store.Store
 	var err error
@@ -84,7 +88,51 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	select {}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /readings", serveReadings(db))
+	log.Printf("serving stored readings on %s", addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+
+// serveReadings answers GET /readings?room=<id>&since=<RFC3339> with that
+// room's stored readings from that time onwards, oldest first, as a JSON
+// array of co2_reading messages. Both parameters are required.
+func serveReadings(db store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roomID := r.URL.Query().Get("room")
+		if roomID == "" {
+			fail(w, http.StatusBadRequest, "readings: no room given")
+			return
+		}
+		sinceText := r.URL.Query().Get("since")
+		since, err := time.Parse(time.RFC3339, sinceText)
+		if err != nil {
+			fail(w, http.StatusBadRequest, "readings: bad since %q: %v", sinceText, err)
+			return
+		}
+		stored, err := db.ReadingsSince(r.Context(), roomID, since)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "readings: read %s: %v", roomID, err)
+			return
+		}
+
+		body := make([]co2ReadingPayload, 0, len(stored)) // empty rather than nil, so no readings encodes as [] and not null
+		for _, s := range stored {
+			body = append(body, co2ReadingPayload{RoomID: s.RoomID, PPM: s.PPM, Ts: s.Time})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(body); err != nil {
+			log.Printf("readings: write response: %v", err)
+		}
+	}
+}
+
+// fail logs why a request was refused and answers with that reason as plain
+// text, so a caller sees the same message the log holds.
+func fail(w http.ResponseWriter, status int, format string, args ...any) {
+	msg := fmt.Sprintf(format, args...)
+	log.Print(msg)
+	http.Error(w, msg, status)
 }
 
 // subscribeAll subscribes to every topic this service stores. Each message is

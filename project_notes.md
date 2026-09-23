@@ -609,8 +609,18 @@ _(nothing yet)_
     independently, but it adds a container to build, test, and draw. With
     both in one process, an outage stops both, which only matters if it
     happens while the forecast service is restarting. Writing decided and
-    implemented 2026-09-16 (`cmd/storage-service`); reads decided
-    2026-09-17, not implemented.
+    implemented 2026-09-16 (`cmd/storage-service`); reads decided 2026-09-17
+    and implemented 2026-09-23 as `GET /readings?room=<id>&since=<RFC3339>`,
+    answering with the room's readings from that time onwards, oldest first,
+    as a JSON array of `co2_reading` messages. Both parameters are required;
+    a missing `room` or an unparseable `since` gives 400, a failed read 500.
+    Verified against the running stack: readings published by the sensor came
+    back through the endpoint, a `since` after the newest reading returned an
+    empty array, and both bad-request cases were refused.
+    - **Known caveat —** a room id contains a slash (`level0/A125`), so
+      callers must percent-encode it in the query string. Go's `net/http`
+      decodes it back, so the service is unaffected, but a hand-written URL
+      with a bare slash silently reads a different room.
     - **Replaces** the write-only storage-writer (2026-09-16), renamed when
       it took on reads.
   - **Decided: no retention policy — stored readings are kept
@@ -632,8 +642,9 @@ _(nothing yet)_
     would be hand-built, while a REST call returns the readings or an
     immediate error. Rejected: the Python service querying SQLite directly —
     it breaks the storage-interface rule. Reading from storage decided before
-    2026-09-16; REST via the storage-service decided 2026-09-17. Not
-    implemented (`store.Store` has no read methods yet).
+    2026-09-16; REST via the storage-service decided 2026-09-17. The storage
+    side is implemented (`store.ReadingsSince`, served as `GET /readings`);
+    the forecast service that calls it is not written yet.
   - **Deferred, not yet decided:** how the dashboard reads from storage. The
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data

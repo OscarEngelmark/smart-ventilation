@@ -35,5 +35,10 @@ type Store interface {
 	SaveReading(ctx context.Context, r Reading) error
 	SaveForecast(ctx context.Context, f Forecast) error
 	SaveCommand(ctx context.Context, c Command) error
+
+	// ReadingsSince returns one room's readings from since onwards, oldest
+	// first. An empty result is not an error.
+	ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]Reading, error)
+
 	Close() error
 }

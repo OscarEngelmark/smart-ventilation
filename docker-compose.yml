@@ -99,6 +99,9 @@ services:
     environment:
       MQTT_BROKER_URL: *broker-url
       SQLITE_PATH: /data/storage-service.db
+    ports:
+      # Only reachable from this machine, for reading stored readings by hand.
+      - "127.0.0.1:8081:8081"
     volumes:
       - storage-data:/data
     depends_on:

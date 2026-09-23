@@ -71,6 +71,31 @@ func (s *SQLiteStore) SaveCommand(ctx context.Context, c Command) error {
 	return err
 }
 
+func (s *SQLiteStore) ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]Reading, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT room_id, ppm, ts FROM readings WHERE room_id = ? AND ts >= ? ORDER BY ts`,
+		roomID, since.UTC().Format(time.RFC3339)) // timestamps are stored as UTC text, which sorts and compares in time order
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() // runs when this function returns, however it returns
+
+	var readings []Reading
+	for rows.Next() {
+		var r Reading
+		var ts string
+		if err := rows.Scan(&r.RoomID, &r.PPM, &ts); err != nil {
+			return nil, err
+		}
+		r.Time, err = time.Parse(time.RFC3339, ts)
+		if err != nil {
+			return nil, fmt.Errorf("parse stored timestamp %q: %w", ts, err)
+		}
+		readings = append(readings, r)
+	}
+	return readings, rows.Err()
+}
+
 func (s *SQLiteStore) Close() error {
 	return s.db.Close()
 }
