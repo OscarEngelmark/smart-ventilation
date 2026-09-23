@@ -332,20 +332,26 @@ _(nothing yet)_
   a lost one. Decided and implemented 2026-09-23.
   - Useful for: §5, §8.1, §10.
 
-- **Deferred, not yet decided: whether the BuildSim client exposes BuildSim's
-  nested `Equipment`/`Sensor`/`Actuator` shape or a single flat `Device` with
-  one register method per kind.** BuildSim's shape is general — one equipment
+- **Decided: the BuildSim client keeps BuildSim's nested
+  `Equipment`/`Sensor`/`Actuator` shape rather than a flat `Device` with one
+  register method per kind.** BuildSim's shape is general — one equipment
   record can hold several sensors and actuators — but every device here is one
   record holding one device, so a caller writes `ID`, `Name`, and `Type` twice
   in two literals that have to agree. BuildSim accepts a record whose
   equipment ID and sensor ID differ, so a mismatch fails silently: values are
-  written to an ID the 3D view is not reading. A flat `Device` plus
-  `RegisterSensor`/`RegisterActuator` makes that unrepresentable and drops two
-  fields that are always the same constant (`Category`, `DataType`), at the
-  cost of the client's exported types no longer mirroring BuildSim's API, and
-  of a `Unit` field that means nothing for actuators. The client currently
-  keeps BuildSim's shape. Left open until the sensor and actuator processes
-  are written and there are real call sites to judge it by. Noted 2026-09-22.
+  written to an ID the 3D view is not reading. Rejected: a flat `Device` plus
+  `RegisterSensor`/`RegisterActuator`, which makes that mismatch
+  unrepresentable and drops two fields that are always the same constant
+  (`Category`, `DataType`), at the cost of the client's exported types no
+  longer mirroring BuildSim's API and of a `Unit` field meaning nothing for
+  actuators. Kept because the duplication is only written once per device
+  type, both call sites now exist and are correct, and the device list is
+  fixed at one CO2 sensor and one damper per room — so the flat shape would
+  guard against a mistake that is already past, while making the client
+  harder to check against BuildSim's own API. Noted 2026-09-22 as open;
+  decided 2026-09-23 with the sensor and actuator processes written.
+  - **Revisit:** if a third device type is added, the duplication returns with
+    it and the flat shape is worth weighing again.
   - Useful for: §5.
 
 ## 6. Simulating the sensor values (the physical model)
