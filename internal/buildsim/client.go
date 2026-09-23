@@ -179,6 +179,13 @@ func (c *Client) ActuatorState(ctx context.Context, id string) (float64, error) 
 	return asNumber(id, actuator.State)
 }
 
+// SetActuatorState writes an actuator's state, rounded to two decimals.
+func (c *Client) SetActuatorState(ctx context.Context, id string, state float64) error {
+	url := fmt.Sprintf("%s/api/actuators/%s/state", c.baseURL, id)
+	update := actuatorData{State: strconv.FormatFloat(state, 'f', 2, 64)}
+	return c.do(ctx, http.MethodPut, url, update, nil)
+}
+
 // asNumber reads BuildSim's text, keeping "not written yet" apart from text
 // that is not a number at all. Callers can recognize the first with
 // errors.Is(err, ErrNoValue).
