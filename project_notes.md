@@ -290,7 +290,8 @@ _(nothing yet)_
     settled to match the damper state in BuildSim (see *Decided: room A125's
     devices in BuildSim...*, below).
   - Runtime validation against the schemas is implemented in the
-    storage-service (2026-09-17, `schemas/schemas.go`).
+    storage-service (2026-09-17, `schemas/schemas.go`) and in the actuator,
+    which checks every command before writing the damper (2026-09-23).
     - **Revisit:** the forecast and decision services will need the same
       check when they're written.
   - Useful for: §5, §7.2, §10.
@@ -304,6 +305,32 @@ _(nothing yet)_
   against alternatives; settled early so the physical model can be built
   before the sensor and actuator processes exist. Decided 2026-09-17.
   - Useful for: §5, §6.
+
+- **Decided: a reading's MQTT topic is `co2/<room>/reading`, holding the room
+  name alone, while the payload's `room_id` holds BuildSim's full room key
+  (`level0/A125`).** MQTT splits a topic into levels on `/`, and the `+`
+  wildcard matches exactly one level, so a subscriber's `co2/+/reading` stops
+  matching as soon as the middle segment contains a slash of its own.
+  Rejected: the room key in the topic, which reads the same but silently
+  breaks every wildcard subscription; consumers that need the level read it
+  from the payload, as the storage-service already does. Decided and
+  implemented 2026-09-22.
+  - Useful for: §5, §7.2.
+
+- **Decided: the actuator serves one endpoint, `POST /command` on port 8080,
+  taking a `ventilation_command` and answering a
+  `ventilation_command_response`.** The answer is sent only after BuildSim
+  has stored the new damper position, so a caller that gets no acceptance
+  knows the command did not land and can send it again — the retry the REST
+  link was chosen for (see *Decided: two different communication patterns...*,
+  §4). A command for another room is refused with 404 rather than obeyed: one
+  actuator process serves one room, so a foreign `room_id` means something is
+  misrouted. Malformed or schema-invalid commands are refused with 400 and a
+  failed BuildSim write with 502, each answering `accepted: false`. Rejected:
+  accepting on receipt and writing the damper afterwards, which is cheaper to
+  serve but leaves the decision service unable to tell a stored command from
+  a lost one. Decided and implemented 2026-09-23.
+  - Useful for: §5, §8.1, §10.
 
 - **Deferred, not yet decided: whether the BuildSim client exposes BuildSim's
   nested `Equipment`/`Sensor`/`Actuator` shape or a single flat `Device` with
@@ -378,6 +405,10 @@ _(nothing yet)_
       `env_file`. It holds only what more than one service needs; a service's
       own wiring, such as the BuildSim URL and its update interval, stays in
       its `environment` block in `docker-compose.yml`.
+    - The two device IDs joined it 2026-09-23. They had matched only because
+      the writer and the reader of each device built the same fallback string
+      independently, which fails silently when one changes: BuildSim answers
+      both sides normally and the value simply never meets.
     - The physical model's parameters joined it 2026-09-22, which settled the
       naming: a name carries the unit where the value has one
       (`CEILING_HEIGHT_M`, `CO2_PER_PERSON_LPS`), and each entry has a

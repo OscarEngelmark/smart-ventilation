@@ -21,6 +21,25 @@ services:
     ports:
       - "1883:1883"
 
+  actuator:
+    build:
+      context: .
+      dockerfile: cmd/actuator/Dockerfile
+    # Simulation values shared with other services come from sim.env; the
+    # settings below are this service's own wiring.
+    env_file:
+      - sim.env
+    environment:
+      BUILDSIM_URL: *buildsim-url
+    ports:
+      # Only reachable from this machine, for sending commands by hand.
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - buildsim
+    # The service exits if BuildSim isn't ready yet at startup; Docker then
+    # starts it again.
+    restart: unless-stopped
+
   occupancy:
     build:
       context: .
