@@ -591,6 +591,14 @@ _(nothing yet)_
     instead of one window length. Not tried first: a curve with the
     mass-balance shape, the next model if the line doesn't hold up.
     Decided and implemented 2026-09-23 (`internal/forecast`).
+    - **Decided: a forecast below outdoor CO2 is published as outdoor CO2
+      (`OUTDOOR_CO2_PPM`).** With the damper open the line can fall below
+      outdoor air, or below 0, which the forecast schema rejects;
+      ventilation can only bring the room down to outdoor air. Rejected:
+      raising it only to 0, which satisfies the schema but still publishes
+      an impossible value; and not publishing, which leaves the decision
+      service without a forecast exactly while the damper is open. Decided
+      and implemented 2026-09-23 (`cmd/forecast`).
   - **Decided: the forecast predicts where CO2 ends up if nothing changes,
     from CO2 readings alone; it does not take the damper position.** It
     tells the decision service what happens if it doesn't act, and the
@@ -681,7 +689,8 @@ _(nothing yet)_
     it breaks the storage-interface rule. Reading from storage decided before
     2026-09-16; REST via the storage-service decided 2026-09-17. The storage
     side is implemented (`store.ReadingsSince`, served as `GET /readings`);
-    the forecast service that calls it is not written yet.
+    the calling side is written 2026-09-23 (`cmd/forecast`: three tries, 2 s
+    apart), not yet run against the stack.
   - **Deferred, not yet decided:** how the dashboard reads from storage. The
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data

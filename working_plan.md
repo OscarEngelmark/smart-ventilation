@@ -6,7 +6,7 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 1 | Forecast service (Go): reads `GET /readings`, publishes `co2_forecast` | the horizon | 2 |
+| 1 | Forecast service (Go): reads `GET /readings`, publishes `co2_forecast` | the horizon | 1 |
 | 2 | Decision service (Go): forecast vs. 1000 ppm, commands the actuator | behavior when the forecast is missing or stale; one instance per room or one overall | 3 |
 | 3 | First full loop running end to end | none | 1 |
 | 4 | Room time faster than real time? | one decision | 1 |
