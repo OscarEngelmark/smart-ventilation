@@ -40,6 +40,25 @@ services:
     # starts it again.
     restart: unless-stopped
 
+  forecast:
+    build:
+      context: .
+      dockerfile: cmd/forecast/Dockerfile
+    # Simulation values shared with other services come from sim.env; the
+    # settings below are this service's own wiring.
+    env_file:
+      - sim.env
+    environment:
+      MQTT_BROKER_URL: *broker-url
+      STORAGE_URL: http://storage-service:8081
+      FORECAST_WINDOW: 10m
+    depends_on:
+      - mosquitto
+      - storage-service
+    # The service exits if the broker isn't ready yet at startup; Docker then
+    # starts it again.
+    restart: unless-stopped
+
   occupancy:
     build:
       context: .

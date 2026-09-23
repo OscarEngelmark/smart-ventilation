@@ -574,6 +574,15 @@ _(nothing yet)_
     alternative value was weighed. Decided 2026-09-18.
   - **Revisit:** the forecast horizon (30 minutes is the working figure,
     not yet checked) is not chosen or justified yet.
+  - **Deferred, not yet decided: in the current simulation a plain reactive
+    threshold leaves the forecast almost nothing to improve on.** The
+    physical model applies a new damper position at its next step, with no
+    delay, and `Q_max` is large enough to reverse a full room's rise at
+    once: in A125 with 6 people at 1000 ppm, CO2 rises about 23 ppm/min
+    with the damper closed and falls about 28 ppm/min fully open. Opening
+    when a reading reaches 1000 therefore overshoots by only the rise
+    between a reading and the damper opening, about 10 ppm. The horizon
+    can't be justified until this is settled. Noted 2026-09-23.
   - Useful for: §6, §7.1, §11.
 
 - **Decided: start with the simplest forecasting model that produces a usable
@@ -689,8 +698,11 @@ _(nothing yet)_
     it breaks the storage-interface rule. Reading from storage decided before
     2026-09-16; REST via the storage-service decided 2026-09-17. The storage
     side is implemented (`store.ReadingsSince`, served as `GET /readings`);
-    the calling side is written 2026-09-23 (`cmd/forecast`: three tries, 2 s
-    apart), not yet run against the stack.
+    the calling side is implemented 2026-09-23 (`cmd/forecast`: three
+    tries, 2 s apart). Verified against the running stack: after a restart
+    the forecast service refilled its window with 37 stored readings and
+    published its next forecast 4 seconds later, instead of waiting 5
+    minutes for the window to refill.
   - **Deferred, not yet decided:** how the dashboard reads from storage. The
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data
