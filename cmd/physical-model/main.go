@@ -33,7 +33,7 @@ type model struct {
 }
 
 func main() {
-	baseURL := env.String("BUILDSIM_URL", "http://localhost:9090")
+	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
 	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)

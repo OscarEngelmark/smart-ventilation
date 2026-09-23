@@ -42,6 +42,9 @@ type Client struct {
 	http    *http.Client
 }
 
+// DefaultURL is where BuildSim listens when nothing sets BUILDSIM_URL.
+const DefaultURL = "http://localhost:9090"
+
 // New returns a client for the BuildSim at baseURL, e.g. "http://buildsim:9090".
 func New(baseURL string) *Client {
 	return &Client{

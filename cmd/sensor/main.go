@@ -35,7 +35,7 @@ type co2Reading struct {
 }
 
 func main() {
-	baseURL := env.String("BUILDSIM_URL", "http://localhost:9090")
+	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
