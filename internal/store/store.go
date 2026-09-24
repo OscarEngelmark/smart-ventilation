@@ -51,5 +51,9 @@ type Store interface {
 	// oldest first. An empty result is not an error.
 	OccupancySince(ctx context.Context, roomID string, since time.Time) ([]Occupancy, error)
 
+	// Latest returns the newest timestamp stored in any table, and false when
+	// nothing is stored yet.
+	Latest(ctx context.Context) (time.Time, bool, error)
+
 	Close() error
 }

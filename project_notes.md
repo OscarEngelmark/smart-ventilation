@@ -525,27 +525,47 @@ _(nothing yet)_
   - `C_threshold` is set in *Decided: the system pursues three goals…*, §7.
   - Useful for: §4.4, §6, §13.
 
-- **Decided: room time runs faster than real time; how much faster, and the
-  shared clock it needs, are not decided yet.** The occupancy forecast needs
-  20 weekdays of history (see *Decided: the system pursues three goals…*,
-  §7), four real weeks at normal speed, which runs past the submission
-  deadline. Running faster also shows the loop within the 10-minute demo,
-  where at normal speed CO2 with 6 people in A125 takes about 20 minutes to
-  reach the threshold. Trade-off: it stretches the system's real delays in
-  room time (a 1 s delay becomes a minute at 60×), so it misrepresents how
-  the system would perform in a real building. Rejected: normal speed,
-  which leaves the forecast without history. Noted 2026-09-18; decided
-  2026-09-24.
-  - Running faster also needs a rule for what the room time *is*, which
-    running at normal speed does not. Two processes now depend on it — the
-    occupancy simulator reads the time of day from the schedule, and the
-    physical model advances CO2 by it — and they start at different moments,
-    so room time can't be counted from each process's own start. It has to
-    be a function of the wall clock that both compute the same way, which
-    means agreeing on a fixed wall-clock instant to anchor it to. At normal
-    speed none of this is needed, because room time is the wall clock; the
-    occupancy simulator assumes that today (2026-09-20).
-  - Useful for: §6, §11.
+- **Decided: room time runs at a speed chosen per session, and each session
+  continues the room timeline where the previous one stopped.** A session
+  is started with `./start.sh <speed>`: the script asks the storage-service
+  for the latest stored timestamp, and the session begins at that room time,
+  or at the fixed origin 2026-09-25 09:00 (Stockholm time) if nothing later
+  is stored. It records three values for every container: the wall-clock
+  moment the session started, the room time it started at, and the speed.
+  Every process computes room time = room start + speed × (wall clock now −
+  session start), so all processes agree without talking to each other, and
+  a restarted container rejoins the same clock. Room time stands still
+  between sessions, so the stored history stays one continuous timeline
+  across shutdowns and speed changes. Decided 2026-09-24; the clock
+  (`internal/roomtime`), `start.sh`, and the storage-service's
+  `GET /latest` implemented the same day, with no service using the clock
+  yet. Verified: `./start.sh 10` wrote the session to `run.env` and
+  recreated the project's services while BuildSim and the broker kept
+  running.
+  - Why faster at all: testing and evaluation cover many room days, and the
+    occupancy forecast needs 20 weekdays of history (see *Decided: the system
+    pursues three goals…*, §7), four real weeks at normal speed. Trade-off:
+    the system's real delays stretch in room time (a 1 s delay becomes a
+    minute at 60×), so a fast run misrepresents how the system would perform
+    in a real building.
+  - Rejected: normal speed only, with the forecast's history written
+    directly from the occupancy schedule — much simpler, but every
+    evaluation run would take real days. Rejected: one fixed instant where
+    room time equals wall-clock time, with room time = instant + speed ×
+    elapsed — no start script, but a run can't start at a chosen room time,
+    and changing speed makes room time jump past or behind the stored
+    history. Rejected: each process counting room time from its own start —
+    a restarted process would fall behind the others. Rejected: a clock
+    service the other processes ask — one more container that every process
+    depends on.
+  - Changing speed means running `./start.sh` again. That recreates only the
+    project's own services, which read the three values; BuildSim and the
+    broker keep running, so the room's CO2 and damper carry on.
+  - **Known caveat —** a full shutdown restarts BuildSim, which keeps state
+    only in memory, so the room's CO2 resumes from outdoor air while room
+    time continues. Ending sessions outside office hours hides this, since
+    an empty room's CO2 decays toward outdoor air overnight anyway.
+  - Useful for: §6, §9, §11.
 
 - **Decided: occupancy comes from a time-of-day schedule (arrivals, a meeting
   block, departures) plus some randomness.** Rejected: replaying a public
@@ -728,6 +748,9 @@ _(nothing yet)_
     Verified against the running stack: readings published by the sensor came
     back through the endpoint, a `since` after the newest reading returned an
     empty array, and both bad-request cases were refused.
+    - Timestamps are converted to UTC before they are stored (2026-09-24).
+      They are compared as text, so one sent with another offset would
+      otherwise sort out of time order.
     - Occupancy counts are stored and served the same way, at
       `GET /occupancy?room=<id>&since=<RFC3339>`, answering a JSON array of
       `occupancy_reading` messages, for the occupancy forecast's history.
@@ -893,7 +916,7 @@ was caught. Kept for the report's reflection and the oral exam.
   holds for the current code, but only because running faster isn't built
   yet: if the sensors kept a real-time interval, speed would change how
   often the system samples, which the design keeps independent of speed
-  (see *Decided: room time runs faster than real time…*, §6). The user
+  (see *Decided: room time runs at a speed chosen per session…*, §6). The user
   caught it by asking whether speed changes the system's behavior. The
   history holds about 240,000 counts per 20 weekdays at any speed. Noted
   2026-09-24.

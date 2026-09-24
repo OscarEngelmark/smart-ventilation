@@ -100,6 +100,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /co2", serveCO2(db))
 	mux.HandleFunc("GET /occupancy", serveOccupancy(db))
+	mux.HandleFunc("GET /latest", serveLatest(db))
 	log.Printf("serving stored CO2 readings and occupancy on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
@@ -155,6 +156,25 @@ func serveOccupancy(db store.Store) http.HandlerFunc {
 		if err := json.NewEncoder(w).Encode(body); err != nil {
 			log.Printf("occupancy: write response: %v", err)
 		}
+	}
+}
+
+// serveLatest answers GET /latest with the newest timestamp stored in any
+// table, as plain RFC 3339 text for start.sh to read, or 204 No Content when
+// nothing is stored yet.
+func serveLatest(db store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		latest, ok, err := db.Latest(r.Context())
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "latest: %v", err)
+			return
+		}
+		if !ok {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintln(w, latest.UTC().Format(time.RFC3339))
 	}
 }
 

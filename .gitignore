@@ -37,3 +37,6 @@ Thumbs.db
 
 # Private scratch files (e.g. equations to view in Markdown preview)
 scratch/
+
+# Clock of the current session, written by start.sh
+run.env

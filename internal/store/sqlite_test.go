@@ -165,6 +165,53 @@ func TestOccupancyComesBackAsItWasSaved(t *testing.T) {
 	}
 }
 
+func TestLatestIsNewestAcrossTables(t *testing.T) {
+	s := openTemp(t)
+	ctx := context.Background()
+	save(t, s, "level0/A125", 500, noon)
+	saveCount(t, s, "level0/A125", 3, noon.Add(2*time.Minute))
+	if err := s.SaveCommand(ctx, Command{RoomID: "level0/A125", Level: 1, Time: noon.Add(time.Minute)}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	got, ok, err := s.Latest(ctx)
+	if err != nil || !ok {
+		t.Fatalf("latest: %v, %v", ok, err)
+	}
+	if want := noon.Add(2 * time.Minute); !got.Equal(want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// Written with its own offset, 07:01-05:00 would sort as text before 12:00Z
+// although it is a minute later.
+func TestLatestHandlesTimestampsSentInAnotherZone(t *testing.T) {
+	s := openTemp(t)
+	save(t, s, "level0/A125", 500, noon)
+	later := noon.Add(time.Minute).In(time.FixedZone("EST", -5*60*60))
+	save(t, s, "level0/A125", 600, later)
+
+	got, _, err := s.Latest(context.Background())
+	if err != nil {
+		t.Fatalf("latest: %v", err)
+	}
+	if !got.Equal(later) {
+		t.Errorf("got %v, want %v", got, later)
+	}
+}
+
+func TestLatestOnEmptyStoreIsNotFound(t *testing.T) {
+	s := openTemp(t)
+
+	_, ok, err := s.Latest(context.Background())
+	if err != nil {
+		t.Fatalf("latest: %v", err)
+	}
+	if ok {
+		t.Errorf("found a latest timestamp in an empty store")
+	}
+}
+
 // want fails the test unless got holds the same ppm values in the same order.
 func want(t *testing.T, got, expected []float64) {
 	t.Helper()

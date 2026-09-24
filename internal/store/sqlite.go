@@ -58,28 +58,28 @@ CREATE TABLE IF NOT EXISTS commands (
 func (s *SQLiteStore) SaveCO2Reading(ctx context.Context, r CO2Reading) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO co2_readings (room_id, ppm, ts) VALUES (?, ?, ?)`,
-		r.RoomID, r.PPM, r.Time.Format(time.RFC3339))
+		r.RoomID, r.PPM, r.Time.UTC().Format(time.RFC3339)) // stored as UTC text, so text order is time order
 	return err
 }
 
 func (s *SQLiteStore) SaveOccupancy(ctx context.Context, o Occupancy) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO occupancy (room_id, count, ts) VALUES (?, ?, ?)`,
-		o.RoomID, o.Count, o.Time.Format(time.RFC3339))
+		o.RoomID, o.Count, o.Time.UTC().Format(time.RFC3339))
 	return err
 }
 
 func (s *SQLiteStore) SaveForecast(ctx context.Context, f Forecast) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO forecasts (room_id, ppm_forecast, horizon_min, ts) VALUES (?, ?, ?, ?)`,
-		f.RoomID, f.PPMForecast, f.HorizonMin, f.Time.Format(time.RFC3339))
+		f.RoomID, f.PPMForecast, f.HorizonMin, f.Time.UTC().Format(time.RFC3339))
 	return err
 }
 
 func (s *SQLiteStore) SaveCommand(ctx context.Context, c Command) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO commands (room_id, level, ts) VALUES (?, ?, ?)`,
-		c.RoomID, c.Level, c.Time.Format(time.RFC3339))
+		c.RoomID, c.Level, c.Time.UTC().Format(time.RFC3339))
 	return err
 }
 
@@ -131,6 +131,27 @@ func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since t
 		counts = append(counts, o)
 	}
 	return counts, rows.Err()
+}
+
+func (s *SQLiteStore) Latest(ctx context.Context) (time.Time, bool, error) {
+	var ts sql.NullString // NULL when every table is empty
+	err := s.db.QueryRowContext(ctx, `SELECT MAX(ts) FROM (
+		SELECT ts FROM co2_readings UNION ALL
+		SELECT ts FROM occupancy UNION ALL
+		SELECT ts FROM forecasts UNION ALL
+		SELECT ts FROM commands
+	)`).Scan(&ts)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	if !ts.Valid {
+		return time.Time{}, false, nil
+	}
+	latest, err := time.Parse(time.RFC3339, ts.String)
+	if err != nil {
+		return time.Time{}, false, fmt.Errorf("parse stored timestamp %q: %w", ts.String, err)
+	}
+	return latest, true, nil
 }
 
 func (s *SQLiteStore) Close() error {

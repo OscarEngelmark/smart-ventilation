@@ -2,6 +2,12 @@
 x-buildsim-url: &buildsim-url http://buildsim:9090
 x-broker-url: &broker-url tcp://mosquitto:1883
 
+# Shared simulation values, then the session's clock written by start.sh.
+x-env-files: &env-files
+  - sim.env
+  - path: run.env
+    required: false # absent until start.sh has run once
+
 services:
   buildsim:
     # Built straight from the course repository, pinned to one commit so
@@ -25,10 +31,9 @@ services:
     build:
       context: .
       dockerfile: cmd/actuator/Dockerfile
-    # Simulation values shared with other services come from sim.env; the
+    # Shared values and the session's clock come from x-env-files; the
     # settings below are this service's own wiring.
-    env_file:
-      - sim.env
+    env_file: *env-files
     environment:
       BUILDSIM_URL: *buildsim-url
     ports:
@@ -44,10 +49,9 @@ services:
     build:
       context: .
       dockerfile: cmd/co2-sensor/Dockerfile
-    # Simulation values shared with other services come from sim.env; the
+    # Shared values and the session's clock come from x-env-files; the
     # settings below are this service's own wiring.
-    env_file:
-      - sim.env
+    env_file: *env-files
     environment:
       BUILDSIM_URL: *buildsim-url
       MQTT_BROKER_URL: *broker-url
@@ -63,10 +67,9 @@ services:
     build:
       context: .
       dockerfile: cmd/forecast/Dockerfile
-    # Simulation values shared with other services come from sim.env; the
+    # Shared values and the session's clock come from x-env-files; the
     # settings below are this service's own wiring.
-    env_file:
-      - sim.env
+    env_file: *env-files
     environment:
       MQTT_BROKER_URL: *broker-url
       STORAGE_URL: http://storage-service:8081
@@ -82,10 +85,9 @@ services:
     build:
       context: .
       dockerfile: cmd/occupancy/Dockerfile
-    # Simulation values shared with other services come from sim.env; the
+    # Shared values and the session's clock come from x-env-files; the
     # settings below are this service's own wiring.
-    env_file:
-      - sim.env
+    env_file: *env-files
     environment:
       BUILDSIM_URL: *buildsim-url
       OCCUPANCY_INTERVAL: 10s
@@ -99,10 +101,9 @@ services:
     build:
       context: .
       dockerfile: cmd/occupancy-sensor/Dockerfile
-    # Simulation values shared with other services come from sim.env; the
+    # Shared values and the session's clock come from x-env-files; the
     # settings below are this service's own wiring.
-    env_file:
-      - sim.env
+    env_file: *env-files
     environment:
       BUILDSIM_URL: *buildsim-url
       MQTT_BROKER_URL: *broker-url
@@ -118,10 +119,9 @@ services:
     build:
       context: .
       dockerfile: cmd/physical-model/Dockerfile
-    # Simulation values shared with other services come from sim.env; the
+    # Shared values and the session's clock come from x-env-files; the
     # settings below are this service's own wiring.
-    env_file:
-      - sim.env
+    env_file: *env-files
     environment:
       BUILDSIM_URL: *buildsim-url
     depends_on:
