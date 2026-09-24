@@ -156,7 +156,7 @@ _(nothing yet)_
   because the fault-injection tests work by making the simulated side
   misbehave on purpose — a CO2 value frozen at a plausible level, a room
   filling faster than the ventilation can clear it. Today that budget is
-  `restart: unless-stopped` plus a skipped cycle on a failed read, and it is
+  `restart: on-failure` plus a skipped cycle on a failed read, and it is
   meant to stay there. Rejected: treating every process alike, which spends
   the same effort on the two components whose failures a real building
   doesn't have. Decided 2026-09-22.
@@ -558,6 +558,16 @@ _(nothing yet)_
     a restarted process would fall behind the others. Rejected: a clock
     service the other processes ask — one more container that every process
     depends on.
+  - **Decided: every service restarts by itself after a crash but not when
+    the PC boots (`restart: on-failure` in `docker-compose.yml`).** Only
+    `./start.sh` starts a session, so shutting the PC down never causes a
+    jump. With `restart: unless-stopped`, Docker started the services again
+    at boot with the previous session's values, and room time leapt ahead by
+    the speed times the hours the PC was off. Rejected: keeping
+    `unless-stopped` and stopping the system by hand before every shutdown —
+    one forgotten stop gives a silent jump; with `on-failure`, forgetting
+    `./start.sh` just leaves the simulation off. Decided and implemented
+    2026-09-24; not yet confirmed across a real reboot.
   - Changing speed means running `./start.sh` again. That recreates only the
     project's own services, which read the three values; BuildSim and the
     broker keep running, so the room's CO2 and damper carry on.

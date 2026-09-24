@@ -18,7 +18,7 @@ services:
     ports:
       # Only reachable from this machine; open http://127.0.0.1:9090 for the 3D view.
       - "127.0.0.1:9090:9090"
-    restart: unless-stopped
+    restart: on-failure
 
   mosquitto:
     image: eclipse-mosquitto:2
@@ -43,7 +43,7 @@ services:
       - buildsim
     # The service exits if BuildSim isn't ready yet at startup; Docker then
     # starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
   co2-sensor:
     build:
@@ -61,7 +61,7 @@ services:
       - mosquitto
     # The service exits if BuildSim or the broker isn't ready yet at startup;
     # Docker then starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
   forecast:
     build:
@@ -79,7 +79,7 @@ services:
       - storage-service
     # The service exits if the broker isn't ready yet at startup; Docker then
     # starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
   occupancy:
     build:
@@ -95,7 +95,7 @@ services:
       - buildsim
     # The service exits if BuildSim isn't ready yet at startup; Docker then
     # starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
   occupancy-sensor:
     build:
@@ -113,7 +113,7 @@ services:
       - mosquitto
     # The service exits if BuildSim or the broker isn't ready yet at startup;
     # Docker then starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
   physical-model:
     build:
@@ -128,7 +128,7 @@ services:
       - buildsim
     # The service exits if BuildSim isn't ready yet at startup; Docker then
     # starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
   storage-service:
     build:
@@ -146,7 +146,7 @@ services:
       - mosquitto
     # The service exits if the broker isn't ready yet at startup; Docker then
     # starts it again.
-    restart: unless-stopped
+    restart: on-failure
 
 volumes:
   storage-data:
