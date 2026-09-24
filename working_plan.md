@@ -6,7 +6,6 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 2 | Fan safety factor 1.2 in `sim.env` (`project_notes.md` §6) | none | 1 |
 | 3 | Occupancy sensor (Go): reports the room's head count | its topic and message schema | 1 |
 | 4 | Room time faster than real time (`project_notes.md` §6) | how much faster; the shared clock both simulators compute room time from | 2 |
 | 5 | Occupancy forecast: average head count per time of day over the last 20 weekdays (`project_notes.md` §7) | how far ahead it looks; what happens to the straight-line CO2 forecast | 2 |

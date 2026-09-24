@@ -469,8 +469,8 @@ _(nothing yet)_
     to decide. `Q_min` is the airflow with the damper closed; without it
     `Q = 0` and CO2 rises without limit. Rejected: taking `Q_max` from a real
     ventilation device; and choosing a value per room, which doesn't carry
-    over to more rooms. Decided 2026-09-21; factor lowered to 1.2 on
-    2026-09-24, not yet in `sim.env`.
+    over to more rooms. Decided 2026-09-21; factor lowered to 1.2 and
+    implemented 2026-09-24 (`MAX_AIRFLOW_FACTOR` in `sim.env`).
     - Replaces a factor of 2, an unsourced margin that made the fan larger
       than any goal needed.
     - `V` and `Q_max` both scale with floor area, so they cancel in

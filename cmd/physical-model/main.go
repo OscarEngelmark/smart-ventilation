@@ -42,7 +42,7 @@ func main() {
 	Cout := env.Float("OUTDOOR_CO2_PPM", 420)
 	Cthres := env.Float("CO2_THRESHOLD_PPM", 1000)
 	minPerArea := env.Float("MIN_AIRFLOW_LPS_PER_M2", 0.35)
-	factor := env.Float("MAX_AIRFLOW_FACTOR", 2)
+	factor := env.Float("MAX_AIRFLOW_FACTOR", 1.2)
 	dt := env.Duration("SIM_STEP", 10*time.Second)
 
 	client := buildsim.New(baseURL) // this program's link to BuildSim
