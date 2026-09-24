@@ -450,27 +450,33 @@ _(nothing yet)_
     guess.
   - **5 m² per person** is an estimate, not sourced — roughly what a meeting
     room allows; those workplace rules give no figure per person.
-  - **Airflow `Q = Q_min + damper·(Q_max − Q_min)`, with `Q_max = 2 · G·N_max
-    / (C_threshold − C_out)`** (≈ 116 L/s in A125), so `Q_max` is computed
+  - **Airflow `Q = Q_min + damper·(Q_max − Q_min)`, with `Q_max = 1.2 ·
+    G·N_max / (C_threshold − C_out)`** (≈ 70 L/s in A125), so `Q_max` is computed
     from floor area like `V`, `N_max` and `Q_min` and a second room needs no
     new configuration. The lower bound `Q_max > G·N_max /
     (C_threshold − C_out)` follows from the steady state `C_steady = C_out +
     G·N/Q`: fully open at `N_max`, CO2 must settle below the threshold, or
     the damper reaches its limit with the room still above it and the
-    decision service has nothing left to command. The factor 2 is an
-    unsourced margin. Sizing `Q_max` this way does not keep the room below
-    the threshold — with the damper closed it still settles far above it (≈
+    decision service has nothing left to command. The factor 1.2 is a safety
+    factor on that bound, a judgment rather than a sourced figure: the fan
+    holds a full room under the threshold with some reserve and is no larger,
+    per *Decided: the system pursues three goals…*, §7. A full A125 is then
+    held at 1000 ppm with the damper at about 0.8. Sizing `Q_max` this way
+    does not keep the room below the threshold — with the damper closed it
+    still settles far above it (≈
     3650 ppm at `N_max` in A125) — it only makes opening the damper able to
     bring it back under, which is what leaves the decision service something
     to decide. `Q_min` is the airflow with the damper closed; without it
     `Q = 0` and CO2 rises without limit. Rejected: taking `Q_max` from a real
     ventilation device; and choosing a value per room, which doesn't carry
-    over to more rooms. Decided 2026-09-21.
+    over to more rooms. Decided 2026-09-21; factor lowered to 1.2 on
+    2026-09-24, not yet in `sim.env`.
+    - Replaces a factor of 2, an unsourced margin that made the fan larger
+      than any goal needed.
     - `V` and `Q_max` both scale with floor area, so they cancel in
-      `τ = V/Q_max`: every room clears at the same rate, ≈ 10 min with margin
-      2, and the forecast horizon needs no retuning per room. A larger margin
-      makes rooms respond faster, leaving a 30-minute forecast less to
-      anticipate.
+      `τ = V/Q_max`: every room clears at the same rate, ≈ 17 min with
+      factor 1.2, so how early a room must be ventilated ahead of a meeting
+      is the same for every room.
   - **`Q_min` = 0.35 L/s per m² of floor area** (≈ 10 L/s in A125), so it
     is computed from floor area like `V` and `N_max`. Both FoHMFS 2014:18
     (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf)
@@ -498,18 +504,20 @@ _(nothing yet)_
     compared with how often people arrive or leave (minutes), not tuned.
     Rejected: `Δt` in real time, where a faster room would notice changes
     later in room time. Decided 2026-09-18.
-  - **Revisit:** the factor 2 is to come down toward 1, since the fan only
-    needs to hold a full room under the threshold with some margin (see
-    *Decided: the system pursues three goals…*, §7). Value not chosen.
   - `C_threshold` is set in *Decided: the system pursues three goals…*, §7.
   - Useful for: §4.4, §6, §13.
 
-- **Deferred, not yet decided: whether room time runs faster than real
-  time.** At normal speed, CO2 with 6 people in A125 takes about 20 minutes
-  to reach the threshold, longer than the 10-minute demo. Running faster
-  shows the loop within the demo, but stretches the system's real delays in
+- **Decided: room time runs faster than real time; how much faster, and the
+  shared clock it needs, are not decided yet.** The occupancy forecast needs
+  20 weekdays of history (see *Decided: the system pursues three goals…*,
+  §7), four real weeks at normal speed, which runs past the submission
+  deadline. Running faster also shows the loop within the 10-minute demo,
+  where at normal speed CO2 with 6 people in A125 takes about 20 minutes to
+  reach the threshold. Trade-off: it stretches the system's real delays in
   room time (a 1 s delay becomes a minute at 60×), so it misrepresents how
-  the system would perform in a real building. Noted 2026-09-18.
+  the system would perform in a real building. Rejected: normal speed,
+  which leaves the forecast without history. Noted 2026-09-18; decided
+  2026-09-24.
   - Running faster also needs a rule for what the room time *is*, which
     running at normal speed does not. Two processes now depend on it — the
     occupancy simulator reads the time of day from the schedule, and the
@@ -579,8 +587,8 @@ _(nothing yet)_
     reacting at the threshold. A new damper position takes effect at the
     physical model's next step, and a fully open damper reverses a full
     room's rise at once: in A125 with 6 people at 1000 ppm, CO2 rises about
-    23 ppm/min with the damper closed and falls about 28 ppm/min fully open,
-    so opening when a reading reaches 1000 overshoots by about 10 ppm. A
+    23 ppm/min with the damper closed and falls about 28 ppm/min fully open
+    (with the fan factor then at 2, see §6), so opening when a reading reaches 1000 overshoots by about 10 ppm. A
     delay between command and effect, or a weaker fan, would give that
     forecast work, but only by creating the problem it then solves. A
     forecast from recent CO2 also can't see a rise before people arrive;
@@ -598,13 +606,20 @@ _(nothing yet)_
     room. Fan electricity falls, as it grows steeply with fan level, but
     heating the incoming air rises; the net effect on energy is not
     measured. Accepted for now. Noted 2026-09-24.
-  - **Deferred, not yet decided:** how occupancy is sensed and forecast.
-    Working suggestion: an occupancy sensor process reporting the room's
-    head count the way the CO2 sensor reports CO2, and a forecast averaging
-    the count at each time of day over past weekdays. Also open: how far
-    ahead it looks, and how the decision service turns a predicted meeting
-    into a damper level. The model needs several days of history, which
-    bears on running room time faster than real time (§6).
+  - **Decided: occupancy is sensed by its own sensor process**, reporting
+    the room's head count the way the CO2 sensor reports CO2. The forecast
+    predicts occupancy rather than CO2 because past CO2 also records what
+    the damper did, so the same reading can mean six people with the damper
+    open or two with it closed; the head count doesn't depend on the damper.
+    No other way of obtaining occupancy was weighed. Decided 2026-09-24.
+  - **Decided: the forecast for a time of day is the average head count at
+    that time over the last 20 weekdays**; weekends are empty. Rejected: a
+    separate average per day of the week, which would catch a Monday that
+    differs from a Friday, but the schedule is the same on every weekday,
+    so it would only split the same history five ways. Chosen as the
+    simplest model that captures a daily pattern. Decided 2026-09-24.
+  - **Deferred, not yet decided:** how far ahead the forecast looks, and how
+    the decision service turns a predicted meeting into a damper level.
   - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
 - **Decided: start with the simplest forecasting model that produces a usable
