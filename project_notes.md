@@ -887,6 +887,18 @@ was caught. Kept for the report's reflection and the oral exam.
   by asking. Noted 2026-09-24.
   - Useful for: §13.
 
+- **The assistant claimed faster room time would shrink the stored
+  occupancy history.** It reasoned that the counter's 10-second interval is
+  real time, so a faster room would hold fewer counts per room day. That
+  holds for the current code, but only because running faster isn't built
+  yet: if the sensors kept a real-time interval, speed would change how
+  often the system samples, which the design keeps independent of speed
+  (see *Decided: room time runs faster than real time…*, §6). The user
+  caught it by asking whether speed changes the system's behavior. The
+  history holds about 240,000 counts per 20 weekdays at any speed. Noted
+  2026-09-24.
+  - Useful for: §13.
+
 - **The assistant argued against its own earlier refactor using an obstacle
   that does not exist.** Asked to reassess merging the BuildSim client's
   `Equipment`, `Sensor`, and `Actuator` structs into one `Device`, it claimed
