@@ -498,9 +498,10 @@ _(nothing yet)_
     compared with how often people arrive or leave (minutes), not tuned.
     Rejected: `Δt` in real time, where a faster room would notice changes
     later in room time. Decided 2026-09-18.
-  - `C_threshold` is set in
-    *Decided: the decision service compares a short-horizon CO2 forecast to
-    a fixed threshold …*, §7.
+  - **Revisit:** the factor 2 is to come down toward 1, since the fan only
+    needs to hold a full room under the threshold with some margin (see
+    *Decided: the system pursues three goals…*, §7). Value not chosen.
+  - `C_threshold` is set in *Decided: the system pursues three goals…*, §7.
   - Useful for: §4.4, §6, §13.
 
 - **Deferred, not yet decided: whether room time runs faster than real
@@ -556,14 +557,34 @@ _(nothing yet)_
 
 ## 7. Autonomous services and data pipeline
 
-- **Decided: the decision service compares a short-horizon CO2 forecast to a
-  fixed threshold and turns ventilation on before the threshold is crossed.**
-  Ventilation only affects CO2 with a delay, so a plain reactive threshold is
-  either too late for a fast-filling room or too cautious for a slowly
-  filling one. The forecast is load-bearing in every decision, not a fallback
-  behind a plain threshold. Rejected: a plain reactive threshold (which also
-  serves as the comparison in evaluation). Proposal sections 1 and 5,
-  2026-09-04.
+- **Decided: the system pursues three goals — CO2 stays under 1000 ppm at
+  all times, the fan runs as low as it can (noise and energy), and the fan
+  is no larger than the first goal needs (cost) — and the forecast's job is
+  the second.** The fan is sized by the first goal alone: a room can fill
+  without warning, so the fan must hold a full room (`N_max`) under the
+  threshold by itself, with a safety factor on top. A reactive mechanism
+  keeps CO2 under the threshold whenever occupancy differs from what was
+  expected, and may use the full fan. The forecast predicts when the room
+  will be occupied from its daily pattern, so the room can be ventilated
+  moderately ahead of a predicted meeting. A room brought down to outdoor
+  air holds about 20 minutes of a full meeting's CO2 before reaching the
+  threshold (in A125, `V·(1000 − 420 ppm)` against `G·N_max`), so the fan
+  can run lower during the meeting. Rejected: a fan smaller than a full room
+  needs, relying on the forecast to clean the room beforehand — a room that
+  fills unexpectedly then goes over the threshold. Decided 2026-09-24; not
+  implemented.
+  - Replaces the proposal's plan (proposal sections 1 and 5): a CO2
+    forecast 30 minutes ahead, compared to the threshold so ventilation
+    starts before it is crossed. In this simulation that gains nothing over
+    reacting at the threshold. A new damper position takes effect at the
+    physical model's next step, and a fully open damper reverses a full
+    room's rise at once: in A125 with 6 people at 1000 ppm, CO2 rises about
+    23 ppm/min with the damper closed and falls about 28 ppm/min fully open,
+    so opening when a reading reaches 1000 overshoots by about 10 ppm. A
+    delay between command and effect, or a weaker fan, would give that
+    forecast work, but only by creating the problem it then solves. A
+    forecast from recent CO2 also can't see a rise before people arrive;
+    the daily occupancy pattern can.
   - **Threshold `C_threshold` = 1000 ppm.** The Public Health Agency of
     Sweden's general advice on ventilation, FoHMFS 2014:18
     (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf),
@@ -572,18 +593,19 @@ _(nothing yet)_
     workplace rules cited for the ceiling height (AFS 2023:12) give no CO2
     limit, only a minimum outdoor airflow per person and per m². No
     alternative value was weighed. Decided 2026-09-18.
-  - **Revisit:** the forecast horizon (30 minutes is the working figure,
-    not yet checked) is not chosen or justified yet.
-  - **Deferred, not yet decided: in the current simulation a plain reactive
-    threshold leaves the forecast almost nothing to improve on.** The
-    physical model applies a new damper position at its next step, with no
-    delay, and `Q_max` is large enough to reverse a full room's rise at
-    once: in A125 with 6 people at 1000 ppm, CO2 rises about 23 ppm/min
-    with the damper closed and falls about 28 ppm/min fully open. Opening
-    when a reading reaches 1000 therefore overshoots by only the rise
-    between a reading and the damper opening, about 10 ppm. The horizon
-    can't be justified until this is settled. Noted 2026-09-23.
-  - Useful for: §6, §7.1, §11.
+  - **Known caveat —** cleaning the room ahead of a meeting moves more air
+    in total, since each liter of air carries less CO2 out of a cleaner
+    room. Fan electricity falls, as it grows steeply with fan level, but
+    heating the incoming air rises; the net effect on energy is not
+    measured. Accepted for now. Noted 2026-09-24.
+  - **Deferred, not yet decided:** how occupancy is sensed and forecast.
+    Working suggestion: an occupancy sensor process reporting the room's
+    head count the way the CO2 sensor reports CO2, and a forecast averaging
+    the count at each time of day over past weekdays. Also open: how far
+    ahead it looks, and how the decision service turns a predicted meeting
+    into a damper level. The model needs several days of history, which
+    bears on running room time faster than real time (§6).
+  - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
 - **Decided: start with the simplest forecasting model that produces a usable
   forecast** (e.g. exponential smoothing or a small regression over recent
@@ -629,9 +651,10 @@ _(nothing yet)_
     noisier slope. The window starts at 10 minutes (60 readings at the
     sensor's 10-second interval), an untuned value to revisit in
     evaluation; the horizon is not fixed yet. Decided 2026-09-23.
-  - **Revisit:** whether it forecasts well enough to beat a plain reactive
-    threshold — which is what justifies having it in the loop at all (a risk
-    in proposal section 6).
+  - **Revisit:** this straight-line CO2 forecast can't beat reacting at the
+    threshold in this simulation, so it doesn't serve the goals in
+    *Decided: the system pursues three goals…*, above. Whether it stays in
+    the system or is replaced by the occupancy forecast is open.
   - Useful for: §7.1, §11, §13.
 
 - **Decided: readings, forecasts, and commands are persisted in SQLite,
@@ -809,10 +832,21 @@ was caught. Kept for the report's reflection and the oral exam.
   assistant suggested it came from the workplace rules already cited for the
   ceiling height (AFS 2023:12). Reading that document showed it has no CO2
   limit, only a minimum outdoor airflow. The figure actually comes from
-  FoHMFS 2014:18 (see the threshold in *Decided: the decision service
-  compares a short-horizon CO2 forecast to a fixed threshold …*, §7). Caught
-  because the value was checked against the source before it was logged.
-  Noted 2026-09-18.
+  FoHMFS 2014:18 (see the threshold in *Decided: the system pursues three
+  goals…*, §7). Caught because the value was checked against the source
+  before it was logged. Noted 2026-09-18.
+  - Useful for: §13.
+
+- **The assistant proposed changing the simulation so the forecast would
+  have something to do.** Faced with the finding that reacting at the
+  threshold already works (see *Decided: the system pursues three goals…*,
+  §7), it first suggested a delay between a damper command and its effect,
+  then a fan too weak for a full room, with the forecast cleaning the room
+  ahead of meetings. The user rejected the first as introducing a problem
+  only to solve it, and the second because a room that fills unexpectedly
+  would then go over the threshold. Its first analysis had also silently
+  assumed the damper is either closed or fully open, which the user caught
+  by asking. Noted 2026-09-24.
   - Useful for: §13.
 
 - **The assistant argued against its own earlier refactor using an obstacle

@@ -6,7 +6,7 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 2 | Decision service (Go): forecast vs. 1000 ppm, commands the actuator | what the forecast gains over a reactive threshold when ventilation acts instantly (`project_notes.md` §7), which also sets the horizon; behavior when the forecast is missing or stale; one instance per room or one overall | 3 |
+| 2 | Decision service (Go): keeps CO2 under 1000 ppm, ventilates ahead of predicted occupancy, commands the actuator (`project_notes.md` §7, *the system pursues three goals*) | how occupancy is sensed and forecast; how a predicted meeting becomes a damper level; the fan's safety factor; behavior when the forecast is missing or stale; one instance per room or one overall | to re-plan |
 | 3 | First full loop running end to end | none | 1 |
 | 4 | Room time faster than real time? | one decision | 1 |
 | 5 | Dashboard | how it reads from storage | 2 |
