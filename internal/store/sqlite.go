@@ -29,7 +29,7 @@ func OpenSQLite(path string) (*SQLiteStore, error) {
 
 func createSchema(db *sql.DB) error {
 	const schema = `
-CREATE TABLE IF NOT EXISTS readings (
+CREATE TABLE IF NOT EXISTS co2_readings (
 	room_id TEXT NOT NULL,
 	ppm REAL NOT NULL,
 	ts TEXT NOT NULL
@@ -55,9 +55,9 @@ CREATE TABLE IF NOT EXISTS commands (
 	return err
 }
 
-func (s *SQLiteStore) SaveReading(ctx context.Context, r Reading) error {
+func (s *SQLiteStore) SaveCO2Reading(ctx context.Context, r CO2Reading) error {
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO readings (room_id, ppm, ts) VALUES (?, ?, ?)`,
+		`INSERT INTO co2_readings (room_id, ppm, ts) VALUES (?, ?, ?)`,
 		r.RoomID, r.PPM, r.Time.Format(time.RFC3339))
 	return err
 }
@@ -83,18 +83,18 @@ func (s *SQLiteStore) SaveCommand(ctx context.Context, c Command) error {
 	return err
 }
 
-func (s *SQLiteStore) ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]Reading, error) {
+func (s *SQLiteStore) CO2ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]CO2Reading, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT room_id, ppm, ts FROM readings WHERE room_id = ? AND ts >= ? ORDER BY ts`,
+		`SELECT room_id, ppm, ts FROM co2_readings WHERE room_id = ? AND ts >= ? ORDER BY ts`,
 		roomID, since.UTC().Format(time.RFC3339)) // timestamps are stored as UTC text, which sorts and compares in time order
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close() // runs when this function returns, however it returns
 
-	var readings []Reading
+	var readings []CO2Reading
 	for rows.Next() {
-		var r Reading
+		var r CO2Reading
 		var ts string
 		if err := rows.Scan(&r.RoomID, &r.PPM, &ts); err != nil {
 			return nil, err
@@ -111,7 +111,7 @@ func (s *SQLiteStore) ReadingsSince(ctx context.Context, roomID string, since ti
 func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since time.Time) ([]Occupancy, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT room_id, count, ts FROM occupancy WHERE room_id = ? AND ts >= ? ORDER BY ts`,
-		roomID, since.UTC().Format(time.RFC3339)) // compared as UTC text, as in ReadingsSince
+		roomID, since.UTC().Format(time.RFC3339)) // compared as UTC text, as in CO2ReadingsSince
 	if err != nil {
 		return nil, err
 	}

@@ -98,25 +98,25 @@ func main() {
 	defer client.Disconnect(250)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /readings", serveReadings(db))
+	mux.HandleFunc("GET /co2", serveCO2(db))
 	mux.HandleFunc("GET /occupancy", serveOccupancy(db))
-	log.Printf("serving stored readings and occupancy on %s", addr)
+	log.Printf("serving stored CO2 readings and occupancy on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
-// serveReadings answers GET /readings?room=<id>&since=<RFC3339> with that
-// room's stored readings from that time onwards, oldest first, as a JSON
-// array of co2_reading messages. Both parameters are required.
-func serveReadings(db store.Store) http.HandlerFunc {
+// serveCO2 answers GET /co2?room=<id>&since=<RFC3339> with that room's stored
+// CO2 readings from that time onwards, oldest first, as a JSON array of
+// co2_reading messages. Both parameters are required.
+func serveCO2(db store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		roomID, since, err := roomAndSince(r)
 		if err != nil {
-			fail(w, http.StatusBadRequest, "readings: %v", err)
+			fail(w, http.StatusBadRequest, "co2: %v", err)
 			return
 		}
-		stored, err := db.ReadingsSince(r.Context(), roomID, since)
+		stored, err := db.CO2ReadingsSince(r.Context(), roomID, since)
 		if err != nil {
-			fail(w, http.StatusInternalServerError, "readings: read %s: %v", roomID, err)
+			fail(w, http.StatusInternalServerError, "co2: read %s: %v", roomID, err)
 			return
 		}
 
@@ -126,7 +126,7 @@ func serveReadings(db store.Store) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(body); err != nil {
-			log.Printf("readings: write response: %v", err)
+			log.Printf("co2: write response: %v", err)
 		}
 	}
 }
@@ -194,7 +194,7 @@ func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 			log.Printf("reading: bad payload: %v", err)
 			return
 		}
-		if err := db.SaveReading(context.Background(), store.Reading{
+		if err := db.SaveCO2Reading(context.Background(), store.CO2Reading{
 			RoomID: p.RoomID, PPM: p.PPM, Time: p.Ts,
 		}); err != nil {
 			log.Printf("reading: save failed: %v", err)

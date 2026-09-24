@@ -109,7 +109,7 @@ func main() {
 func fillWindow(storageURL, roomID string, window time.Duration) []forecast.Reading {
 	const tries = 3
 	for try := 1; try <= tries; try++ {
-		readings, err := storedReadings(storageURL, roomID, time.Now().Add(-window))
+		readings, err := storedCO2Readings(storageURL, roomID, time.Now().Add(-window))
 		if err == nil {
 			log.Printf("filled window with %d stored readings", len(readings))
 			return readings
@@ -123,14 +123,14 @@ func fillWindow(storageURL, roomID string, window time.Duration) []forecast.Read
 	return nil
 }
 
-// storedReadings calls GET /readings on the storage-service for one room's
+// storedCO2Readings calls GET /co2 on the storage-service for one room's
 // readings from since onwards.
-func storedReadings(storageURL, roomID string, since time.Time) ([]forecast.Reading, error) {
+func storedCO2Readings(storageURL, roomID string, since time.Time) ([]forecast.Reading, error) {
 	query := url.Values{
 		"room":  {roomID},
 		"since": {since.UTC().Format(time.RFC3339)},
 	}
-	resp, err := http.Get(storageURL + "/readings?" + query.Encode())
+	resp, err := http.Get(storageURL + "/co2?" + query.Encode())
 	if err != nil {
 		return nil, err
 	}

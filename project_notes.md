@@ -721,7 +721,7 @@ _(nothing yet)_
     both in one process, an outage stops both, which only matters if it
     happens while the forecast service is restarting. Writing decided and
     implemented 2026-09-16 (`cmd/storage-service`); reads decided 2026-09-17
-    and implemented 2026-09-23 as `GET /readings?room=<id>&since=<RFC3339>`,
+    and implemented 2026-09-23 as `GET /co2?room=<id>&since=<RFC3339>`,
     answering with the room's readings from that time onwards, oldest first,
     as a JSON array of `co2_reading` messages. Both parameters are required;
     a missing `room` or an unparseable `since` gives 400, a failed read 500.
@@ -758,7 +758,7 @@ _(nothing yet)_
     immediate error. Rejected: the forecast service querying SQLite directly —
     it breaks the storage-interface rule. Reading from storage decided before
     2026-09-16; REST via the storage-service decided 2026-09-17. The storage
-    side is implemented (`store.ReadingsSince`, served as `GET /readings`);
+    side is implemented (`store.CO2ReadingsSince`, served as `GET /co2`);
     the calling side is implemented 2026-09-23 (`cmd/forecast`: three
     tries, 2 s apart). Verified against the running stack: after a restart
     the forecast service refilled its window with 37 stored readings and

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type Reading struct {
+type CO2Reading struct {
 	RoomID string
 	PPM    float64
 	Time   time.Time
@@ -38,14 +38,14 @@ type Command struct {
 // Store is the only way any component may persist a reading, occupancy count,
 // forecast, or command (see project_notes.md §7).
 type Store interface {
-	SaveReading(ctx context.Context, r Reading) error
+	SaveCO2Reading(ctx context.Context, r CO2Reading) error
 	SaveOccupancy(ctx context.Context, o Occupancy) error
 	SaveForecast(ctx context.Context, f Forecast) error
 	SaveCommand(ctx context.Context, c Command) error
 
-	// ReadingsSince returns one room's readings from since onwards, oldest
-	// first. An empty result is not an error.
-	ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]Reading, error)
+	// CO2ReadingsSince returns one room's CO2 readings from since onwards,
+	// oldest first. An empty result is not an error.
+	CO2ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]CO2Reading, error)
 
 	// OccupancySince returns one room's occupancy counts from since onwards,
 	// oldest first. An empty result is not an error.

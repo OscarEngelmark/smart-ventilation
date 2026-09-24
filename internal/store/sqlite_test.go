@@ -25,16 +25,16 @@ func openTemp(t *testing.T) *SQLiteStore {
 // save stores one reading, its ppm standing in for which reading it is.
 func save(t *testing.T, s *SQLiteStore, room string, ppm float64, ts time.Time) {
 	t.Helper()
-	r := Reading{RoomID: room, PPM: ppm, Time: ts}
-	if err := s.SaveReading(context.Background(), r); err != nil {
+	r := CO2Reading{RoomID: room, PPM: ppm, Time: ts}
+	if err := s.SaveCO2Reading(context.Background(), r); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 }
 
-// ppmSince is the ppm of each reading ReadingsSince gives back, in its order.
+// ppmSince is the ppm of each reading CO2ReadingsSince returns, in order.
 func ppmSince(t *testing.T, s *SQLiteStore, room string, from time.Time) []float64 {
 	t.Helper()
-	got, err := s.ReadingsSince(context.Background(), room, from)
+	got, err := s.CO2ReadingsSince(context.Background(), room, from)
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestOtherRoomsAreLeftOut(t *testing.T) {
 func TestNoReadingsIsNotAnError(t *testing.T) {
 	s := openTemp(t)
 
-	got, err := s.ReadingsSince(context.Background(), "level0/A125", noon)
+	got, err := s.CO2ReadingsSince(context.Background(), "level0/A125", noon)
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestReadingComesBackAsItWasSaved(t *testing.T) {
 	s := openTemp(t)
 	save(t, s, "level0/A125", 543.5, noon)
 
-	got, err := s.ReadingsSince(context.Background(), "level0/A125", noon)
+	got, err := s.CO2ReadingsSince(context.Background(), "level0/A125", noon)
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
@@ -127,7 +127,7 @@ func saveCount(t *testing.T, s *SQLiteStore, room string, count int, ts time.Tim
 	}
 }
 
-// The occupancy query mirrors the readings query, so one test covers the
+// The occupancy query mirrors the CO2 query, so one test covers the
 // room, the since bound, and the order together.
 func TestOccupancySinceSelectsRoomAndTimeInOrder(t *testing.T) {
 	s := openTemp(t)
