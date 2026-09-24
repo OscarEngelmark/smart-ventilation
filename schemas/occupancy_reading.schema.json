@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/occupancy_reading.schema.json",
+  "title": "Occupancy reading",
+  "description": "Published by the occupancy sensor process to MQTT topic occupancy/<room>/reading.",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Room identifier, matching BuildSim's room key."
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of people in the room."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the reading was taken (RFC 3339)."
+    }
+  },
+  "required": ["room_id", "count", "ts"],
+  "additionalProperties": false
+}

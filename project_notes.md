@@ -162,9 +162,23 @@ _(nothing yet)_
   doesn't have. Decided 2026-09-22.
   - Useful for: §4.4, §8.2, §10, §13.
 
+- **Decided: the people counter (`cmd/occupancy-sensor`) takes the head
+  count from BuildSim's occupancy (`GET /api/occupancy`), counting the
+  people listed in its room.** The occupancy process already writes the
+  true count there, so for this sensor that list is the physical world it
+  observes. It reports the count as its own device value in BuildSim, the
+  way BuildSim expects a device to report, and publishes it to MQTT.
+  Rejected: the occupancy process also writing the count into the
+  counter's device value, as the physical model does for the CO2 sensor —
+  symmetric with the CO2 side, but it gives the occupancy process a second
+  job and makes it depend on the counter being registered, while the count
+  is already in BuildSim. Decided and implemented 2026-09-24; verified
+  against the running stack (the count reaches BuildSim and the topic).
+  - Useful for: §4.2, §4.4, §5.
+
 - **Decided: each device process registers its own device with BuildSim on
   startup** — the sensor process registers the CO2 sensor, the actuator
-  process registers the damper. BuildSim keeps devices only in memory and
+  process registers the damper, the people counter registers itself. BuildSim keeps devices only in memory and
   starts with none, so they must exist before any value can be written or
   read. Rejected: the physical-model process registering all devices — it
   would make a restarted sensor or actuator depend on another process, where
@@ -286,8 +300,8 @@ _(nothing yet)_
   (see *Decided: failure testing covers a sensor giving bad readings, a
   component going down, and delayed or dropped communication*, §10) needs
   anyway; a bare example payload is only documentation, nothing checks
-  against it. Four schemas exist so far: `co2_reading` and `co2_forecast`
-  (the two MQTT payloads) and `ventilation_command` /
+  against it. Five schemas exist so far: `co2_reading`, `co2_forecast` and
+  `occupancy_reading` (the MQTT payloads) and `ventilation_command` /
   `ventilation_command_response` (the REST request/response for the
   decision→actuator link, see *Decided: two different communication
   patterns...*, §4). Decided and implemented 2026-09-15.
@@ -333,6 +347,10 @@ _(nothing yet)_
   breaks every wildcard subscription; consumers that need the level read it
   from the payload, as the storage-service already does. Decided and
   implemented 2026-09-22.
+  - The people counter follows the same form: `occupancy/<room>/reading`,
+    carrying `room_id`, `count` (a whole number of people) and `ts`, every
+    10 s. Copied from the CO2 reading as a low-stakes default. Implemented
+    2026-09-24.
   - Useful for: §5, §7.2.
 
 - **Decided: the actuator serves one endpoint, `POST /command` on port 8080,
