@@ -690,10 +690,11 @@ _(nothing yet)_
     the system or is replaced by the occupancy forecast is open.
   - Useful for: §7.1, §11, §13.
 
-- **Decided: readings, forecasts, and commands are persisted in SQLite,
-  accessed only through a small storage interface** (`store.Store` in
-  `internal/store` — a typed `Save` method per message kind, no read methods
-  yet) — no component writes SQL directly. Chosen because nothing in the
+- **Decided: CO2 readings, occupancy counts, forecasts, and commands are
+  persisted in SQLite, accessed only through a small storage interface**
+  (`store.Store` in `internal/store` — a typed `Save` method per message
+  kind, and a read method for each kind that is read back) — no component
+  writes SQL directly. Chosen because nothing in the
   actual requirements needs more at this project's current scale (one room),
   and it adds no new infrastructure on top of Go, Docker, and MQTT, all new
   to this project at once. Rejected: InfluxDB — the better fit for
@@ -707,8 +708,8 @@ _(nothing yet)_
     reversed once the storage interface made a later swap cheap enough that
     committing to InfluxDB now wasn't buying anything.
   - **Decided: a dedicated storage-service process owns storage** — it
-    subscribes to the `co2_reading`, `co2_forecast`, and
-    `ventilation_command` MQTT topics and writes each through the storage
+    subscribes to the `co2_reading`, `occupancy_reading`, `co2_forecast`,
+    and `ventilation_command` MQTT topics and writes each through the storage
     interface, and answers read requests from other components over REST.
     Rejected: folding writing into the forecast service, which already
     subscribes to readings — it would mix forecasting logic with
@@ -727,6 +728,10 @@ _(nothing yet)_
     Verified against the running stack: readings published by the sensor came
     back through the endpoint, a `since` after the newest reading returned an
     empty array, and both bad-request cases were refused.
+    - Occupancy counts are stored and served the same way, at
+      `GET /occupancy?room=<id>&since=<RFC3339>`, answering a JSON array of
+      `occupancy_reading` messages, for the occupancy forecast's history.
+      Implemented and verified against the running stack 2026-09-24.
     - **Known caveat —** a room id contains a slash (`level0/A125`), so
       callers must percent-encode it in the query string. Go's `net/http`
       decodes it back, so the service is unaffected, but a hand-written URL

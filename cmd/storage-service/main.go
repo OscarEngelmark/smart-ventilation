@@ -1,6 +1,7 @@
-// storage-service subscribes to the co2 reading, co2 forecast, and
-// ventilation command MQTT topics, saves each one through internal/store,
-// and serves stored readings back to other components over REST.
+// storage-service subscribes to the co2 reading, occupancy reading, co2
+// forecast, and ventilation command MQTT topics, saves each one through
+// internal/store, and serves stored readings and occupancy counts back to
+// other components over REST.
 // Reasoning: project_notes.md §7.
 package main
 
@@ -23,14 +24,21 @@ import (
 // payloadSchemas holds the schema each incoming message is checked against
 // before it is saved.
 type payloadSchemas struct {
-	reading  *jsonschema.Schema
-	forecast *jsonschema.Schema
-	command  *jsonschema.Schema
+	reading   *jsonschema.Schema
+	occupancy *jsonschema.Schema
+	forecast  *jsonschema.Schema
+	command   *jsonschema.Schema
 }
 
 type co2ReadingPayload struct {
 	RoomID string    `json:"room_id"`
 	PPM    float64   `json:"ppm"`
+	Ts     time.Time `json:"ts"`
+}
+
+type occupancyReadingPayload struct {
+	RoomID string    `json:"room_id"`
+	Count  int       `json:"count"`
 	Ts     time.Time `json:"ts"`
 }
 
@@ -61,9 +69,10 @@ func main() {
 	defer db.Close()
 
 	sch := payloadSchemas{
-		reading:  mustLoadSchema("co2_reading.schema.json"),
-		forecast: mustLoadSchema("co2_forecast.schema.json"),
-		command:  mustLoadSchema("ventilation_command.schema.json"),
+		reading:   mustLoadSchema("co2_reading.schema.json"),
+		occupancy: mustLoadSchema("occupancy_reading.schema.json"),
+		forecast:  mustLoadSchema("co2_forecast.schema.json"),
+		command:   mustLoadSchema("ventilation_command.schema.json"),
 	}
 
 	// Subscribing here rather than once after Connect: the client reconnects
@@ -90,7 +99,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /readings", serveReadings(db))
-	log.Printf("serving stored readings on %s", addr)
+	mux.HandleFunc("GET /occupancy", serveOccupancy(db))
+	log.Printf("serving stored readings and occupancy on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
@@ -99,15 +109,9 @@ func main() {
 // array of co2_reading messages. Both parameters are required.
 func serveReadings(db store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		roomID := r.URL.Query().Get("room")
-		if roomID == "" {
-			fail(w, http.StatusBadRequest, "readings: no room given")
-			return
-		}
-		sinceText := r.URL.Query().Get("since")
-		since, err := time.Parse(time.RFC3339, sinceText)
+		roomID, since, err := roomAndSince(r)
 		if err != nil {
-			fail(w, http.StatusBadRequest, "readings: bad since %q: %v", sinceText, err)
+			fail(w, http.StatusBadRequest, "readings: %v", err)
 			return
 		}
 		stored, err := db.ReadingsSince(r.Context(), roomID, since)
@@ -125,6 +129,47 @@ func serveReadings(db store.Store) http.HandlerFunc {
 			log.Printf("readings: write response: %v", err)
 		}
 	}
+}
+
+// serveOccupancy answers GET /occupancy?room=<id>&since=<RFC3339> with that
+// room's stored occupancy counts from that time onwards, oldest first, as a
+// JSON array of occupancy_reading messages. Both parameters are required.
+func serveOccupancy(db store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roomID, since, err := roomAndSince(r)
+		if err != nil {
+			fail(w, http.StatusBadRequest, "occupancy: %v", err)
+			return
+		}
+		stored, err := db.OccupancySince(r.Context(), roomID, since)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "occupancy: read %s: %v", roomID, err)
+			return
+		}
+
+		body := make([]occupancyReadingPayload, 0, len(stored)) // encodes as [] when empty
+		for _, s := range stored {
+			body = append(body, occupancyReadingPayload{RoomID: s.RoomID, Count: s.Count, Ts: s.Time})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(body); err != nil {
+			log.Printf("occupancy: write response: %v", err)
+		}
+	}
+}
+
+// roomAndSince reads the two query parameters both read endpoints require.
+func roomAndSince(r *http.Request) (string, time.Time, error) {
+	roomID := r.URL.Query().Get("room")
+	if roomID == "" {
+		return "", time.Time{}, fmt.Errorf("no room given")
+	}
+	sinceText := r.URL.Query().Get("since")
+	since, err := time.Parse(time.RFC3339, sinceText)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("bad since %q: %v", sinceText, err)
+	}
+	return roomID, since, nil
 }
 
 // fail logs why a request was refused and answers with that reason as plain
@@ -153,6 +198,23 @@ func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 			RoomID: p.RoomID, PPM: p.PPM, Time: p.Ts,
 		}); err != nil {
 			log.Printf("reading: save failed: %v", err)
+		}
+	})
+
+	subscribe(client, "occupancy/+/reading", func(payload []byte) {
+		if err := schemas.Validate(sch.occupancy, payload); err != nil {
+			log.Printf("occupancy: invalid payload: %v", err)
+			return
+		}
+		var p occupancyReadingPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			log.Printf("occupancy: bad payload: %v", err)
+			return
+		}
+		if err := db.SaveOccupancy(context.Background(), store.Occupancy{
+			RoomID: p.RoomID, Count: p.Count, Time: p.Ts,
+		}); err != nil {
+			log.Printf("occupancy: save failed: %v", err)
 		}
 	})
 

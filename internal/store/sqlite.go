@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS readings (
 	ppm REAL NOT NULL,
 	ts TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS occupancy (
+	room_id TEXT NOT NULL,
+	count INTEGER NOT NULL,
+	ts TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS forecasts (
 	room_id TEXT NOT NULL,
 	ppm_forecast REAL NOT NULL,
@@ -54,6 +59,13 @@ func (s *SQLiteStore) SaveReading(ctx context.Context, r Reading) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO readings (room_id, ppm, ts) VALUES (?, ?, ?)`,
 		r.RoomID, r.PPM, r.Time.Format(time.RFC3339))
+	return err
+}
+
+func (s *SQLiteStore) SaveOccupancy(ctx context.Context, o Occupancy) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO occupancy (room_id, count, ts) VALUES (?, ?, ?)`,
+		o.RoomID, o.Count, o.Time.Format(time.RFC3339))
 	return err
 }
 
@@ -94,6 +106,31 @@ func (s *SQLiteStore) ReadingsSince(ctx context.Context, roomID string, since ti
 		readings = append(readings, r)
 	}
 	return readings, rows.Err()
+}
+
+func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since time.Time) ([]Occupancy, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT room_id, count, ts FROM occupancy WHERE room_id = ? AND ts >= ? ORDER BY ts`,
+		roomID, since.UTC().Format(time.RFC3339)) // compared as UTC text, as in ReadingsSince
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() // runs when this function returns, however it returns
+
+	var counts []Occupancy
+	for rows.Next() {
+		var o Occupancy
+		var ts string
+		if err := rows.Scan(&o.RoomID, &o.Count, &ts); err != nil {
+			return nil, err
+		}
+		o.Time, err = time.Parse(time.RFC3339, ts)
+		if err != nil {
+			return nil, fmt.Errorf("parse stored timestamp %q: %w", ts, err)
+		}
+		counts = append(counts, o)
+	}
+	return counts, rows.Err()
 }
 
 func (s *SQLiteStore) Close() error {

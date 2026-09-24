@@ -1,5 +1,5 @@
-// Package store defines how sensor readings, forecasts, and ventilation
-// commands are persisted. Store is the contract other components depend
+// Package store defines how CO2 readings, occupancy counts, forecasts, and
+// ventilation commands are persisted. Store is the contract other components depend
 // on; sqlite.go holds the current implementation. A different backend
 // later only needs a new file satisfying the same contract, with no
 // change to any caller.
@@ -16,6 +16,12 @@ type Reading struct {
 	Time   time.Time
 }
 
+type Occupancy struct {
+	RoomID string
+	Count  int
+	Time   time.Time
+}
+
 type Forecast struct {
 	RoomID      string
 	PPMForecast float64
@@ -29,16 +35,21 @@ type Command struct {
 	Time   time.Time
 }
 
-// Store is the only way any component may persist a reading, forecast, or
-// command (see project_notes.md §7).
+// Store is the only way any component may persist a reading, occupancy count,
+// forecast, or command (see project_notes.md §7).
 type Store interface {
 	SaveReading(ctx context.Context, r Reading) error
+	SaveOccupancy(ctx context.Context, o Occupancy) error
 	SaveForecast(ctx context.Context, f Forecast) error
 	SaveCommand(ctx context.Context, c Command) error
 
 	// ReadingsSince returns one room's readings from since onwards, oldest
 	// first. An empty result is not an error.
 	ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]Reading, error)
+
+	// OccupancySince returns one room's occupancy counts from since onwards,
+	// oldest first. An empty result is not an error.
+	OccupancySince(ctx context.Context, roomID string, since time.Time) ([]Occupancy, error)
 
 	Close() error
 }

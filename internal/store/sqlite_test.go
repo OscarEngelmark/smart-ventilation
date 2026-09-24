@@ -118,6 +118,53 @@ func TestReadingComesBackAsItWasSaved(t *testing.T) {
 	}
 }
 
+// saveCount stores one occupancy count.
+func saveCount(t *testing.T, s *SQLiteStore, room string, count int, ts time.Time) {
+	t.Helper()
+	o := Occupancy{RoomID: room, Count: count, Time: ts}
+	if err := s.SaveOccupancy(context.Background(), o); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+}
+
+// The occupancy query mirrors the readings query, so one test covers the
+// room, the since bound, and the order together.
+func TestOccupancySinceSelectsRoomAndTimeInOrder(t *testing.T) {
+	s := openTemp(t)
+	saveCount(t, s, "level0/A125", 1, noon.Add(-time.Second))
+	saveCount(t, s, "level0/A125", 4, noon.Add(time.Minute))
+	saveCount(t, s, "level0/A125", 3, noon)
+	saveCount(t, s, "level0/B210", 6, noon)
+
+	got, err := s.OccupancySince(context.Background(), "level0/A125", noon)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var counts []int
+	for _, o := range got {
+		counts = append(counts, o.Count)
+	}
+	if !slices.Equal(counts, []int{3, 4}) {
+		t.Errorf("got %v, want [3 4]", counts)
+	}
+}
+
+func TestOccupancyComesBackAsItWasSaved(t *testing.T) {
+	s := openTemp(t)
+	saveCount(t, s, "level0/A125", 5, noon)
+
+	got, err := s.OccupancySince(context.Background(), "level0/A125", noon)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d counts, want 1", len(got))
+	}
+	if got[0].RoomID != "level0/A125" || got[0].Count != 5 || !got[0].Time.Equal(noon) {
+		t.Errorf("got %+v, want level0/A125 5 at %v", got[0], noon)
+	}
+}
+
 // want fails the test unless got holds the same ppm values in the same order.
 func want(t *testing.T, got, expected []float64) {
 	t.Helper()
