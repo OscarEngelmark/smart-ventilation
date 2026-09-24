@@ -1,5 +1,5 @@
-// sensor is the CO2 sensor process for one room. It registers its device with
-// BuildSim on startup, then reads the level the physical model wrote and
+// co2-sensor is the CO2 sensor process for one room. It registers its device
+// with BuildSim on startup, then reads the level the physical model wrote and
 // publishes each reading to the broker, where the rest of the system picks it
 // up. Reasoning: project_notes.md §4 and §5.
 package main
