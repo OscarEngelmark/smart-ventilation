@@ -6,7 +6,6 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 4 | Room time at a chosen speed, in sessions (`project_notes.md` §6): every service switched to the clock in `internal/roomtime` | which intervals count in room time (the sensors' too, so speed doesn't change how often they sample) | 1 |
 | 5 | Occupancy forecast: average head count per time of day over the last 20 weekdays (`project_notes.md` §7) | how far ahead it looks; what happens to the straight-line CO2 forecast | 2 |
 | 6 | Decision service (Go): ventilates ahead of predicted occupancy, keeps CO2 under 1000 ppm, commands the actuator (`project_notes.md` §7, *the system pursues three goals*) | how a predicted meeting becomes a damper level; behavior when the forecast is missing or stale; one instance per room or one overall | 3 |
 | 7 | First full loop running end to end | none | 1 |

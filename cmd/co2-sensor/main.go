@@ -14,6 +14,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 )
 
 // publisher is what one reading needs: the device it is read from, and where
@@ -21,6 +22,7 @@ import (
 type publisher struct {
 	client   *buildsim.Client
 	broker   mqtt.Client
+	clock    *roomtime.Clock
 	sensorID string
 	roomID   string
 	topic    string
@@ -42,6 +44,7 @@ func main() {
 	sensorID := env.String("CO2_SENSOR_ID", roomName+"-co2")
 	interval := env.Duration("SENSOR_INTERVAL", 10*time.Second)
 
+	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
@@ -55,13 +58,14 @@ func main() {
 	p := &publisher{
 		client:   client,
 		broker:   broker,
+		clock:    clock,
 		sensorID: sensorID,
 		roomID:   buildsim.RoomKey(level, roomName),
 		topic:    "co2/" + roomName + "/reading",
 	}
 	log.Printf("reading %s every %s, publishing to %s", sensorID, interval, p.topic)
 
-	ticker := time.NewTicker(interval)
+	ticker := clock.NewTicker(interval)
 	for {
 		// A reading fails while the physical model has written no value yet,
 		// which is the normal state until it has run once.
@@ -82,7 +86,7 @@ func (p *publisher) publish(ctx context.Context) error {
 	reading := co2Reading{
 		RoomID: p.roomID,
 		PPM:    ppm,
-		Ts:     time.Now().UTC(),
+		Ts:     p.clock.Now().UTC(),
 	}
 	payload, err := json.Marshal(reading)
 	if err != nil {

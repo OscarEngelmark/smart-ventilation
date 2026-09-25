@@ -15,6 +15,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/co2"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/room"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 )
 
 // model is what one cycle needs: the room's parameters, and the devices its
@@ -45,6 +46,7 @@ func main() {
 	factor := env.Float("MAX_AIRFLOW_FACTOR", 1.2)
 	dt := env.Duration("SIM_STEP", 10*time.Second)
 
+	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 	roomKey := buildsim.RoomKey(level, roomName)
@@ -69,8 +71,7 @@ func main() {
 	log.Printf("room %s is %.1f m², holding %.1f m³ of air, ventilated at %.1f to %.1f L/s",
 		roomKey, area, m.V, m.Qmin, m.Qmax)
 
-	// Room time is the wall clock, so a step of room time is one tick.
-	ticker := time.NewTicker(dt)
+	ticker := clock.NewTicker(dt)
 	for {
 		// A cycle fails while a device is missing, which is the normal state
 		// until the sensor and actuator processes have registered theirs.

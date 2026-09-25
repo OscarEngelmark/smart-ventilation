@@ -17,6 +17,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/occupancy"
 	"github.com/OscarEngelmark/smart-ventilation/internal/room"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)
 	interval := env.Duration("OCCUPANCY_INTERVAL", 10*time.Second)
 
+	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
@@ -40,10 +42,9 @@ func main() {
 
 	people := namePeople(roomName, capacity)
 
-	ticker := time.NewTicker(interval)
+	ticker := clock.NewTicker(interval)
 	for {
-		// Room time is the wall clock: the simulation runs at real speed.
-		present := occupancy.PeopleAt(time.Now(), capacity)
+		present := occupancy.PeopleAt(clock.Now(), capacity)
 		if err := publish(ctx, client, level, roomName, people[:present]); err != nil {
 			// Skip this cycle; BuildSim keeps the occupancy it already has.
 			log.Printf("write occupancy: %v", err)

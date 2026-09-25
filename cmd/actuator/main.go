@@ -16,6 +16,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
 
@@ -24,6 +25,7 @@ import (
 type commands struct {
 	client   *buildsim.Client
 	schema   *jsonschema.Schema
+	clock    *roomtime.Clock
 	damperID string
 	roomID   string
 }
@@ -50,6 +52,7 @@ func main() {
 	damperID := env.String("DAMPER_ID", roomName+"-damper")
 	addr := env.String("ACTUATOR_ADDR", ":8080")
 
+	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
@@ -65,6 +68,7 @@ func main() {
 	c := &commands{
 		client:   client,
 		schema:   schema,
+		clock:    clock,
 		damperID: damperID,
 		roomID:   buildsim.RoomKey(level, roomName),
 	}
@@ -81,43 +85,43 @@ func main() {
 func (c *commands) serve(w http.ResponseWriter, r *http.Request) {
 	payload, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
 	if err != nil {
-		reject(w, http.StatusBadRequest, "read command: %v", err)
+		c.reject(w, http.StatusBadRequest, "read command: %v", err)
 		return
 	}
 	if err := schemas.Validate(c.schema, payload); err != nil {
-		reject(w, http.StatusBadRequest, "invalid command: %v", err)
+		c.reject(w, http.StatusBadRequest, "invalid command: %v", err)
 		return
 	}
 	var cmd ventilationCommand
 	if err := json.Unmarshal(payload, &cmd); err != nil {
-		reject(w, http.StatusBadRequest, "bad command: %v", err)
+		c.reject(w, http.StatusBadRequest, "bad command: %v", err)
 		return
 	}
 	if cmd.RoomID != c.roomID {
-		reject(w, http.StatusNotFound, "command for %s, this actuator serves %s",
+		c.reject(w, http.StatusNotFound, "command for %s, this actuator serves %s",
 			cmd.RoomID, c.roomID)
 		return
 	}
 	// The command's level is the damper position unchanged: both run 0 to 1.
 	if err := c.client.SetActuatorState(r.Context(), c.damperID, cmd.Level); err != nil {
-		reject(w, http.StatusBadGateway, "write %s: %v", c.damperID, err)
+		c.reject(w, http.StatusBadGateway, "write %s: %v", c.damperID, err)
 		return
 	}
 	log.Printf("%s: damper %.2f", c.roomID, cmd.Level)
-	respond(w, http.StatusOK, true)
+	c.respond(w, http.StatusOK, true)
 }
 
 // reject logs why a command was refused and answers that it was not accepted.
-func reject(w http.ResponseWriter, status int, format string, args ...any) {
+func (c *commands) reject(w http.ResponseWriter, status int, format string, args ...any) {
 	log.Printf(format, args...)
-	respond(w, status, false)
+	c.respond(w, status, false)
 }
 
 // respond answers with one ventilation_command_response.
-func respond(w http.ResponseWriter, status int, accepted bool) {
+func (c *commands) respond(w http.ResponseWriter, status int, accepted bool) {
 	body := commandResponse{
 		Accepted: accepted,
-		Ts:       time.Now().UTC(),
+		Ts:       c.clock.Now().UTC(),
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

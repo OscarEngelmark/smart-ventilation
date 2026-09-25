@@ -14,6 +14,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 )
 
 // publisher is what one reading needs: the room it counts, the device it
@@ -21,6 +22,7 @@ import (
 type publisher struct {
 	client   *buildsim.Client
 	broker   mqtt.Client
+	clock    *roomtime.Clock
 	sensorID string
 	roomID   string
 	topic    string
@@ -42,6 +44,7 @@ func main() {
 	sensorID := env.String("OCCUPANCY_SENSOR_ID", roomName+"-occupancy")
 	interval := env.Duration("SENSOR_INTERVAL", 10*time.Second)
 
+	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
@@ -55,6 +58,7 @@ func main() {
 	p := &publisher{
 		client:   client,
 		broker:   broker,
+		clock:    clock,
 		sensorID: sensorID,
 		roomID:   buildsim.RoomKey(level, roomName),
 		topic:    "occupancy/" + roomName + "/reading",
@@ -62,7 +66,7 @@ func main() {
 	log.Printf("counting people in %s every %s, publishing to %s",
 		p.roomID, interval, p.topic)
 
-	ticker := time.NewTicker(interval)
+	ticker := clock.NewTicker(interval)
 	for {
 		if err := p.publish(ctx); err != nil {
 			log.Printf("skip this reading: %v", err)
@@ -87,7 +91,7 @@ func (p *publisher) publish(ctx context.Context) error {
 	reading := occupancyReading{
 		RoomID: p.roomID,
 		Count:  count,
-		Ts:     time.Now().UTC(),
+		Ts:     p.clock.Now().UTC(),
 	}
 	payload, err := json.Marshal(reading)
 	if err != nil {

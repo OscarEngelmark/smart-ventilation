@@ -17,6 +17,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/forecast"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
 
@@ -41,6 +42,7 @@ type co2Forecast struct {
 type forecaster struct {
 	broker   mqtt.Client
 	schema   *jsonschema.Schema
+	clock    *roomtime.Clock
 	roomID   string
 	topic    string
 	window   time.Duration
@@ -62,13 +64,14 @@ func main() {
 
 	f := &forecaster{
 		schema:  schema,
+		clock:   roomtime.FromEnv(),
 		roomID:  buildsim.RoomKey(level, roomName),
 		topic:   "co2/" + roomName + "/forecast",
 		window:  env.Duration("FORECAST_WINDOW", 10*time.Minute),
 		horizon: env.Duration("FORECAST_HORIZON", 30*time.Minute),
 		Cout:    env.Float("OUTDOOR_CO2_PPM", 420),
 	}
-	f.readings = fillWindow(storageURL, f.roomID, f.window)
+	f.readings = fillWindow(storageURL, f.roomID, f.window, f.clock)
 
 	readingTopic := "co2/" + roomName + "/reading"
 	// Subscribing on every connect, since the broker forgets subscriptions
@@ -106,10 +109,14 @@ func main() {
 // window, so a restarted service can forecast without waiting for the window
 // to refill. After three failed tries it starts with an empty window, which
 // the readings topic then fills.
-func fillWindow(storageURL, roomID string, window time.Duration) []forecast.Reading {
+func fillWindow(
+	storageURL, roomID string,
+	window time.Duration,
+	clock *roomtime.Clock,
+) []forecast.Reading {
 	const tries = 3
 	for try := 1; try <= tries; try++ {
-		readings, err := storedCO2Readings(storageURL, roomID, time.Now().Add(-window))
+		readings, err := storedCO2Readings(storageURL, roomID, clock.Now().Add(-window))
 		if err == nil {
 			log.Printf("filled window with %d stored readings", len(readings))
 			return readings
@@ -195,7 +202,7 @@ func (f *forecaster) publish(ppm float64) error {
 		RoomID:      f.roomID,
 		PPMForecast: ppm,
 		HorizonMin:  f.horizon.Minutes(),
-		Ts:          time.Now().UTC(),
+		Ts:          f.clock.Now().UTC(),
 	}
 	payload, err := json.Marshal(msg)
 	if err != nil {

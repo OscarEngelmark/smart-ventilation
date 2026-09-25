@@ -538,10 +538,22 @@ _(nothing yet)_
   between sessions, so the stored history stays one continuous timeline
   across shutdowns and speed changes. Decided 2026-09-24; the clock
   (`internal/roomtime`), `start.sh`, and the storage-service's
-  `GET /latest` implemented the same day, with no service using the clock
-  yet. Verified: `./start.sh 10` wrote the session to `run.env` and
-  recreated the project's services while BuildSim and the broker kept
+  `GET /latest` implemented the same day, and every service switched to the
+  clock 2026-09-25. Verified: `./start.sh 10` wrote the session to `run.env`
+  and recreated the project's services while BuildSim and the broker kept
   running.
+  - **Decided: intervals that belong to the simulated room run on room time;
+    waits that belong to the software run on real time.** Room time covers
+    the sensors' sampling interval, the physical model's step, the occupancy
+    update, and the forecast's window; every timestamp in a message is room
+    time. Real time covers retry waits, such as the forecast's pause between
+    tries at the storage-service. So speed doesn't change how often the room
+    is sampled per room hour, and the stored history is equally dense at
+    any speed. Rejected: sensor intervals in real time, where a faster room
+    gets fewer readings per room hour, so the chosen speed would change the
+    system's behavior. Trade-off: message traffic grows with speed (at 60×,
+    a 10 s sensor interval is one message every 0.17 real seconds). Decided
+    and implemented 2026-09-25.
   - Why faster at all: testing and evaluation cover many room days, and the
     occupancy forecast needs 20 weekdays of history (see *Decided: the system
     pursues three goals…*, §7), four real weeks at normal speed. Trade-off:
