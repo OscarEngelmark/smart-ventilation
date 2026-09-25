@@ -555,8 +555,9 @@ _(nothing yet)_
     a 10 s sensor interval is one message every 0.17 real seconds). Decided
     and implemented 2026-09-25.
   - Why faster at all: testing and evaluation cover many room days, and the
-    occupancy forecast needs 20 weekdays of history (see *Decided: the system
-    pursues three goals…*, §7), four real weeks at normal speed. Trade-off:
+    occupancy forecast needs 5 weekdays of history (see *Decided: the
+    forecast for a time of day is the average head count…*, §7), a real week
+    at normal speed. Trade-off:
     the system's real delays stretch in room time (a 1 s delay becomes a
     minute at 60×), so a fast run misrepresents how the system would perform
     in a real building.
@@ -672,12 +673,35 @@ _(nothing yet)_
     the damper did, so the same reading can mean six people with the damper
     open or two with it closed; the head count doesn't depend on the damper.
     No other way of obtaining occupancy was weighed. Decided 2026-09-24.
+    - **Decided: the occupancy sensor counts once a minute of room time**,
+      against 10 s for the CO2 sensor. People arrive one at a time, so the
+      count changes a few dozen times a day, and a minute still gives the
+      forecast 5 counts per slot per day. The physical model reads the head
+      count from BuildSim every step, so the physics doesn't depend on this
+      interval. Rejected: 10 s like the CO2 sensor — six times the stored
+      history for no gain in the forecast. Trade-off: an unexpected arrival
+      reaches the rest of the system up to a minute late. Decided and
+      implemented 2026-09-25 (`SENSOR_INTERVAL` in `docker-compose.yml`).
   - **Decided: the forecast for a time of day is the average head count at
-    that time over the last 20 weekdays**; weekends are empty. Rejected: a
-    separate average per day of the week, which would catch a Monday that
-    differs from a Friday, but the schedule is the same on every weekday,
-    so it would only split the same history five ways. Chosen as the
-    simplest model that captures a daily pattern. Decided 2026-09-24.
+    that time over the last 5 weekdays**; weekends are empty. "At that
+    time" means the same 5-minute slot of the day; only weekdays before the
+    forecast's own date count; with fewer than 5 stored, it averages over
+    those there are, so a fresh start forecasts from its second weekday.
+    Rejected: a separate average per day of the week, which would catch a
+    Monday that differs from a Friday, but the schedule is the same on every
+    weekday, so it would only split the same history five ways. Chosen as
+    the simplest model that captures a daily pattern. Decided 2026-09-24;
+    implemented 2026-09-25 (`internal/occupancyforecast`, with unit tests),
+    not yet run as a service.
+    - Replaces 20 weekdays (2026-09-24), a number picked without a reason.
+      5 is enough to show the meeting clearly, catches up within a week if
+      the pattern changes where 20 would take a month, needs a quarter of
+      the history, and is ready after one room week. Trade-off: one odd day
+      weighs a fifth of the average instead of a twentieth. Neither number
+      is measured.
+    - The 5-minute slot is an untested default: wider would blur arrivals,
+      and narrower gains nothing, since each person's times already shift by
+      up to ±20 minutes from day to day.
   - **Deferred, not yet decided:** how far ahead the forecast looks, and how
     the decision service turns a predicted meeting into a damper level.
   - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
@@ -938,4 +962,13 @@ was caught. Kept for the report's reflection and the oral exam.
   satisfies the icon and the shading at once. Caught by pushing back on the
   reversal and checking the source. The only real cost of the merge is that
   `Unit` is meaningless on actuators. Noted 2026-09-22.
+  - Useful for: §13.
+
+- **The assistant said `docker compose down` would remove the container of a
+  service just deleted from `docker-compose.yml`.** Compose acts only on the
+  services named in the current file, so the old container kept running,
+  kept its network in use, and was reported as an "orphan" on the next
+  start. The user caught it from the warnings in the terminal output.
+  Removing it takes `docker compose down --remove-orphans`, or removing the
+  container by name. Noted 2026-09-25.
   - Useful for: §13.

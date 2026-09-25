@@ -89,7 +89,7 @@ services:
     environment:
       BUILDSIM_URL: *buildsim-url
       MQTT_BROKER_URL: *broker-url
-      SENSOR_INTERVAL: 10s
+      SENSOR_INTERVAL: 1m
     depends_on:
       - buildsim
       - mosquitto
