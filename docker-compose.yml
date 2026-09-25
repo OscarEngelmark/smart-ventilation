@@ -63,24 +63,6 @@ services:
     # Docker then starts it again.
     restart: on-failure
 
-  forecast:
-    build:
-      context: .
-      dockerfile: cmd/forecast/Dockerfile
-    # Shared values and the session's clock come from x-env-files; the
-    # settings below are this service's own wiring.
-    env_file: *env-files
-    environment:
-      MQTT_BROKER_URL: *broker-url
-      STORAGE_URL: http://storage-service:8081
-      FORECAST_WINDOW: 10m
-    depends_on:
-      - mosquitto
-      - storage-service
-    # The service exits if the broker isn't ready yet at startup; Docker then
-    # starts it again.
-    restart: on-failure
-
   occupancy:
     build:
       context: .

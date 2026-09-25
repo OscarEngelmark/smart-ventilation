@@ -1,5 +1,5 @@
-// Package store defines how CO2 readings, occupancy counts, forecasts, and
-// ventilation commands are persisted. Store is the contract other components depend
+// Package store defines how CO2 readings, occupancy counts, and ventilation
+// commands are persisted. Store is the contract other components depend
 // on; sqlite.go holds the current implementation. A different backend
 // later only needs a new file satisfying the same contract, with no
 // change to any caller.
@@ -22,13 +22,6 @@ type Occupancy struct {
 	Time   time.Time
 }
 
-type Forecast struct {
-	RoomID      string
-	PPMForecast float64
-	HorizonMin  float64
-	Time        time.Time
-}
-
 type Command struct {
 	RoomID string
 	Level  float64
@@ -36,11 +29,10 @@ type Command struct {
 }
 
 // Store is the only way any component may persist a reading, occupancy count,
-// forecast, or command (see project_notes.md §7).
+// or command (see project_notes.md §7).
 type Store interface {
 	SaveCO2Reading(ctx context.Context, r CO2Reading) error
 	SaveOccupancy(ctx context.Context, o Occupancy) error
-	SaveForecast(ctx context.Context, f Forecast) error
 	SaveCommand(ctx context.Context, c Command) error
 
 	// CO2ReadingsSince returns one room's CO2 readings from since onwards,

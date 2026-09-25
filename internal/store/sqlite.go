@@ -39,12 +39,6 @@ CREATE TABLE IF NOT EXISTS occupancy (
 	count INTEGER NOT NULL,
 	ts TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS forecasts (
-	room_id TEXT NOT NULL,
-	ppm_forecast REAL NOT NULL,
-	horizon_min REAL NOT NULL,
-	ts TEXT NOT NULL
-);
 CREATE TABLE IF NOT EXISTS commands (
 	room_id TEXT NOT NULL,
 	level REAL NOT NULL,
@@ -66,13 +60,6 @@ func (s *SQLiteStore) SaveOccupancy(ctx context.Context, o Occupancy) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO occupancy (room_id, count, ts) VALUES (?, ?, ?)`,
 		o.RoomID, o.Count, o.Time.UTC().Format(time.RFC3339))
-	return err
-}
-
-func (s *SQLiteStore) SaveForecast(ctx context.Context, f Forecast) error {
-	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO forecasts (room_id, ppm_forecast, horizon_min, ts) VALUES (?, ?, ?, ?)`,
-		f.RoomID, f.PPMForecast, f.HorizonMin, f.Time.UTC().Format(time.RFC3339))
 	return err
 }
 
@@ -138,7 +125,6 @@ func (s *SQLiteStore) Latest(ctx context.Context) (time.Time, bool, error) {
 	err := s.db.QueryRowContext(ctx, `SELECT MAX(ts) FROM (
 		SELECT ts FROM co2_readings UNION ALL
 		SELECT ts FROM occupancy UNION ALL
-		SELECT ts FROM forecasts UNION ALL
 		SELECT ts FROM commands
 	)`).Scan(&ts)
 	if err != nil {

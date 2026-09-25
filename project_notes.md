@@ -63,13 +63,13 @@ _(nothing yet)_
   stays open for the forecast service if a later model needs its
   libraries.** Go for goroutine-based concurrency and small, fast-starting
   binaries, since the whole system has to run on one laptop at once. The
-  first forecast model is a straight-line fit (see *Decided: start with the
-  simplest forecasting model…*, §7), which needs no library, and the rest of
+  first forecast model was a straight-line fit (see *Decided: the CO2
+  forecast service is removed…*, §7), which needs no library, and the rest of
   the forecast service is MQTT, REST, and schema-checking code the Go
   services already have. Rejected: all-Python (loses the
   small-binary/concurrency argument for the service layer). The forecast
-  service is its own container behind the `co2_forecast` topic, so moving it
-  to Python later changes one folder. Decided 2026-09-23.
+  service is its own container, so moving it to Python later changes one
+  folder. Decided 2026-09-23.
   - Replaces Python for the forecast service (decided by 2026-09-02, for
     statsmodels and scikit-learn). Dropped once the model turned out to be
     a straight line: Python would have added a second toolchain and a second
@@ -300,19 +300,20 @@ _(nothing yet)_
   (see *Decided: failure testing covers a sensor giving bad readings, a
   component going down, and delayed or dropped communication*, §10) needs
   anyway; a bare example payload is only documentation, nothing checks
-  against it. Five schemas exist so far: `co2_reading`, `co2_forecast` and
+  against it. Four schemas exist so far: `co2_reading` and
   `occupancy_reading` (the MQTT payloads) and `ventilation_command` /
   `ventilation_command_response` (the REST request/response for the
   decision→actuator link, see *Decided: two different communication
-  patterns...*, §4). Decided and implemented 2026-09-15.
+  patterns...*, §4). Decided and implemented 2026-09-15; `co2_forecast`
+  was removed with the CO2 forecast service 2026-09-25.
   - `ventilation_command`'s `level` field (0–1) was a placeholder; now
     settled to match the damper state in BuildSim (see *Decided: room A125's
     devices in BuildSim...*, below).
   - Runtime validation against the schemas is implemented in the
     storage-service (2026-09-17, `schemas/schemas.go`) and in the actuator,
     which checks every command before writing the damper (2026-09-23).
-    - **Revisit:** the forecast and decision services will need the same
-      check when they're written.
+    - **Revisit:** the occupancy forecast and decision services will need
+      the same check when they're written.
   - Only received messages are validated, not published ones: a publisher
     fills a Go struct whose fields are the schema's fields, so its own output
     can't fail the check, while a receiver is handed bytes another process
@@ -433,8 +434,8 @@ _(nothing yet)_
     Docker Compose from one shared file**, so each value is written once
     and every service that uses it reads the same number. This covers
     ceiling height, area per person, outdoor CO2, `G`, the minimum airflow
-    per m², and `Δt` (describing the simulation), and the threshold and
-    forecast horizon (settings of the system itself). Only values from
+    per m², and `Δt` (describing the simulation), and the threshold (a
+    setting of the system itself). Only values from
     BuildSim count as facts about the building; the rest are assumptions,
     so they should be changeable between runs without a rebuild. Rejected:
     a shared config file (YAML/JSON) mounted into each container — allows
@@ -454,8 +455,7 @@ _(nothing yet)_
     - The physical model's parameters joined it 2026-09-22, which settled the
       naming: a name carries the unit where the value has one
       (`CEILING_HEIGHT_M`, `CO2_PER_PERSON_LPS`), and each entry has a
-      comment saying what the value is and where it comes from. Only the
-      forecast horizon is still missing, and joins with the forecast service.
+      comment saying what the value is and where it comes from.
       `MAX_AIRFLOW_FACTOR` was named `AIRFLOW_MARGIN` first; "margin" reads
       as a distance in ppm below the threshold, which is how the same word
       had already produced a wrong comment on `room.MaxAirflow`, while the
@@ -680,60 +680,44 @@ _(nothing yet)_
     simplest model that captures a daily pattern. Decided 2026-09-24.
   - **Deferred, not yet decided:** how far ahead the forecast looks, and how
     the decision service turns a predicted meeting into a damper level.
+  - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
+    mechanism sets the damper at once to the airflow the counted people need
+    to stay under the threshold, instead of waiting for a reading at the
+    threshold and opening fully. It would run the fan lower, serving the
+    second goal. It is a calculation from the current head count, not a
+    forecast. Noted 2026-09-25.
   - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
-- **Decided: start with the simplest forecasting model that produces a usable
-  forecast** (e.g. exponential smoothing or a small regression over recent
-  readings), escalating only if it doesn't hold up. Chosen for simplicity,
-  not by comparing models. Proposal section 5, 2026-09-04.
-  - **Decided: a least-squares straight line through the readings in the
-    window, extended by the horizon.** It gives no forecast while the
-    window holds less than 5 minutes of readings. With the damper closed
-    the real curve over 30 minutes is close to straight: in A125 the line
-    overshoots the real rise by about 12%, which errs toward opening early.
-    It fits the damper-open case worse, where the real curve flattens
-    within about 10 minutes. Rejected: Holt's exponential smoothing — the
-    same "trend continues" idea with two smoothing constants to tune
-    instead of one window length. Not tried first: a curve with the
-    mass-balance shape, the next model if the line doesn't hold up.
-    Decided and implemented 2026-09-23 (`internal/forecast`).
-    - **Decided: a forecast below outdoor CO2 is published as outdoor CO2
-      (`OUTDOOR_CO2_PPM`).** With the damper open the line can fall below
-      outdoor air, or below 0, which the forecast schema rejects;
-      ventilation can only bring the room down to outdoor air. Rejected:
-      raising it only to 0, which satisfies the schema but still publishes
-      an impossible value; and not publishing, which leaves the decision
-      service without a forecast exactly while the damper is open. Decided
-      and implemented 2026-09-23 (`cmd/forecast`).
-  - **Decided: the forecast predicts where CO2 ends up if nothing changes,
-    from CO2 readings alone; it does not take the damper position.** It
-    tells the decision service what happens if it doesn't act, and the
-    decision service acts long before that forecast would come true. The
-    damper's current effect is already in the recent readings. Chosen as a
-    starting point, not by comparison: a model with the damper position as
-    an input is not rejected, only not tried first. It could predict the
-    effect of a damper change, but can't learn that effect from recent
-    readings in which the damper never moved, so it would need a long
-    history of damper changes joined with stored commands. Decided
-    2026-09-23.
-    - **Revisit:** try the damper-as-input model if the evaluation shows
-      the forecast failing where a damper change is involved.
-  - **Decided: how far back the forecast looks (its window) is kept short,
-    and chosen separately from how far ahead it predicts (its horizon).** A
-    window that spans a damper change fits one line to readings from before
-    and after it, and gets the slope wrong until the older readings drop
-    out; a short window drops them sooner. Trade-off: fewer readings make a
-    noisier slope. The window starts at 10 minutes (60 readings at the
-    sensor's 10-second interval), an untuned value to revisit in
-    evaluation; the horizon is not fixed yet. Decided 2026-09-23.
-  - **Revisit:** this straight-line CO2 forecast can't beat reacting at the
-    threshold in this simulation, so it doesn't serve the goals in
-    *Decided: the system pursues three goals…*, above. Whether it stays in
-    the system or is replaced by the occupancy forecast is open.
-  - Useful for: §7.1, §11, §13.
+- **Decided: the CO2 forecast service is removed; the occupancy forecast is
+  the system's only forecast.** The CO2 forecast was a least-squares straight
+  line through the last 10 minutes of CO2 readings, extended 30 minutes
+  ahead and published on `co2/<room>/forecast` (`cmd/forecast` and
+  `internal/forecast`, last present in commit `9ba69fc`). It gains nothing in
+  this simulation: a forecast pays off only when the system has to act in
+  advance, and here a damper change takes effect at the physical model's
+  next step and a fully open damper turns a full room's rise around at once,
+  so reacting when a reading reaches the threshold overshoots by only about
+  10 ppm (see *Decided: the system pursues three goals…*, above). The line
+  also used CO2 readings alone, so it saw people only once their CO2 had
+  raised the readings, not when the occupancy sensor counted them. Rejected:
+  keeping it running beside the occupancy forecast — a service no decision
+  reads, which still has to be tested and defended. Rejected: a CO2 forecast
+  that puts the head count into the mass balance — it would see arrivals at
+  once, but there is still nothing to act on in advance. Decided and
+  implemented 2026-09-25.
+  - What it showed while it ran: with the damper closed the line overshot
+    the real 30-minute rise in A125 by about 12%; with the damper open it fit
+    worse, since the real curve flattens within about 10 minutes, and could
+    fall below outdoor air, so it was raised to outdoor CO2 before
+    publishing. It took no damper position as input, so it predicted where
+    CO2 ends up if nothing changes.
+  - Replaces *Decided: start with the simplest forecasting model that
+    produces a usable forecast* (proposal section 5, 2026-09-04), of which
+    the straight line (2026-09-23) was the first and only model.
+  - Useful for: §1, §4.4, §7.1, §11, §13.
 
-- **Decided: CO2 readings, occupancy counts, forecasts, and commands are
-  persisted in SQLite, accessed only through a small storage interface**
+- **Decided: CO2 readings, occupancy counts, and commands are persisted in
+  SQLite, accessed only through a small storage interface**
   (`store.Store` in `internal/store` — a typed `Save` method per message
   kind, and a read method for each kind that is read back) — no component
   writes SQL directly. Chosen because nothing in the
@@ -750,18 +734,18 @@ _(nothing yet)_
     reversed once the storage interface made a later swap cheap enough that
     committing to InfluxDB now wasn't buying anything.
   - **Decided: a dedicated storage-service process owns storage** — it
-    subscribes to the `co2_reading`, `occupancy_reading`, `co2_forecast`,
-    and `ventilation_command` MQTT topics and writes each through the storage
+    subscribes to the `co2_reading`, `occupancy_reading`, and
+    `ventilation_command` MQTT topics and writes each through the storage
     interface, and answers read requests from other components over REST.
-    Rejected: folding writing into the forecast service, which already
-    subscribes to readings — it would mix forecasting logic with
+    Rejected: folding writing into the CO2 forecast service (since
+    removed), which already subscribed to readings — it would mix forecasting logic with
     persistence, and couple their failures (a forecast-service outage would
     also stop storage, instead of the two failing independently, which the
     fault-injection tests need to tell apart). Rejected: a separate
     storage-reader container for reads — writing and reading would fail
     independently, but it adds a container to build, test, and draw. With
-    both in one process, an outage stops both, which only matters if it
-    happens while the forecast service is restarting. Writing decided and
+    both in one process, an outage stops both, which only matters to a
+    service reading stored history at that moment. Writing decided and
     implemented 2026-09-16 (`cmd/storage-service`); reads decided 2026-09-17
     and implemented 2026-09-23 as `GET /co2?room=<id>&since=<RFC3339>`,
     answering with the room's readings from that time onwards, oldest first,
@@ -792,23 +776,21 @@ _(nothing yet)_
     - **Revisit:** if scale changes (see the rejected InfluxDB alternative
       above), retention becomes a real requirement again — InfluxDB has one
       built in.
-  - **Decided: the forecast service reads recent readings from the
-    storage-service over REST** to rebuild its window of recent readings
-    after a restart. If the read fails, it retries a few times, then fills
-    its window from the `co2_reading` topic instead. Rejected: keeping the
-    window only in memory — after a restart the window is empty, and there's
-    no forecast until it refills. Rejected: request/reply over MQTT — MQTT
-    has no built-in reply, so matching replies to requests and timing out
-    would be hand-built, while a REST call returns the readings or an
-    immediate error. Rejected: the forecast service querying SQLite directly —
-    it breaks the storage-interface rule. Reading from storage decided before
-    2026-09-16; REST via the storage-service decided 2026-09-17. The storage
-    side is implemented (`store.CO2ReadingsSince`, served as `GET /co2`);
-    the calling side is implemented 2026-09-23 (`cmd/forecast`: three
-    tries, 2 s apart). Verified against the running stack: after a restart
-    the forecast service refilled its window with 37 stored readings and
+  - **Decided: the CO2 forecast service read recent readings from the
+    storage-service over REST** to rebuild its window after a restart,
+    retrying three times, 2 s apart, before filling it from the
+    `co2_reading` topic instead. Rejected: keeping the window only in memory
+    — after a restart there's no forecast until it refills. Rejected:
+    request/reply over MQTT — MQTT has no built-in reply, so matching
+    replies to requests and timing out would be hand-built, while a REST
+    call returns the readings or an immediate error. Rejected: querying
+    SQLite directly — it breaks the storage-interface rule. Decided
+    2026-09-17, implemented 2026-09-23. Verified against the running stack:
+    after a restart it refilled its window with 37 stored readings and
     published its next forecast 4 seconds later, instead of waiting 5
-    minutes for the window to refill.
+    minutes. The calling side was removed with the service 2026-09-25 (see
+    *Decided: the CO2 forecast service is removed…*, above); the storage
+    side, `GET /co2`, stays.
   - **Deferred, not yet decided:** how the dashboard reads from storage. The
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data

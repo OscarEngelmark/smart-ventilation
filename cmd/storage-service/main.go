@@ -1,5 +1,5 @@
-// storage-service subscribes to the co2 reading, occupancy reading, co2
-// forecast, and ventilation command MQTT topics, saves each one through
+// storage-service subscribes to the co2 reading, occupancy reading, and
+// ventilation command MQTT topics, saves each one through
 // internal/store, and serves stored readings and occupancy counts back to
 // other components over REST.
 // Reasoning: project_notes.md §7.
@@ -26,7 +26,6 @@ import (
 type payloadSchemas struct {
 	reading   *jsonschema.Schema
 	occupancy *jsonschema.Schema
-	forecast  *jsonschema.Schema
 	command   *jsonschema.Schema
 }
 
@@ -40,13 +39,6 @@ type occupancyReadingPayload struct {
 	RoomID string    `json:"room_id"`
 	Count  int       `json:"count"`
 	Ts     time.Time `json:"ts"`
-}
-
-type co2ForecastPayload struct {
-	RoomID      string    `json:"room_id"`
-	PPMForecast float64   `json:"ppm_forecast"`
-	HorizonMin  float64   `json:"horizon_min"`
-	Ts          time.Time `json:"ts"`
 }
 
 type ventilationCommandPayload struct {
@@ -71,7 +63,6 @@ func main() {
 	sch := payloadSchemas{
 		reading:   mustLoadSchema("co2_reading.schema.json"),
 		occupancy: mustLoadSchema("occupancy_reading.schema.json"),
-		forecast:  mustLoadSchema("co2_forecast.schema.json"),
 		command:   mustLoadSchema("ventilation_command.schema.json"),
 	}
 
@@ -235,23 +226,6 @@ func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 			RoomID: p.RoomID, Count: p.Count, Time: p.Ts,
 		}); err != nil {
 			log.Printf("occupancy: save failed: %v", err)
-		}
-	})
-
-	subscribe(client, "co2/+/forecast", func(payload []byte) {
-		if err := schemas.Validate(sch.forecast, payload); err != nil {
-			log.Printf("forecast: invalid payload: %v", err)
-			return
-		}
-		var p co2ForecastPayload
-		if err := json.Unmarshal(payload, &p); err != nil {
-			log.Printf("forecast: bad payload: %v", err)
-			return
-		}
-		if err := db.SaveForecast(context.Background(), store.Forecast{
-			RoomID: p.RoomID, PPMForecast: p.PPMForecast, HorizonMin: p.HorizonMin, Time: p.Ts,
-		}); err != nil {
-			log.Printf("forecast: save failed: %v", err)
 		}
 	})
 

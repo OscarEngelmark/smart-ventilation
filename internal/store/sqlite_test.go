@@ -60,8 +60,7 @@ func TestReadingBeforeSinceIsLeftOut(t *testing.T) {
 	want(t, ppmSince(t, s, "level0/A125", noon), []float64{600})
 }
 
-// Readings arrive in time order, but nothing guarantees it, and the forecast
-// window is only meaningful in order.
+// Readings arrive in time order, but nothing guarantees it.
 func TestReadingsComeBackOldestFirst(t *testing.T) {
 	s := openTemp(t)
 	save(t, s, "level0/A125", 700, noon.Add(2*time.Minute))
