@@ -300,20 +300,22 @@ _(nothing yet)_
   (see *Decided: failure testing covers a sensor giving bad readings, a
   component going down, and delayed or dropped communication*, §10) needs
   anyway; a bare example payload is only documentation, nothing checks
-  against it. Four schemas exist so far: `co2_reading` and
-  `occupancy_reading` (the MQTT payloads) and `ventilation_command` /
-  `ventilation_command_response` (the REST request/response for the
-  decision→actuator link, see *Decided: two different communication
-  patterns...*, §4). Decided and implemented 2026-09-15; `co2_forecast`
-  was removed with the CO2 forecast service 2026-09-25.
+  against it. Five schemas exist so far: `co2_reading`,
+  `occupancy_reading` and `occupancy_forecast` (the MQTT payloads) and
+  `ventilation_command` / `ventilation_command_response` (the REST
+  request/response for the decision→actuator link, see *Decided: two
+  different communication patterns...*, §4). Decided and implemented
+  2026-09-15; `co2_forecast` was removed with the CO2 forecast service
+  2026-09-25.
   - `ventilation_command`'s `level` field (0–1) was a placeholder; now
     settled to match the damper state in BuildSim (see *Decided: room A125's
     devices in BuildSim...*, below).
   - Runtime validation against the schemas is implemented in the
     storage-service (2026-09-17, `schemas/schemas.go`) and in the actuator,
     which checks every command before writing the damper (2026-09-23).
-    - **Revisit:** the occupancy forecast and decision services will need
-      the same check when they're written.
+    - **Revisit:** the decision service will need the same check when it's
+      written. The occupancy forecast service goes without it: its counts
+      come from the storage-service, which checked each one before saving.
   - Only received messages are validated, not published ones: a publisher
     fills a Go struct whose fields are the schema's fields, so its own output
     can't fail the check, while a receiver is handed bytes another process
@@ -349,9 +351,14 @@ _(nothing yet)_
   from the payload, as the storage-service already does. Decided and
   implemented 2026-09-22.
   - The people counter follows the same form: `occupancy/<room>/reading`,
-    carrying `room_id`, `count` (a whole number of people) and `ts`, every
-    10 s. Copied from the CO2 reading as a low-stakes default. Implemented
-    2026-09-24.
+    carrying `room_id`, `count` (a whole number of people) and `ts`, once a
+    minute (see *Decided: the occupancy sensor counts once a minute of room
+    time*, §7). Copied from the CO2 reading as a low-stakes default.
+    Implemented 2026-09-24.
+  - The occupancy forecast follows it: `occupancy/<room>/forecast`, one
+    retained message per room day carrying `room_id`, `date`,
+    `slot_minutes`, and `slots` (each a `start` time and the expected
+    `people`). Implemented 2026-09-25.
   - Useful for: §5, §7.2.
 
 - **Decided: the actuator serves one endpoint, `POST /command` on port 8080,
@@ -545,7 +552,7 @@ _(nothing yet)_
   - **Decided: intervals that belong to the simulated room run on room time;
     waits that belong to the software run on real time.** Room time covers
     the sensors' sampling interval, the physical model's step, the occupancy
-    update, and the forecast's window; every timestamp in a message is room
+    update, and the forecast's daily run; every timestamp in a message is room
     time. Real time covers retry waits, such as the forecast's pause between
     tries at the storage-service. So speed doesn't change how often the room
     is sampled per room hour, and the stored history is equally dense at
@@ -691,8 +698,8 @@ _(nothing yet)_
     Monday that differs from a Friday, but the schedule is the same on every
     weekday, so it would only split the same history five ways. Chosen as
     the simplest model that captures a daily pattern. Decided 2026-09-24;
-    implemented 2026-09-25 (`internal/occupancyforecast`, with unit tests),
-    not yet run as a service.
+    implemented 2026-09-25 (`internal/occupancyforecast`, with unit tests;
+    run by `cmd/occupancy-forecast`).
     - Replaces 20 weekdays (2026-09-24), a number picked without a reason.
       5 is enough to show the meeting clearly, catches up within a week if
       the pattern changes where 20 would take a month, needs a quarter of
@@ -702,8 +709,22 @@ _(nothing yet)_
     - The 5-minute slot is an untested default: wider would blur arrivals,
       and narrower gains nothing, since each person's times already shift by
       up to ±20 minutes from day to day.
-  - **Deferred, not yet decided:** how far ahead the forecast looks, and how
-    the decision service turns a predicted meeting into a damper level.
+  - **Decided: the forecast covers the whole day and is made once, at room
+    midnight.** The model leaves the forecast's own date out of its history,
+    so nothing learned during the day changes that day's forecast. The
+    service fetches the last 7 days of head counts from the storage-service,
+    forecasts each 5-minute slot, and publishes the day as one retained MQTT
+    message (the broker keeps it and hands it to any later subscriber), so a
+    restarted decision service has the day's forecast at once. How far ahead
+    to act is left to the decision service, which knows how long cleaning
+    the room takes. Rejected: a rolling forecast of the next 30 minutes,
+    remade every slot — it recomputes numbers that can't change, and fixes
+    the lead time inside the forecast service. Trade-off: if the
+    storage-service is down at midnight, the day has no forecast until it
+    answers (the service retries every 5 real seconds). Decided and
+    implemented 2026-09-25 (`cmd/occupancy-forecast`).
+  - **Deferred, not yet decided:** how the decision service turns a
+    predicted meeting into a damper level.
   - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
     mechanism sets the damper at once to the airflow the counted people need
     to stay under the threshold, instead of waiting for a reading at the

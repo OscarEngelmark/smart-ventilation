@@ -15,8 +15,8 @@ type Count struct {
 	Time   time.Time
 }
 
-// slot is how finely the day is divided; counts in one slot are averaged.
-const slot = 5 * time.Minute
+// Slot is how finely the day is divided; counts in one slot are averaged.
+const Slot = 5 * time.Minute
 
 // Expected returns the average head count in the slot of the day that at falls
 // in, over the latest days weekdays in history before at's own date. With
@@ -83,7 +83,7 @@ func dateOf(t time.Time) string {
 // slotOf numbers the slot of the day t falls in, counting from midnight.
 func slotOf(t time.Time) int {
 	clock := time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute
-	return int(clock / slot)
+	return int(clock / Slot)
 }
 
 func isWeekend(t time.Time) bool {

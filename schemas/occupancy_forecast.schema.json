@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/occupancy_forecast.schema.json",
+  "title": "Occupancy forecast",
+  "description": "Published once per room day, retained, by the occupancy forecast process to MQTT topic occupancy/<room>/forecast.",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Room identifier, matching BuildSim's room key."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "The local calendar date the forecast covers (YYYY-MM-DD)."
+    },
+    "slot_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Length of each slot, in minutes."
+    },
+    "slots": {
+      "type": "array",
+      "description": "Expected head count per slot of the day, in time order. A slot with no stored history is left out, so the list is empty before the first weekday of history.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Room time the slot begins (RFC 3339)."
+          },
+          "people": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Expected number of people in the room during the slot."
+          }
+        },
+        "required": ["start", "people"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["room_id", "date", "slot_minutes", "slots"],
+  "additionalProperties": false
+}
