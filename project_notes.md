@@ -723,6 +723,38 @@ _(nothing yet)_
     storage-service is down at midnight, the day has no forecast until it
     answers (the service retries every 5 real seconds). Decided and
     implemented 2026-09-25 (`cmd/occupancy-forecast`).
+  - **Decided: the decision service plans with a room model learned from
+    stored data, never with the simulator's own values.** The model has the
+    shape of any well-mixed ventilated room, `dC/dt = a·N − (b0 + b1·d)·(C −
+    C_out)`, with `d` the damper level. Its three numbers are fitted by least
+    squares from stored CO2 readings, head counts and damper levels: `a`, how
+    fast CO2 rises per person; `b0`, how fast the room clears with the damper
+    closed; `b1`, how much faster per unit of damper opening. The volume,
+    CO2 per person and airflows the physical model uses (§6) are never given
+    to it, so the decision logic would carry over to a real building, which
+    provides the same three data streams, and how well the model is learned
+    can be measured. Rejected: the physical model's equation and values,
+    which make the decision work by construction and show nothing. Rejected:
+    a model with no physics, such as a table of the CO2 level each head count
+    and damper level has led to — it assumes nothing about the room, but
+    needs far more history and can't plan for a head count or starting level
+    it hasn't seen. Decided 2026-09-25; not implemented.
+    - **Known caveat —** the model's shape matches the simulated room
+      exactly, so the fit will be close to exact here. A real room departs
+      from it (uneven mixing, open windows, a slow sensor). The shape is
+      standard ventilation physics, not taken from the simulator; the
+      numbers are what the simulator sets.
+    - **Decided: the fitting runs in its own service, `room-model`**, built
+      like the occupancy forecast: once per room day it fetches history from
+      the storage-service, fits the model, and publishes the three numbers
+      as a retained MQTT message. A slow or failing fit then can't delay a
+      damper command, and the decision service keeps planning with the last
+      published numbers while the learner is down. Rejected: fitting inside
+      the decision service — one container fewer to build, test and draw,
+      but it mixes a slow batch job with the per-minute loop. Trade-off: one
+      more container and message format, and the decision service must
+      handle a missing or outdated model, as it must for the forecast.
+      Decided 2026-09-25; not implemented.
   - **Deferred, not yet decided:** how the decision service turns a
     predicted meeting into a damper level.
   - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
@@ -912,13 +944,13 @@ _(nothing yet)_
   - Useful for: §10, §11, §13.
 
 - **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a
-  fan losing capacity — and measure how long the forecast stays wrong.** The
-  decision service never sees `Q_max`, `V` or `G`; it only sees CO2 readings
-  and damper positions, so the forecast model picks up how fast the room
-  clears from stored history rather than from the parameters. Changing
-  `Q_max` invalidates what it learned, and the recovery time is a measure of
-  how long the pipeline takes to catch up with a building that has changed.
-  Noted 2026-09-21.
+  fan losing capacity — and measure how long the room model stays wrong.**
+  The decision side never sees `Q_max`, `V` or `G`; the room model learns
+  how fast the room clears from stored history rather than from the
+  parameters (see *Decided: the decision service plans with a room model
+  learned from stored data…*, §7). Changing `Q_max` invalidates what it
+  learned, and the recovery time is a measure of how long the pipeline takes
+  to catch up with a building that has changed. Noted 2026-09-21.
   - Useful for: §10, §11, §13.
 
 ## 11. Evaluation and results
