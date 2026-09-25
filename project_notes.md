@@ -738,7 +738,23 @@ _(nothing yet)_
     a model with no physics, such as a table of the CO2 level each head count
     and damper level has led to — it assumes nothing about the room, but
     needs far more history and can't plan for a head count or starting level
-    it hasn't seen. Decided 2026-09-25; not implemented.
+    it hasn't seen. Decided 2026-09-25; the fit implemented 2026-09-25
+    (`internal/roommodel`, with unit tests), not yet run as a service.
+    - **Decided: each pair of consecutive CO2 readings gives one equation for
+      the fit**, using the head count and damper level last stored at or
+      before the first reading (each holds until the next is stored), and
+      the average of the two readings as the pair's CO2 level. A pair is
+      left out when the readings are more than a minute apart, when the head
+      count or damper level changed between them, or when either is not yet
+      known. On 8 simulated hours the fit recovers the physical model's
+      values to within 0.01%. Rejected: averaging all three streams onto a
+      1-minute grid first — it discards CO2 detail and blends the minutes
+      where the damper or head count changed into rows that match neither.
+      Trade-off: the head count is stored once a minute, so an arrival shows
+      up to a minute late, and the pairs in that minute carry the old count.
+      The fit refuses to answer when the history can't separate the three
+      numbers, e.g. with the damper never moved. Decided and implemented
+      2026-09-25.
     - **Known caveat —** the model's shape matches the simulated room
       exactly, so the fit will be close to exact here. A real room departs
       from it (uneven mixing, open windows, a slow sensor). The shape is
