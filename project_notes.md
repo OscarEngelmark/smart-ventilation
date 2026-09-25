@@ -795,9 +795,14 @@ _(nothing yet)_
   raised the readings, not when the occupancy sensor counted them. Rejected:
   keeping it running beside the occupancy forecast — a service no decision
   reads, which still has to be tested and defended. Rejected: a CO2 forecast
-  that puts the head count into the mass balance — it would see arrivals at
-  once, but there is still nothing to act on in advance. Decided and
-  implemented 2026-09-25.
+  service that puts the current head count into the mass balance — it would
+  see arrivals at once, but a head count already in the room gives nothing
+  to act on in advance. The same mass balance, with learned numbers, is how
+  the decision service plans instead: there it predicts CO2 for a damper
+  level it is considering, from the head counts the occupancy forecast
+  expects, which does give something to act on ahead of a meeting (see
+  *Decided: the decision service plans with a room model learned from stored
+  data*, above). Decided and implemented 2026-09-25.
   - What it showed while it ran: with the damper closed the line overshot
     the real 30-minute rise in A125 by about 12%; with the damper open it fit
     worse, since the real curve flattens within about 10 minutes, and could
