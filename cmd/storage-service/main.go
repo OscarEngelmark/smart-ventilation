@@ -1,7 +1,7 @@
 // storage-service subscribes to the co2 reading, occupancy reading, and
 // ventilation command MQTT topics, saves each one through
-// internal/store, and serves stored readings and occupancy counts back to
-// other components over REST.
+// internal/store, and serves stored readings, occupancy counts and commands
+// back to other components over REST.
 // Reasoning: project_notes.md §7.
 package main
 
@@ -91,8 +91,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /co2", serveCO2(db))
 	mux.HandleFunc("GET /occupancy", serveOccupancy(db))
+	mux.HandleFunc("GET /commands", serveCommands(db))
 	mux.HandleFunc("GET /latest", serveLatest(db))
-	log.Printf("serving stored CO2 readings and occupancy on %s", addr)
+	log.Printf("serving stored CO2 readings, occupancy and commands on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
@@ -146,6 +147,34 @@ func serveOccupancy(db store.Store) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(body); err != nil {
 			log.Printf("occupancy: write response: %v", err)
+		}
+	}
+}
+
+// serveCommands answers GET /commands?room=<id>&since=<RFC3339> with that
+// room's stored commands from that time onwards, led by the last one before
+// it, oldest first, as a JSON array of ventilation_command messages. Both
+// parameters are required.
+func serveCommands(db store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roomID, since, err := roomAndSince(r)
+		if err != nil {
+			fail(w, http.StatusBadRequest, "commands: %v", err)
+			return
+		}
+		stored, err := db.CommandsInForceSince(r.Context(), roomID, since)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "commands: read %s: %v", roomID, err)
+			return
+		}
+
+		body := make([]ventilationCommandPayload, 0, len(stored)) // encodes as [] when empty
+		for _, s := range stored {
+			body = append(body, ventilationCommandPayload{RoomID: s.RoomID, Level: s.Level, Ts: s.Time})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(body); err != nil {
+			log.Printf("commands: write response: %v", err)
 		}
 	}
 }

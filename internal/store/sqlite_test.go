@@ -164,6 +164,54 @@ func TestOccupancyComesBackAsItWasSaved(t *testing.T) {
 	}
 }
 
+// saveCommand stores one command, its level standing in for which command it is.
+func saveCommand(t *testing.T, s *SQLiteStore, room string, level float64, ts time.Time) {
+	t.Helper()
+	c := Command{RoomID: room, Level: level, Time: ts}
+	if err := s.SaveCommand(context.Background(), c); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+}
+
+// levelsInForceSince is the level of each command CommandsInForceSince returns, in order.
+func levelsInForceSince(t *testing.T, s *SQLiteStore, room string, from time.Time) []float64 {
+	t.Helper()
+	got, err := s.CommandsInForceSince(context.Background(), room, from)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var levels []float64
+	for _, c := range got {
+		levels = append(levels, c.Level)
+	}
+	return levels
+}
+
+func TestCommandsSinceAreLedByTheLastOneBefore(t *testing.T) {
+	s := openTemp(t)
+	saveCommand(t, s, "level0/A125", 0.2, noon.Add(-2*time.Hour))
+	saveCommand(t, s, "level0/A125", 0.8, noon.Add(time.Minute))
+	saveCommand(t, s, "level0/A125", 0.3, noon.Add(-time.Hour))
+	saveCommand(t, s, "level0/B210", 0.9, noon.Add(-time.Minute))
+
+	want(t, levelsInForceSince(t, s, "level0/A125", noon), []float64{0.3, 0.8})
+}
+
+func TestCommandLongBeforeSinceIsStillInForce(t *testing.T) {
+	s := openTemp(t)
+	saveCommand(t, s, "level0/A125", 0.4, noon.Add(-6*24*time.Hour))
+
+	want(t, levelsInForceSince(t, s, "level0/A125", noon), []float64{0.4})
+}
+
+func TestNoCommandsBeforeSinceGivesOnlyThoseAfter(t *testing.T) {
+	s := openTemp(t)
+	saveCommand(t, s, "level0/A125", 0.5, noon)
+	saveCommand(t, s, "level0/A125", 0.7, noon.Add(time.Minute))
+
+	want(t, levelsInForceSince(t, s, "level0/A125", noon), []float64{0.5, 0.7})
+}
+
 func TestLatestIsNewestAcrossTables(t *testing.T) {
 	s := openTemp(t)
 	ctx := context.Background()
@@ -211,7 +259,7 @@ func TestLatestOnEmptyStoreIsNotFound(t *testing.T) {
 	}
 }
 
-// want fails the test unless got holds the same ppm values in the same order.
+// want fails the test unless got holds the same values in the same order.
 func want(t *testing.T, got, expected []float64) {
 	t.Helper()
 	if !slices.Equal(got, expected) {

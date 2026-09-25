@@ -859,6 +859,18 @@ _(nothing yet)_
       `GET /occupancy?room=<id>&since=<RFC3339>`, answering a JSON array of
       `occupancy_reading` messages, for the occupancy forecast's history.
       Implemented and verified against the running stack 2026-09-24.
+    - **Decided: commands are served at
+      `GET /commands?room=<id>&since=<RFC3339>`, led by the last command
+      stored before `since`**, for the room model's history. A damper level
+      holds until the next command, which may come days later, so without
+      that command the fit would treat the damper as unknown until the first
+      command in the window, and skip the readings before it. Rejected: the
+      room model asking for extra days before its window — it can't know how
+      many are enough. Rejected: the decision service repeating its command
+      every minute so every window holds one — it would shape the decision
+      service around storage. Decided and implemented 2026-09-25
+      (`CommandsInForceSince` in `internal/store`, with unit tests); not yet
+      checked against the running stack.
     - **Known caveat —** a room id contains a slash (`level0/A125`), so
       callers must percent-encode it in the query string. Go's `net/http`
       decodes it back, so the service is unaffected, but a hand-written URL

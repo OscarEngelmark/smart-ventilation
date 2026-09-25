@@ -120,6 +120,38 @@ func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since t
 	return counts, rows.Err()
 }
 
+func (s *SQLiteStore) CommandsInForceSince(ctx context.Context, roomID string, since time.Time) ([]Command, error) {
+	from := since.UTC().Format(time.RFC3339) // compared as UTC text, as in CO2ReadingsSince
+	rows, err := s.db.QueryContext(ctx, `
+SELECT room_id, level, ts FROM (
+	SELECT room_id, level, ts FROM commands
+	WHERE room_id = ? AND ts < ? ORDER BY ts DESC LIMIT 1
+)
+UNION ALL
+SELECT room_id, level, ts FROM commands WHERE room_id = ? AND ts >= ?
+ORDER BY ts`,
+		roomID, from, roomID, from)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() // runs when this function returns, however it returns
+
+	var commands []Command
+	for rows.Next() {
+		var c Command
+		var ts string
+		if err := rows.Scan(&c.RoomID, &c.Level, &ts); err != nil {
+			return nil, err
+		}
+		c.Time, err = time.Parse(time.RFC3339, ts)
+		if err != nil {
+			return nil, fmt.Errorf("parse stored timestamp %q: %w", ts, err)
+		}
+		commands = append(commands, c)
+	}
+	return commands, rows.Err()
+}
+
 func (s *SQLiteStore) Latest(ctx context.Context) (time.Time, bool, error) {
 	var ts sql.NullString // NULL when every table is empty
 	err := s.db.QueryRowContext(ctx, `SELECT MAX(ts) FROM (

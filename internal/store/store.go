@@ -43,6 +43,11 @@ type Store interface {
 	// oldest first. An empty result is not an error.
 	OccupancySince(ctx context.Context, roomID string, since time.Time) ([]Occupancy, error)
 
+	// CommandsInForceSince returns one room's commands from since onwards,
+	// oldest first, led by the last command before since, as a command holds
+	// until the next one. An empty result is not an error.
+	CommandsInForceSince(ctx context.Context, roomID string, since time.Time) ([]Command, error)
+
 	// Latest returns the newest timestamp stored in any table, and false when
 	// nothing is stored yet.
 	Latest(ctx context.Context) (time.Time, bool, error)
