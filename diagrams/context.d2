@@ -1,18 +1,23 @@
 # C4 Context diagram. Rationale for each choice: project_notes.md, section 4.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
 direction: down
 
-operator: "Operator\n[Person]\nWatches CO2, forecasts,\nand ventilation decisions" {
+operator: "Operator\n[Person]\nWatches CO2, the occupancy\nforecast, and damper decisions" {
   shape: person
 }
 occupants: "Room occupants\n[Person, simulated]\nRaise CO2 by being in the room" {
   shape: person
 }
 
-sys: "Smart Ventilation\n[Software System]\nForecasts CO2 and ventilates\nbefore the threshold is crossed"
+sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith the fan as low as possible,\nventilating ahead of expected people"
 
-bs: "BuildSim\n[Software System, external]\nShared building state:\nsensor values, actuator state"
+bs: "BuildSim\n[Software System, external]\nShared building state: people\nin each room, sensor values,\nactuator state"
 
-occupants -> sys: "presence (from a time-of-day schedule)"
+occupants -> bs: "are in the room, raising its CO2\n(simulated from a weekday schedule)"
 operator -> sys: "monitors [dashboard, not yet designed]" {
   style.stroke-dash: 4
 }

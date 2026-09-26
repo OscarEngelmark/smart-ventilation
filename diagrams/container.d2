@@ -1,47 +1,94 @@
 # C4 Container diagram. Rationale for each choice: project_notes.md, section 4.
 # Dashed boxes and arrows are not decided yet. REST arrows point from the
-# caller to the service it calls; the response data flows back.
-direction: down
-
-bs: "BuildSim\n[Software System, external]\nShared building state (room CO2,\noccupancy, ventilation level)"
+# caller to the service it calls; the response data flows back. Grids with
+# grid-rows are filled row by row; empty cells keep arrows clear of boxes.
+grid-rows: 2
+vertical-gap: 40
 
 sys: "Smart Ventilation  [System]" {
   style.stroke-dash: 4
   style.fill: transparent
+  grid-rows: 4
+  horizontal-gap: 220
+  vertical-gap: 110
 
-  model: "Physical model\n[Container: Go]\nEach cycle: reads state, steps the\nCO2 mass balance, writes it back"
-  occ: "Occupancy simulator\n[Container: Go]\nTurns the time of day into the\npeople in the room; sole writer\nof occupancy"
-  sensor: "CO2 sensor\n[Container: Go]\nReads room CO2 from BuildSim,\npublishes it"
-  broker: "Message broker\n[Container: Mosquitto, MQTT]\nDecouples publishers from subscribers" {
-    shape: queue
-  }
-  forecast: "Forecast service\n[Container: Python]\nPredicts CO2 a short horizon ahead"
-  decision: "Decision service\n[Container: Go]\nForecast vs. threshold ->\nventilation command"
-  actuator: "Ventilation actuator\n[Container: Go]\nApplies commands to BuildSim"
-  storage: "Storage service\n[Container: Go]\nPersists readings, forecasts,\ncommands; serves reads"
-  db: "Readings store\n[SQLite]\nAccessed only via store.Store" {
-    shape: cylinder
-  }
   dash: "Dashboard\n[Container: not yet decided]" {
     style.stroke-dash: 4
   }
+  storage: "Storage service\n[Container: Go]\nStores readings and\ncommands; serves\ntheir history"
+  db: "Readings store\n[SQLite]\nAccessed only via\nstore.Store" {
+    shape: cylinder
+  }
+
+  forecast: "Occupancy forecast\n[Container: Go]\nLearns when people come:\nexpected head count per\n5-minute slot of the day"
+  gap: "" {
+    style.stroke-width: 0
+    style.fill: transparent
+  }
+  roommodel: "Room model\n[Container: Go]\nLearns how CO2 responds to\npeople and to the damper"
+
+  decision: "Decision service\n[Container: Go, one per room]\nChooses the damper level that\nkeeps CO2 under 1000 ppm\nwith the fan as low as possible"
+  broker: "Message broker\n[Container: Mosquitto, MQTT]\nPasses each message to its\nsubscribers; keeps the last\nretained one per topic" {
+    shape: queue
+  }
+  gap2: "" {
+    style.stroke-width: 0
+    style.fill: transparent
+  }
+
+  actuator: "Damper actuator\n[Container: Go]\nApplies commands\nto the damper"
+  co2sensor: "CO2 sensor\n[Container: Go]\nReads the room's CO2,\npublishes it"
+  occsensor: "Occupancy sensor\n[Container: Go]\nCounts the people in the\nroom, publishes the count"
 }
 
-sys.occ -> bs: "sets who is in each room [REST]"
-sys.model <-> bs: "reads CO2, damper, occupancy;\nwrites next CO2 [REST]"
-sys.sensor -> bs: "reads room CO2 [REST]"
-sys.sensor -> sys.broker: "co2/+/reading [MQTT]"
-sys.broker -> sys.forecast: "co2/+/reading [MQTT]"
-sys.forecast -> sys.broker: "co2/+/forecast [MQTT]"
-sys.broker -> sys.decision: "co2/+/forecast [MQTT]"
-sys.decision -> sys.actuator: "command, retried until ack [REST]"
-sys.decision -> sys.broker: "ventilation/+/command (copy) [MQTT]"
-sys.actuator -> bs: "set ventilation level [REST, not yet decided]" {
-  style.stroke-dash: 4
+below: "" {
+  style.stroke-width: 0
+  style.fill: transparent
+  grid-columns: 2
+  horizontal-gap: 0
+
+  spacer: "" {
+    style.stroke-width: 0
+    style.fill: transparent
+    width: 420
+  }
+
+  room: "" {
+    style.stroke-width: 0
+    style.fill: transparent
+    direction: up
+
+    bs: "BuildSim\n[Software System, external]\nShared building state:\npeople in each room, device\nvalues, damper position"
+
+    world: "Simulated room  [stands in for the real room]" {
+      style.stroke-dash: 4
+      style.fill: transparent
+      label.near: bottom-center
+
+      occ: "Occupancy simulator\n[Container: Go]\nMoves people in and out of the\nroom by their weekday schedule"
+      model: "Physical model\n[Container: Go]\nSteps the room's CO2\nmass balance"
+    }
+  }
 }
-sys.broker -> sys.storage: "all three topics [MQTT]"
-sys.storage <-> sys.db: "save / read [store.Store]"
-sys.forecast -> sys.storage: "requests recent readings after restart [REST]"
-sys.dash -> sys.db: "reads [path not yet decided]" {
+
+below.room.world.occ -> below.room.bs: "sets the people\nin the room [REST]"
+below.room.world.model <-> below.room.bs: "reads people, damper, CO2;\nwrites the next CO2 [REST]"
+
+sys.co2sensor -> below.room.bs: "reads the sensor's\nvalue [REST]"
+sys.occsensor <-> below.room.bs: "reads the people;\nwrites the counter's\nvalue [REST]"
+sys.actuator -> below.room.bs: "sets the damper\nposition [REST]"
+
+sys.co2sensor -> sys.broker: "co2/<room>/reading\n[MQTT]"
+sys.occsensor -> sys.broker: "occupancy/<room>/reading\n[MQTT]"
+sys.broker <-> sys.decision: "to decision: readings,\nforecast, room model;\nto broker: ventilation/<room>/\ncommand, copy once accepted\n[MQTT]"
+sys.decision -> sys.actuator: "POST /command\n[REST]"
+sys.forecast -> sys.broker: "occupancy/<room>/forecast,\nretained [MQTT]"
+sys.roommodel -> sys.broker: "room/<room>/model,\nretained [MQTT]"
+
+sys.broker -> sys.storage: "readings and\ncommands [MQTT]"
+sys.forecast -> sys.storage: "GET /occupancy\n[REST]"
+sys.roommodel -> sys.storage: "GET /co2, /occupancy,\n/commands [REST]"
+sys.storage <-> sys.db: "save / read\n[store.Store]"
+sys.dash -> sys.storage: "reads history\n[not yet decided]" {
   style.stroke-dash: 4
 }
