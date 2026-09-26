@@ -662,8 +662,10 @@ _(nothing yet)_
   threshold (in A125, `V·(1000 − 420 ppm)` against `G·N_max`), so the fan
   can run lower during the meeting. Rejected: a fan smaller than a full room
   needs, relying on the forecast to clean the room beforehand — a room that
-  fills unexpectedly then goes over the threshold. Decided 2026-09-24; not
-  implemented.
+  fills unexpectedly then goes over the threshold. Decided 2026-09-24; the
+  plan from the forecast implemented 2026-09-26 (see *Decided: on every CO2
+  reading, the decision service picks the lowest damper level…*, below), the
+  reactive mechanism not yet.
   - Replaces the proposal's plan (proposal sections 1 and 5): a CO2
     forecast 30 minutes ahead, compared to the threshold so ventilation
     starts before it is crossed. In this simulation that gains nothing over
@@ -814,8 +816,31 @@ _(nothing yet)_
         old steps fading out. Either way the shorter memory must still hold
         the damper at more than one level, or the fit can't separate the
         rates.
-  - **Deferred, not yet decided:** how the decision service turns a
-    predicted meeting into a damper level.
+  - **Decided: on every CO2 reading, the decision service picks the lowest
+    damper level that keeps predicted CO2 under 950 ppm for the next 60
+    minutes, holding that level the whole time.** The prediction steps the
+    room model minute by minute from the current reading, with the forecast
+    head count for each minute; levels are tried from closed upward in steps
+    of 0.05, and fully open is chosen when none lower is enough. The plan is
+    made again on every reading, so holding one level is only how a level
+    for now is judged. The target sits below the 1000 ppm threshold so that
+    small errors in the forecast or the fit don't push a room held at the
+    target over it, which would hand most decisions to the reactive
+    mechanism. Both numbers are untuned defaults (`PLAN_TARGET_PPM` and
+    `PLAN_HORIZON` in `docker-compose.yml`); 60 minutes is longer than the
+    20–40 minutes a moderately open damper takes to clear the room.
+    Rejected: a level for every minute ahead, chosen to use the least fan in
+    total — it needs an optimization solver and is harder to test and
+    explain. Rejected: a fixed rule such as opening to a set level a set
+    time before each predicted meeting — it ignores the room model, so it
+    doesn't follow a room that changes, and both numbers are guesses.
+    Trade-off: holding one level ventilates earlier than needed. With A125's
+    fitted rates and a meeting of 6 from 13:00, the plan opens to 0.55 at
+    12:30 while the room is still at outdoor level, and needs 0.85 at 13:00
+    against 0.9 for a room starting at 900 ppm. Decided and implemented
+    2026-09-26 (`internal/planner`, with unit tests; used by `cmd/decision`).
+    - Replaces *Deferred, not yet decided: how the decision service turns a
+      predicted meeting into a damper level*.
   - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
     mechanism sets the damper at once to the airflow the counted people need
     to stay under the threshold, instead of waiting for a reading at the
@@ -1115,4 +1140,17 @@ was caught. Kept for the report's reflection and the oral exam.
   start. The user caught it from the warnings in the terminal output.
   Removing it takes `docker compose down --remove-orphans`, or removing the
   container by name. Noted 2026-09-25.
+  - Useful for: §13.
+
+- **The assistant said `./start.sh` would resume room time where the stored
+  history stopped, leaving no gap, after the machine was shut down hard.**
+  The broker had stayed down while the other services came back and kept
+  running on the old session's clock. `start.sh` first starts the
+  storage-service, which also starts the broker; the CO2 sensor, still on
+  the old clock, then got a reading stored before `start.sh` asked for the
+  latest one, so the session resumed at the old clock's time. The history
+  has no CO2 readings from 2026-09-29 13:41 to 2026-09-30 23:12 UTC. Caught
+  by comparing the room start in `run.env` with the time the history should
+  have stopped, then listing the gaps in the stored readings. Noted
+  2026-09-26.
   - Useful for: §13.

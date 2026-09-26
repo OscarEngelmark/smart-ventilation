@@ -21,6 +21,8 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/planner"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 )
 
@@ -117,6 +119,11 @@ func main() {
 	actuatorURL := env.String("ACTUATOR_URL", "http://localhost:8080")
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
+	settings := planner.Settings{
+		Target:  env.Float("PLAN_TARGET_PPM", 950),
+		Horizon: env.Duration("PLAN_HORIZON", time.Hour),
+		Cout:    env.Float("OUTDOOR_CO2_PPM", 420),
+	}
 
 	clock := roomtime.FromEnv()
 	state := &latest{}
@@ -137,13 +144,14 @@ func main() {
 		roomID:      buildsim.RoomKey(level, roomName),
 		topic:       "ventilation/" + roomName + "/command",
 	}
-	log.Printf("deciding for %s, commanding %s", c.roomID, c.actuatorURL)
+	log.Printf("deciding for %s, commanding %s, keeping CO2 under %.0f ppm over the next %v",
+		c.roomID, c.actuatorURL, settings.Target, settings.Horizon)
 
 	var sent bool        // whether a level has been accepted by the actuator yet
 	var last float64     // the last level the actuator accepted
 	for range readings { // wait for each CO2 reading in turn
 		in := state.snapshot()
-		chosen := choose(in)
+		chosen := choose(in, settings)
 		if sent && chosen == last {
 			continue
 		}
@@ -158,9 +166,24 @@ func main() {
 }
 
 // choose returns the damper level, 0 (closed) to 1 (fully open), for the
-// room's current inputs. It keeps the damper closed for now.
-func choose(in inputs) float64 {
-	return 0
+// room's current inputs: the planner's level once a forecast and a room model
+// have arrived, and closed until then.
+func choose(in inputs, s planner.Settings) float64 {
+	if in.forecast == nil || in.model == nil {
+		return 0
+	}
+	f := plannerForecast(in.forecast)
+	m := roommodel.Model{A: in.model.A, B0: in.model.B0, B1: in.model.B1}
+	return planner.Level(in.co2.PPM, in.co2.Ts, f, m, s)
+}
+
+// plannerForecast turns the forecast message into the planner's form.
+func plannerForecast(msg *occupancyForecast) planner.Forecast {
+	f := planner.Forecast{SlotLength: time.Duration(msg.SlotMinutes) * time.Minute}
+	for _, slot := range msg.Slots {
+		f.Slots = append(f.Slots, planner.Slot{Start: slot.Start, N: slot.People})
+	}
+	return f
 }
 
 // send commands the actuator to the level and, once the actuator has accepted
