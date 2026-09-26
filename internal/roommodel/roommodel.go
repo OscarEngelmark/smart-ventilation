@@ -27,7 +27,7 @@ type Model struct {
 	B1 float64 // share cleared per minute added by each unit of damper opening
 }
 
-// maxGap is the longest time between two CO2 readings still used as a pair.
+// maxGap is the longest step between two CO2 readings still used.
 const maxGap = time.Minute
 
 // minIndependence is how far below the diagonal product det(M) may fall
@@ -38,10 +38,10 @@ const minIndependence = 1e-6
 // people and damper are the stored CO2 readings (ppm), head counts and damper
 // levels (0–1), each in time order; Cout is the outdoor CO2 level, in ppm.
 //
-// Each pair of consecutive CO2 readings gives one equation, using the head
-// count and damper level in force at the first reading. A pair is left out
-// when the readings are more than maxGap apart, when the head count or damper
-// level changed between them, or when either is unknown that early.
+// Each step, from one CO2 reading to the next, gives one equation, using the
+// head count and damper level in force at the step's start. A step is left out
+// when it is longer than maxGap, when the head count or damper level changed
+// during it, or when either is unknown that early.
 //
 // It returns an error when the history can't tell the three rates apart: too
 // little of it, nobody ever present, or the damper never moved.
@@ -66,15 +66,15 @@ func Fit(co2, people, damper []Sample, Cout float64) (Model, error) {
 	return Model{A: theta[0], B0: theta[1], B1: theta[2]}, nil
 }
 
-// equation is what one pair of consecutive CO2 readings says about the room.
+// equation is what one step between CO2 readings says about the room.
 type equation struct {
 	N    float64 // head count
 	d    float64 // damper level
-	C    float64 // CO2 over the pair, the average of the two readings, in ppm
-	rate float64 // change in CO2 over the pair, in ppm per minute
+	C    float64 // CO2 over the step, the average of its two readings, in ppm
+	rate float64 // change in CO2 over the step, in ppm per minute
 }
 
-// equations turns the history into one equation per usable pair of CO2
+// equations turns the history into one equation per usable step between CO2
 // readings, by the rules in Fit.
 func equations(co2, people, damper []Sample) []equation {
 	var out []equation

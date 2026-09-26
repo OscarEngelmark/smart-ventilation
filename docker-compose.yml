@@ -115,6 +115,24 @@ services:
     # starts it again. It waits for the storage-service by itself.
     restart: on-failure
 
+  room-model:
+    build:
+      context: .
+      dockerfile: cmd/room-model/Dockerfile
+    # Shared values and the session's clock come from x-env-files; the
+    # settings below are this service's own wiring.
+    env_file: *env-files
+    environment:
+      STORAGE_URL: http://storage-service:8081
+      MQTT_BROKER_URL: *broker-url
+      FIT_DAYS: 7
+    depends_on:
+      - mosquitto
+      - storage-service
+    # The service exits if the broker isn't ready yet at startup; Docker then
+    # starts it again. It waits for the storage-service by itself.
+    restart: on-failure
+
   physical-model:
     build:
       context: .

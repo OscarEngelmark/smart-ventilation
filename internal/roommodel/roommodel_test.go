@@ -94,7 +94,7 @@ func TestEmptyRoomGivesNoModel(t *testing.T) {
 	}
 }
 
-func TestPairAcrossAGapIsLeftOut(t *testing.T) {
+func TestTooLongStepIsLeftOut(t *testing.T) {
 	readings := []Sample{{420, at(0)}, {430, at(10 * time.Second)}, {600, at(5 * time.Minute)}}
 	people := []Sample{{3, at(0)}}
 	damper := []Sample{{0, at(0)}}
@@ -102,7 +102,7 @@ func TestPairAcrossAGapIsLeftOut(t *testing.T) {
 	expectEquations(t, readings, people, damper, 1)
 }
 
-func TestPairAcrossAHeadCountChangeIsLeftOut(t *testing.T) {
+func TestStepAcrossAHeadCountChangeIsLeftOut(t *testing.T) {
 	readings := []Sample{{420, at(0)}, {430, at(10 * time.Second)}, {440, at(20 * time.Second)}}
 	people := []Sample{{3, at(0)}, {4, at(10 * time.Second)}}
 	damper := []Sample{{0, at(0)}}
@@ -110,7 +110,7 @@ func TestPairAcrossAHeadCountChangeIsLeftOut(t *testing.T) {
 	expectEquations(t, readings, people, damper, 1)
 }
 
-func TestPairAcrossADamperChangeIsLeftOut(t *testing.T) {
+func TestStepAcrossADamperChangeIsLeftOut(t *testing.T) {
 	readings := []Sample{{420, at(0)}, {430, at(10 * time.Second)}, {440, at(20 * time.Second)}}
 	people := []Sample{{3, at(0)}}
 	damper := []Sample{{0, at(0)}, {1, at(10 * time.Second)}}
@@ -118,7 +118,7 @@ func TestPairAcrossADamperChangeIsLeftOut(t *testing.T) {
 	expectEquations(t, readings, people, damper, 1)
 }
 
-func TestPairBeforeTheFirstHeadCountIsLeftOut(t *testing.T) {
+func TestStepBeforeTheFirstHeadCountIsLeftOut(t *testing.T) {
 	readings := []Sample{{420, at(0)}, {430, at(10 * time.Second)}, {440, at(20 * time.Second)}}
 	people := []Sample{{3, at(10 * time.Second)}}
 	damper := []Sample{{0, at(0)}}

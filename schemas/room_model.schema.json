@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smart-ventilation.local/schemas/room_model.schema.json",
+  "title": "Room model",
+  "description": "Published once per room day, retained, by the room model process to MQTT topic room/<room>/model. The three rates of dC/dt = a·N − (b0 + b1·d)·(C − Cout), fitted from stored history; N is the head count, d the damper level (0–1), Cout the outdoor CO2 level.",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Room identifier, matching BuildSim's room key."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "The local calendar date the model was fitted on (YYYY-MM-DD)."
+    },
+    "a": {
+      "type": "number",
+      "description": "CO2 rise per person, in ppm per minute."
+    },
+    "b0": {
+      "type": "number",
+      "description": "Share of the gap to outdoor CO2 cleared per minute with the damper closed."
+    },
+    "b1": {
+      "type": "number",
+      "description": "Share of the gap cleared per minute added by each unit of damper opening."
+    }
+  },
+  "required": ["room_id", "date", "a", "b0", "b1"],
+  "additionalProperties": false
+}

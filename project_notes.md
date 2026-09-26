@@ -739,19 +739,19 @@ _(nothing yet)_
     and damper level has led to — it assumes nothing about the room, but
     needs far more history and can't plan for a head count or starting level
     it hasn't seen. Decided 2026-09-25; the fit implemented 2026-09-25
-    (`internal/roommodel`, with unit tests), not yet run as a service.
-    - **Decided: each pair of consecutive CO2 readings gives one equation for
-      the fit**, using the head count and damper level last stored at or
-      before the first reading (each holds until the next is stored), and
-      the average of the two readings as the pair's CO2 level. A pair is
-      left out when the readings are more than a minute apart, when the head
-      count or damper level changed between them, or when either is not yet
+    (`internal/roommodel`, with unit tests), run by `cmd/room-model`.
+    - **Decided: each step, from one CO2 reading to the next, gives one
+      equation for the fit**, using the head count and damper level last
+      stored at or before the step's start (each holds until the next is
+      stored), and the average of its two readings as the step's CO2 level.
+      A step is left out when it is longer than a minute, when the head
+      count or damper level changed during it, or when either is not yet
       known. On 8 simulated hours the fit recovers the physical model's
       values to within 0.01%. Rejected: averaging all three streams onto a
       1-minute grid first — it discards CO2 detail and blends the minutes
       where the damper or head count changed into rows that match neither.
       Trade-off: the head count is stored once a minute, so an arrival shows
-      up to a minute late, and the pairs in that minute carry the old count.
+      up to a minute late, and the steps in that minute carry the old count.
       The fit refuses to answer when the history can't separate the three
       numbers, e.g. with the damper never moved. Decided and implemented
       2026-09-25.
@@ -770,7 +770,35 @@ _(nothing yet)_
       but it mixes a slow batch job with the per-minute loop. Trade-off: one
       more container and message format, and the decision service must
       handle a missing or outdated model, as it must for the forecast.
-      Decided 2026-09-25; not implemented.
+      The rates are published on `room/<room>/model`
+      (`schemas/room_model.schema.json`). When the history can't separate
+      them, nothing is published and the last model stays retained. Decided
+      2026-09-25; implemented 2026-09-26 (`cmd/room-model`). Verified against
+      the running stack with one person present and the damper set by hand to
+      closed, fully open and half open: `a` = 4.701 ppm/min per person
+      (physical model 4.698), `b0` = 0.00908 per min (0.00875, 4% high),
+      `b1` = 0.0486 per min (0.0496, 2% low).
+      - **Revisit:** the unit tests recover all three to within 0.01%, the
+        running stack only to within 4%. The cause is not yet checked.
+    - **Decided: each fit uses the last 7 days of history.** Every usable
+      step between CO2 readings adds to the same few sums, so a longer window
+      costs one larger fetch (about 60,000 readings and 10,000 head counts),
+      not a harder fit. With a noise-free simulated sensor, far fewer steps
+      would give the same rates; the window is sized so it always holds
+      weekdays with people present and the damper at more than one level.
+      Rejected: only the last day — after a weekend it holds an empty room
+      and an unmoved damper, which the fit refuses. Rejected: all stored
+      history — the model would never forget a room that has changed.
+      Trade-off: after a change, such as the fan losing capacity, the fit
+      blends old and new behavior for several days. Decided 2026-09-26.
+      - **Revisit:** a model that adapts over hours rather than days. With
+        one fit per room day on 7 days of history, a change to the room
+        takes about 4 room days to mostly show. Two ways to shorten it:
+        refit more often on a shorter window fetched from storage, or
+        subscribe to the readings and update the sums at every step, with
+        old steps fading out. Either way the shorter memory must still hold
+        the damper at more than one level, or the fit can't separate the
+        rates.
   - **Deferred, not yet decided:** how the decision service turns a
     predicted meeting into a damper level.
   - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
