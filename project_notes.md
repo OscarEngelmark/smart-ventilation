@@ -1098,7 +1098,27 @@ _(nothing yet)_
 
 ## 8. Behaviour
 
-_(nothing yet)_
+- **One CO2 reading traced through the full loop: a damper command it
+  triggered reached the physical model within one step.** Traced on the
+  running stack for A125 on 2026-10-01, room time (UTC), from the stored
+  readings and commands (`GET /co2`, `GET /commands`) and each container's
+  log:
+  1. `physical-model`, with 2 people and the damper at 0.80, steps CO2 to
+     555.6 ppm and writes it to BuildSim as the sensor's value.
+  2. `co2-sensor` reads it from BuildSim and publishes it on
+     `co2/A125/reading`, stamped 10:45:09; `storage-service` stores it.
+  3. `decision` receives it; the plan now needs 0.85 instead of 0.80, so it
+     sends `POST /command` with 0.85 to `actuator`, stamped 10:45:09.
+  4. `actuator` writes 0.85 to BuildSim as the damper's position and
+     answers that it was accepted; `decision` then publishes the copy on
+     `ventilation/A125/command`, and `storage-service` stores it.
+  5. `physical-model`'s next step reads 0.85 from BuildSim.
+  6. The next reading, stamped 10:45:19, is 556.0 ppm: the rise per
+     reading slowed from 0.5 to 0.4 ppm.
+  - Every hop logged in the same real second (at speed 10, one step of 10
+    room seconds); the logs are stamped to the whole second, so the time
+    per hop is not measured. Noted 2026-09-26.
+  - Useful for: §8.1, §10, §11.
 
 ## 9. Deployment and component view
 
