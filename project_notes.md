@@ -820,8 +820,9 @@ _(nothing yet)_
   - **Decided: on every CO2 reading, the decision service picks the lowest
     damper level that keeps predicted CO2 under 950 ppm for the next 60
     minutes, holding that level the whole time.** The prediction steps the
-    room model minute by minute from the current reading, with the forecast
-    head count for each minute; levels are tried from closed upward in steps
+    room model every 10 seconds, the CO2 sensor's interval, from the current
+    reading, with the forecast head count for each step; levels are tried
+    from closed upward in steps
     of 0.05, and fully open is chosen when none lower is enough. The plan is
     made again on every reading, so holding one level is only how a level
     for now is judged. The target sits below the 1000 ppm threshold so that
@@ -849,20 +850,43 @@ _(nothing yet)_
     950 ppm about 45 minutes in, and no logged reading went above that.
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
-    - **Revisit:** the chosen level flips back and forth, each flip a new
-      command: 32 in 22 room minutes of that meeting. Replaying the stored
-      readings, head counts, forecast and room model through the planner
-      reproduces all 32 commands exactly, and shows two causes:
+    - **Decided: the level is raised as soon as the current one no longer
+      keeps CO2 under the target, but lowered only to a level that keeps it
+      20 ppm under the target.** Without this, the chosen level flipped
+      back and forth, each flip a new command: 32 in 22 room minutes of the
+      meeting of 2026-10-01. Replaying that meeting's stored readings, head
+      counts, forecast and room model through the planner reproduced all 32
+      commands exactly and showed two causes:
       - Between 0.80 and 0.85, once a minute: the level needed sat right at
-        the boundary between the two, and the prediction steps in whole
-        minutes from the reading, so the meeting time left in it drops by a
-        whole minute at the first reading of each minute and then stays
-        fixed while measured CO2 rises. With 10-second steps, the replay
-        holds 0.80 for 21 minutes and then changes once.
+        the boundary between the two, and the prediction then stepped in
+        whole minutes from the reading, so the meeting time left in it
+        dropped by a whole minute at the first reading of each minute and
+        then stayed fixed while measured CO2 rose.
       - Between 0.85 and fully open, at the target: a reading at or above
-        950 ppm opens the damper fully, and the next reading just under 950
-        returns the ordinary level; 10-second steps don't change this.
-      - Not fixed yet (working plan row 8). Checked 2026-09-26.
+        950 ppm opened the damper fully, and the next reading just under 950
+        returned the ordinary level.
+      - With the 20 ppm margin, a level that only just keeps CO2 under the
+        target no longer replaces the current one. A full room at the
+        target opens fully until CO2 is under 930 ppm, then settles at 0.95
+        (about 925 ppm) instead of 0.90 (about 948 ppm). Rejected: only
+        shortening the prediction's step to 10 seconds, which removes the
+        first cause in that meeting but not the second, nor flips from other
+        small changes at a boundary. Rejected: a limit on how often a
+        command may be sent, which slows the alternation without ending it
+        and would hold back a needed rise. Rejected: a gap at the target
+        like the fallback switch's, staying fully open until CO2 is under
+        900 ppm — fully open, a full room settles at 903 ppm, so the damper
+        would stay fully open for the rest of the meeting. Trade-off: the
+        fan runs a little higher than strictly needed, and at full for a
+        few minutes after CO2 reaches the target. The 20 ppm is an untuned
+        default (`PLAN_LOWER_MARGIN_PPM` in `docker-compose.yml`). The
+        prediction's step was shortened from 1 minute to 10 seconds in the
+        same change.
+      - Evidence: replayed on the same stored readings, the planner holds
+        0.85 and changes once, to fully open at 950 ppm; a unit test running
+        the planner against the room model for an hour, starting a full
+        room at the target, changes the level twice (fully open, then
+        0.95). Decided and implemented 2026-09-26.
   - **Decided: when the head count is above the forecast for now rounded
     up, the plan expects at least the counted people for its whole
     horizon.** This is the reactive mechanism: the same level search as the

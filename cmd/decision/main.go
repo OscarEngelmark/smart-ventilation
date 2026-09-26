@@ -120,10 +120,11 @@ func main() {
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
 	settings := planner.Settings{
-		Target:     env.Float("PLAN_TARGET_PPM", 950),
-		Horizon:    env.Duration("PLAN_HORIZON", time.Hour),
-		Cout:       env.Float("OUTDOOR_CO2_PPM", 420),
-		CloseBelow: env.Float("FALLBACK_CLOSE_PPM", 800),
+		Target:      env.Float("PLAN_TARGET_PPM", 950),
+		LowerMargin: env.Float("PLAN_LOWER_MARGIN_PPM", 20),
+		Horizon:     env.Duration("PLAN_HORIZON", time.Hour),
+		Cout:        env.Float("OUTDOOR_CO2_PPM", 420),
+		CloseBelow:  env.Float("FALLBACK_CLOSE_PPM", 800),
 	}
 
 	clock := roomtime.FromEnv()
@@ -184,7 +185,7 @@ func choose(in inputs, s planner.Settings, current float64) float64 {
 		f = plannerForecast(in.forecast)
 	}
 	m := roommodel.Model{A: in.model.A, B0: in.model.B0, B1: in.model.B1}
-	return planner.Level(in.co2.PPM, counted, in.co2.Ts, f, m, s)
+	return planner.Level(in.co2.PPM, current, counted, in.co2.Ts, f, m, s)
 }
 
 // plannerForecast turns the forecast message into the planner's form.

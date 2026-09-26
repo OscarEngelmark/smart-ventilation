@@ -128,6 +128,7 @@ services:
       MQTT_BROKER_URL: *broker-url
       ACTUATOR_URL: http://actuator:8080
       PLAN_TARGET_PPM: 950
+      PLAN_LOWER_MARGIN_PPM: 20
       PLAN_HORIZON: 60m
       FALLBACK_CLOSE_PPM: 800
     depends_on:

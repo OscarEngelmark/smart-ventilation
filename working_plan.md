@@ -6,7 +6,6 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 8 | Decision service: the level flips back and forth between readings (`project_notes.md` §7, the planner's Revisit) | the fix, once the cause is checked | 1–2 |
 | 9 | Dashboard | how it reads from storage | 2 |
 | 10 | Storage-service review list (`project_notes.md` §7) | fix or document each as a known limitation | 1–2 |
 | 11 | Tests: one end-to-end test; fault injection (crashed service, frozen sensor, broker down); forecast-led ventilation vs. reacting alone; stress test to a breaking point | small ones per test | 6–8 |
