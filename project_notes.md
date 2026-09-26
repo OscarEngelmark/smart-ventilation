@@ -843,8 +843,17 @@ _(nothing yet)_
     with the room at outdoor level, and needs 0.85 at 13:00 against 0.9 for
     a room starting at 900 ppm. Decided and implemented
     2026-09-26 (`internal/planner`, with unit tests; used by `cmd/decision`).
+    Seen on the running stack for the meeting of 2026-10-01: with the room
+    empty over lunch, the level rose from 0.05 to 0.85 in the hour before
+    the meeting and CO2 fell from 911 to 556 ppm; with 6 people it rose to
+    950 ppm about 45 minutes in, and no logged reading went above that.
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
+    - **Revisit:** the chosen level flips back and forth on almost every
+      reading when it sits between two levels (0.80 and 0.85 during the
+      meeting) or when CO2 is at the target (0.85 and fully open), each flip
+      a new command: 32 in 22 room minutes. The cause is not yet
+      checked.
   - **Decided: when the head count is above the forecast for now rounded
     up, the plan expects at least the counted people for its whole
     horizon.** This is the reactive mechanism: the same level search as the
