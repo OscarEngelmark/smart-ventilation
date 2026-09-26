@@ -849,11 +849,20 @@ _(nothing yet)_
     950 ppm about 45 minutes in, and no logged reading went above that.
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
-    - **Revisit:** the chosen level flips back and forth on almost every
-      reading when it sits between two levels (0.80 and 0.85 during the
-      meeting) or when CO2 is at the target (0.85 and fully open), each flip
-      a new command: 32 in 22 room minutes. The cause is not yet
-      checked.
+    - **Revisit:** the chosen level flips back and forth, each flip a new
+      command: 32 in 22 room minutes of that meeting. Replaying the stored
+      readings, head counts, forecast and room model through the planner
+      reproduces all 32 commands exactly, and shows two causes:
+      - Between 0.80 and 0.85, once a minute: the level needed sat right at
+        the boundary between the two, and the prediction steps in whole
+        minutes from the reading, so the meeting time left in it drops by a
+        whole minute at the first reading of each minute and then stays
+        fixed while measured CO2 rises. With 10-second steps, the replay
+        holds 0.80 for 21 minutes and then changes once.
+      - Between 0.85 and fully open, at the target: a reading at or above
+        950 ppm opens the damper fully, and the next reading just under 950
+        returns the ordinary level; 10-second steps don't change this.
+      - Not fixed yet (working plan row 8). Checked 2026-09-26.
   - **Decided: when the head count is above the forecast for now rounded
     up, the plan expects at least the counted people for its whole
     horizon.** This is the reactive mechanism: the same level search as the
