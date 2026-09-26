@@ -115,6 +115,23 @@ services:
     # starts it again. It waits for the storage-service by itself.
     restart: on-failure
 
+  decision:
+    build:
+      context: .
+      dockerfile: cmd/decision/Dockerfile
+    # Shared values and the session's clock come from x-env-files; the
+    # settings below are this service's own wiring.
+    env_file: *env-files
+    environment:
+      MQTT_BROKER_URL: *broker-url
+      ACTUATOR_URL: http://actuator:8080
+    depends_on:
+      - mosquitto
+      - actuator
+    # The service exits if the broker isn't ready yet at startup; Docker then
+    # starts it again. A refused command is retried on the next reading.
+    restart: on-failure
+
   room-model:
     build:
       context: .

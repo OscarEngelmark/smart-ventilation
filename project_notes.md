@@ -262,11 +262,26 @@ _(nothing yet)_
     kind of value, derived the same way from the same input.
   - Useful for: §4.3, §4.4.
 
-- **Deferred, not yet decided: one decision-service instance per room, or one
-  instance handling all rooms.** Also open: data storage, and any user-facing
-  view beyond BuildSim's own. Proposal sections 3 and 6 leave these until the
-  first one-room loop works end to end.
-  - Useful for: §4.2, §9, §12, §13 (scaling).
+- **Decided: one decision-service instance per room.** It matches the other
+  per-room services (sensors, actuator, occupancy forecast, room model), each
+  room's inputs are independent, and a crash stops decisions for one room
+  only. Rejected: one instance for all rooms — fewer containers, and the
+  natural place for anything rooms must share, but one crash stops every
+  room's decisions, and nothing is shared between rooms here. Trade-off:
+  containers grow with the room count. Each small Go service uses about
+  4–5 MB of memory (measured with `docker stats`), so 1000 rooms at six
+  per-room services is about 6000 containers and 30 GB — possible on a
+  server, but too many to configure by hand in `docker-compose.yml`. The
+  path to that scale is grouping rooms, e.g. one decision process per floor
+  subscribing to `co2/+/reading`, which fails per floor instead of per room.
+  Decided and implemented 2026-09-26 (`cmd/decision`, choosing a level on
+  every CO2 reading and commanding the actuator only when it changes; the
+  decision logic itself is not yet written).
+  - Replaces *Deferred, not yet decided: one decision-service instance per
+    room, or one instance handling all rooms* (proposal sections 3 and 6).
+    Storage has since been decided (§7); how the dashboard reads it is
+    still open.
+  - Useful for: §4.2, §4.4, §9, §13 (scaling).
 
 - **Decided: scaling to more rooms works differently on each side of the
   system boundary — the physical model reads the floor's rooms from BuildSim
