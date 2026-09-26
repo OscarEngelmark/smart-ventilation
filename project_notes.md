@@ -834,10 +834,13 @@ _(nothing yet)_
     explain. Rejected: a fixed rule such as opening to a set level a set
     time before each predicted meeting — it ignores the room model, so it
     doesn't follow a room that changes, and both numbers are guesses.
-    Trade-off: holding one level ventilates earlier than needed. With A125's
-    fitted rates and a meeting of 6 from 13:00, the plan opens to 0.55 at
-    12:30 while the room is still at outdoor level, and needs 0.85 at 13:00
-    against 0.9 for a room starting at 900 ppm. Decided and implemented
+    Trade-off: holding one level ventilates earlier than needed. The level
+    has to be enough for the part of the meeting already inside the
+    horizon, and it is applied now, even while an empty room is at outdoor
+    level and ventilating it removes nothing. Computed with A125's fitted
+    rates and a meeting of 6 from 13:00, the plan opens to 0.55 at 12:30
+    with the room at outdoor level, and needs 0.85 at 13:00 against 0.9 for
+    a room starting at 900 ppm. Decided and implemented
     2026-09-26 (`internal/planner`, with unit tests; used by `cmd/decision`).
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
