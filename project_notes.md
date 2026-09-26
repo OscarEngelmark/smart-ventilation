@@ -955,6 +955,27 @@ _(nothing yet)_
       `internal/planner`, with unit tests; used by `cmd/decision`).
   - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
+- **Deferred, not yet decided: whether to remove the occupancy forecast, so
+  the decision service plans from the head count and the room model alone.**
+  The forecast's gain looks small. A room brought down to outdoor air holds
+  only about 20 minutes of a full meeting's CO2, so over a meeting the level
+  is set by what a full room needs: with A125's fitted rates, a meeting of 6
+  needs 0.85 after cleaning against 0.9 from 900 ppm (see *Decided: on every
+  CO2 reading, the decision service picks the lowest damper level…*, above).
+  When the empty room already sits at outdoor level, ventilating ahead
+  removes nothing. Against that small gain, the forecast adds a container
+  and a rule in the decision service that weighs the head count against the
+  forecast. Without it, the plan from the head count, today the fallback
+  when there is no forecast, becomes the normal mode, and the room model,
+  learned from stored data and used in every decision, stays the
+  data-driven component. The simulated schedule repeats every weekday with
+  little randomness, so the forecast here is close to the best any forecast
+  could be, and the measured gain is close to the most a forecast could give
+  in this room. To settle it: run the same room day with and without the
+  `occupancy-forecast` container and compare the damper level over the day
+  and the peak CO2 (working plan row 8). Noted 2026-09-26.
+  - Useful for: §1, §4.4, §7.1, §11.
+
 - **Decided: the CO2 forecast service is removed; the occupancy forecast is
   the system's only forecast.** The CO2 forecast was a least-squares straight
   line through the last 10 minutes of CO2 readings, extended 30 minutes

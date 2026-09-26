@@ -6,6 +6,7 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
+| 8 | Forecast vs. no forecast: the same room day with and without `occupancy-forecast`, comparing damper level and peak CO2 (`project_notes.md` §7) | whether to remove the occupancy forecast | 1–2 |
 | 9 | Dashboard | how it reads from storage | 2 |
 | 10 | Storage-service review list (`project_notes.md` §7) | fix or document each as a known limitation | 1–2 |
-| 11 | Tests: one end-to-end test; fault injection (crashed service, frozen sensor, broker down); forecast-led ventilation vs. reacting alone; stress test to a breaking point | small ones per test | 6–8 |
+| 11 | Tests: one end-to-end test; fault injection (crashed service, frozen sensor, broker down); stress test to a breaking point | small ones per test | 6–8 |
