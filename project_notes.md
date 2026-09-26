@@ -664,8 +664,9 @@ _(nothing yet)_
   needs, relying on the forecast to clean the room beforehand — a room that
   fills unexpectedly then goes over the threshold. Decided 2026-09-24; the
   plan from the forecast implemented 2026-09-26 (see *Decided: on every CO2
-  reading, the decision service picks the lowest damper level…*, below), the
-  reactive mechanism not yet.
+  reading, the decision service picks the lowest damper level…*, below), and
+  the reactive mechanism the same day (see *Decided: when the head count is
+  above the forecast for now rounded up…*, below).
   - Replaces the proposal's plan (proposal sections 1 and 5): a CO2
     forecast 30 minutes ahead, compared to the threshold so ventilation
     starts before it is crossed. In this simulation that gains nothing over
@@ -844,12 +845,32 @@ _(nothing yet)_
     2026-09-26 (`internal/planner`, with unit tests; used by `cmd/decision`).
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
-  - **Idea, not yet evaluated:** when occupancy is unexpected, the reactive
-    mechanism sets the damper at once to the airflow the counted people need
-    to stay under the threshold, instead of waiting for a reading at the
-    threshold and opening fully. It would run the fan lower, serving the
-    second goal. It is a calculation from the current head count, not a
-    forecast. Noted 2026-09-25.
+  - **Decided: when the head count is above the forecast for now rounded
+    up, the plan expects at least the counted people for its whole
+    horizon.** This is the reactive mechanism: the same level search as the
+    plan from the forecast, so it sets the lowest level that holds the people
+    actually present under the target, as soon as the occupancy sensor counts
+    them and before their CO2 has built up. Rounding up leaves out ordinary
+    day-to-day spread, such as 3 people counted against a forecast of 2.4,
+    so on an ordinary day the forecast still sets the level. When the extra
+    people leave, the count drops and the plan follows the forecast again.
+    Behind it stays the plan's own behavior at the target: a reading at or
+    above 950 ppm opens the damper fully, since no lower level keeps CO2
+    under it, which covers a wrong model or a failed counter. Without the
+    head count, 6 people where 3 were forecast would take CO2 up to 950,
+    open the damper fully, and fall back to the level for 3, over and over.
+    Rejected: opening fully when a reading reaches the threshold — simpler,
+    but it runs the whole fan for one extra person, against the second goal,
+    and waits until CO2 is at the limit. Trade-off: it relies on the head
+    count and the room model being right; if either is wrong, only the full
+    opening at 950 ppm is left. With A125's fitted rates at 800 ppm, 6
+    people counted where 3 were forecast raise the level from 0.35 to 0.9.
+    Decided and implemented 2026-09-26 (`internal/planner`, with unit
+    tests); not yet tested on the running stack, which needs more people in
+    the room than the schedule gives (working plan row 11).
+    - Replaces *Idea, not yet evaluated: when occupancy is unexpected, the
+      reactive mechanism sets the damper at once to the airflow the counted
+      people need*.
   - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
 - **Decided: the CO2 forecast service is removed; the occupancy forecast is

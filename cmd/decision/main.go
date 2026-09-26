@@ -167,14 +167,19 @@ func main() {
 
 // choose returns the damper level, 0 (closed) to 1 (fully open), for the
 // room's current inputs: the planner's level once a forecast and a room model
-// have arrived, and closed until then.
+// have arrived, and closed until then. Before the first head count, the
+// planner is given 0 people counted, so it plans from the forecast alone.
 func choose(in inputs, s planner.Settings) float64 {
 	if in.forecast == nil || in.model == nil {
 		return 0
 	}
+	counted := 0
+	if in.people != nil {
+		counted = in.people.Count
+	}
 	f := plannerForecast(in.forecast)
 	m := roommodel.Model{A: in.model.A, B0: in.model.B0, B1: in.model.B1}
-	return planner.Level(in.co2.PPM, in.co2.Ts, f, m, s)
+	return planner.Level(in.co2.PPM, counted, in.co2.Ts, f, m, s)
 }
 
 // plannerForecast turns the forecast message into the planner's form.

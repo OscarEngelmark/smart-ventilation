@@ -43,7 +43,7 @@ func three(time.Time) float64 {
 func TestEmptyRoomStaysClosed(t *testing.T) {
 	empty := day(func(time.Time) float64 { return 0 })
 
-	got := Level(settings.Cout, at(10, 0), empty, a125, settings)
+	got := Level(settings.Cout, 0, at(10, 0), empty, a125, settings)
 
 	if got != 0 {
 		t.Errorf("level %v, want 0", got)
@@ -51,7 +51,7 @@ func TestEmptyRoomStaysClosed(t *testing.T) {
 }
 
 func TestMeetingWithinTheHourOpensBeforeItStarts(t *testing.T) {
-	got := Level(settings.Cout, at(12, 30), day(meeting), a125, settings)
+	got := Level(settings.Cout, 0, at(12, 30), day(meeting), a125, settings)
 
 	if got == 0 {
 		t.Errorf("level 0 half an hour before the meeting, want open")
@@ -59,7 +59,7 @@ func TestMeetingWithinTheHourOpensBeforeItStarts(t *testing.T) {
 }
 
 func TestMeetingBeyondTheHourStaysClosed(t *testing.T) {
-	got := Level(settings.Cout, at(11, 30), day(meeting), a125, settings)
+	got := Level(settings.Cout, 0, at(11, 30), day(meeting), a125, settings)
 
 	if got != 0 {
 		t.Errorf("level %v an hour and a half before the meeting, want 0", got)
@@ -71,7 +71,7 @@ func TestChosenLevelIsTheLowestThatStaysUnder(t *testing.T) {
 	C := 800.0
 	f := day(three)
 
-	d := Level(C, now, f, a125, settings)
+	d := Level(C, 0, now, f, a125, settings)
 
 	N := expected(f, now, settings.Horizon)
 	if !staysUnder(C, d, N, a125, settings) {
@@ -84,8 +84,8 @@ func TestChosenLevelIsTheLowestThatStaysUnder(t *testing.T) {
 }
 
 func TestMeetingNeedsLessWhenTheRoomStartsClean(t *testing.T) {
-	clean := Level(settings.Cout, at(13, 0), day(meeting), a125, settings)
-	stale := Level(900, at(13, 0), day(meeting), a125, settings)
+	clean := Level(settings.Cout, 0, at(13, 0), day(meeting), a125, settings)
+	stale := Level(900, 0, at(13, 0), day(meeting), a125, settings)
 
 	if clean >= stale {
 		t.Errorf("level %v from outdoor air, %v from 900 ppm, want less from outdoor air", clean, stale)
@@ -93,10 +93,47 @@ func TestMeetingNeedsLessWhenTheRoomStartsClean(t *testing.T) {
 }
 
 func TestAlreadyOverTheTargetOpensFully(t *testing.T) {
-	got := Level(2100, at(10, 0), day(three), a125, settings)
+	got := Level(2100, 0, at(10, 0), day(three), a125, settings)
 
 	if got != 1 {
 		t.Errorf("level %v at 2100 ppm, want 1", got)
+	}
+}
+
+func TestUnexpectedPeopleRaiseTheLevel(t *testing.T) {
+	expected := Level(800, 3, at(10, 0), day(three), a125, settings)
+	unexpected := Level(800, 6, at(10, 0), day(three), a125, settings)
+
+	if unexpected <= expected {
+		t.Errorf("level %v for 6 people, %v for the 3 forecast, want higher for 6", unexpected, expected)
+	}
+}
+
+func TestCountAtTheForecastRoundedUpChangesNothing(t *testing.T) {
+	f := day(func(time.Time) float64 { return 2.4 })
+
+	counted := Level(800, 3, at(10, 0), f, a125, settings)
+	unknown := Level(800, 0, at(10, 0), f, a125, settings)
+
+	if counted != unknown {
+		t.Errorf("level %v with 3 counted, %v with no count, want the same", counted, unknown)
+	}
+}
+
+func TestUnexpectedCountIsHeldUnderTheTarget(t *testing.T) {
+	now := at(10, 0)
+	C := settings.Cout
+	empty := day(func(time.Time) float64 { return 0 })
+
+	d := Level(C, 6, now, empty, a125, settings)
+
+	six := expected(day(func(time.Time) float64 { return 6 }), now, settings.Horizon)
+	if !staysUnder(C, d, six, a125, settings) {
+		t.Errorf("level %v lets 6 people take CO2 over %v ppm", d, settings.Target)
+	}
+	lower := d - 1.0/steps
+	if lower >= 0 && staysUnder(C, lower, six, a125, settings) {
+		t.Errorf("level %v also holds 6 people under, want it chosen over %v", lower, d)
 	}
 }
 

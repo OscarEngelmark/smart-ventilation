@@ -1,5 +1,5 @@
-// Package planner chooses a room's damper level from its occupancy forecast
-// and its learned room model, by predicting CO2 ahead with
+// Package planner chooses a room's damper level from its occupancy forecast,
+// its head count and its learned room model, by predicting CO2 ahead with
 //
 //	dC/dt = a·N − (b0 + b1·d)·(C − Cout)
 //
@@ -7,6 +7,7 @@
 package planner
 
 import (
+	"math"
 	"time"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
@@ -42,8 +43,17 @@ const dt = time.Minute
 // now, holding that level the whole time. When no lower level does, it returns
 // 1, whether or not fully open does. C is the CO2 level at now, in ppm. A time
 // the forecast doesn't cover counts as nobody expected.
-func Level(C float64, now time.Time, f Forecast, m roommodel.Model, s Settings) float64 {
+//
+// counted is the head count at now, 0 when unknown. When it is above the
+// forecast for now rounded up, the extra people are unexpected, and every
+// minute of the horizon expects at least counted people.
+func Level(C float64, counted int, now time.Time, f Forecast, m roommodel.Model, s Settings) float64 {
 	N := expected(f, now, s.Horizon)
+	if float64(counted) > math.Ceil(peopleAt(f, now)) {
+		for k := range N {
+			N[k] = math.Max(N[k], float64(counted))
+		}
+	}
 	for i := range steps {
 		d := float64(i) / steps
 		if staysUnder(C, d, N, m, s) {
