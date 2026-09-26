@@ -958,9 +958,24 @@ _(nothing yet)_
     reading published after the restart was stored. Rejected: a persistent
     session instead — Mosquitto keeps sessions in memory by default, so a
     broker restart would still lose the subscriptions.
-  - **Revisit:** subscriptions use QoS 1 (at-least-once) with no dedup and no
-    unique key, so a message can be stored twice; with no persistent session,
-    messages published while the service is down are lost.
+  - **Decided: the storage-service connects with a persistent session, and
+    each table refuses a second row with the same room and timestamp.**
+    Today it connects with a clean session, so the broker forgets it on
+    disconnect and every reading published while it is down is lost. With
+    clean session off, the broker keeps its subscriptions and saves QoS 1
+    messages for it until it reconnects under the same client ID. Mosquitto
+    saves at most 1000 per absent client by default, about 14 real minutes
+    at 10× speed; a longer outage still loses the rest, and a broker restart
+    loses the saved messages (they are kept in memory), which is why
+    resubscribing on every connect stays. The broker resends any QoS 1
+    message it isn't sure was received, so duplicates become more likely:
+    `(room_id, ts)` is made unique in each table, and inserts skip a row
+    that is already stored. Timestamps are whole seconds, so this assumes
+    no source sends twice in one second. Rejected: QoS 2 (exactly once) —
+    it holds only while the service remembers what it received, which it
+    forgets on restart, the case being guarded against. Decided 2026-09-26;
+    not implemented (working plan row 10). Existing duplicate rows must be
+    removed before the uniqueness rule can be added.
   - **Revisit:** a bad payload or failed save is logged and dropped, never
     retried.
   - **Revisit:** only the sender's timestamp is stored (as text, whole
