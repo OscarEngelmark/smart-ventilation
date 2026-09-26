@@ -3,7 +3,8 @@
 //
 //	dC/dt = a·N − (b0 + b1·d)·(C − Cout)
 //
-// The plan and its reasoning are in project_notes.md §7.
+// Without a room model, it chooses from the CO2 level alone. The plan and its
+// reasoning are in project_notes.md §7.
 package planner
 
 import (
@@ -27,9 +28,10 @@ type Slot struct {
 
 // Settings are the plan's fixed values.
 type Settings struct {
-	Target  float64       // CO2 level the plan stays under, in ppm
-	Horizon time.Duration // how far ahead the plan looks
-	Cout    float64       // outdoor CO2 level, in ppm
+	Target     float64       // CO2 level the plan stays under, in ppm
+	Horizon    time.Duration // how far ahead the plan looks
+	Cout       float64       // outdoor CO2 level, in ppm
+	CloseBelow float64       // CO2 level below which Switch closes the damper, in ppm
 }
 
 // steps is how many equal steps the damper range is divided into.
@@ -61,6 +63,19 @@ func Level(C float64, counted int, now time.Time, f Forecast, m roommodel.Model,
 		}
 	}
 	return 1
+}
+
+// Switch returns the damper level when there is no room model to plan with,
+// from the CO2 level C alone, in ppm: fully open once C reaches s.Target,
+// closed once it falls below s.CloseBelow, and current in between.
+func Switch(C, current float64, s Settings) float64 {
+	if C >= s.Target {
+		return 1
+	}
+	if C < s.CloseBelow {
+		return 0
+	}
+	return current
 }
 
 // staysUnder reports whether CO2, starting at C with the damper held at d,

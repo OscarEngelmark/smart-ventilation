@@ -129,6 +129,7 @@ services:
       ACTUATOR_URL: http://actuator:8080
       PLAN_TARGET_PPM: 950
       PLAN_HORIZON: 60m
+      FALLBACK_CLOSE_PPM: 800
     depends_on:
       - mosquitto
       - actuator

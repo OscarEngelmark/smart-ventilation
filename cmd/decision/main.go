@@ -120,9 +120,10 @@ func main() {
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
 	settings := planner.Settings{
-		Target:  env.Float("PLAN_TARGET_PPM", 950),
-		Horizon: env.Duration("PLAN_HORIZON", time.Hour),
-		Cout:    env.Float("OUTDOOR_CO2_PPM", 420),
+		Target:     env.Float("PLAN_TARGET_PPM", 950),
+		Horizon:    env.Duration("PLAN_HORIZON", time.Hour),
+		Cout:       env.Float("OUTDOOR_CO2_PPM", 420),
+		CloseBelow: env.Float("FALLBACK_CLOSE_PPM", 800),
 	}
 
 	clock := roomtime.FromEnv()
@@ -151,7 +152,7 @@ func main() {
 	var last float64     // the last level the actuator accepted
 	for range readings { // wait for each CO2 reading in turn
 		in := state.snapshot()
-		chosen := choose(in, settings)
+		chosen := choose(in, settings, last)
 		if sent && chosen == last {
 			continue
 		}
@@ -166,18 +167,22 @@ func main() {
 }
 
 // choose returns the damper level, 0 (closed) to 1 (fully open), for the
-// room's current inputs: the planner's level once a forecast and a room model
-// have arrived, and closed until then. Before the first head count, the
-// planner is given 0 people counted, so it plans from the forecast alone.
-func choose(in inputs, s planner.Settings) float64 {
-	if in.forecast == nil || in.model == nil {
-		return 0
+// room's current inputs, where current is the level the damper is at now.
+// Without a room model it switches on CO2 alone; without a forecast the
+// planner plans for the counted people alone; before the first head count it
+// is given 0 people counted, so it plans from the forecast alone.
+func choose(in inputs, s planner.Settings, current float64) float64 {
+	if in.model == nil {
+		return planner.Switch(in.co2.PPM, current, s)
 	}
 	counted := 0
 	if in.people != nil {
 		counted = in.people.Count
 	}
-	f := plannerForecast(in.forecast)
+	var f planner.Forecast // no slots: nobody expected
+	if in.forecast != nil {
+		f = plannerForecast(in.forecast)
+	}
 	m := roommodel.Model{A: in.model.A, B0: in.model.B0, B1: in.model.B1}
 	return planner.Level(in.co2.PPM, counted, in.co2.Ts, f, m, s)
 }

@@ -871,6 +871,33 @@ _(nothing yet)_
     - Replaces *Idea, not yet evaluated: when occupancy is unexpected, the
       reactive mechanism sets the damper at once to the airflow the counted
       people need*.
+  - **Decided: without a forecast the plan uses the head count alone;
+    without a room model the damper switches on CO2 alone; an old room model
+    is used however old.**
+    - No forecast, or one for an earlier day (its slots don't cover the
+      current time): the plan expects nobody, so every counted person is
+      unexpected and planned for. The room is no longer ventilated ahead of
+      meetings, but stays under the target.
+    - No room model, as before the first fit succeeds or after the broker
+      restarts (it keeps retained messages in memory only): no level can be
+      predicted, so the damper opens fully when a reading reaches 950 ppm
+      and closes once CO2 is back below 800 ppm. The gap between the two
+      keeps the damper from flipping on every reading. This also moves the
+      damper between closed and fully open, which the room-model fit needs
+      before it can publish a first model. 800 ppm is an untuned default
+      (`FALLBACK_CLOSE_PPM` in `docker-compose.yml`).
+    - An old room model: kept, since a room's rates change slowly. When a
+      fit fails, the room-model service publishes nothing and the last
+      model stays retained.
+    - Rejected for the missing model: keeping the damper closed — with 3
+      people CO2 settles near 2100 ppm, and the damper never moves, so the
+      room model can never be fitted. Rejected: fully open whenever anyone
+      is counted — safe, since the fan holds a full room, but it runs the
+      whole fan all day and relies on the counter. Trade-off: until the
+      first model, CO2 swings between 800 and 950 ppm, with the fan off or
+      at full.
+    - Decided and implemented 2026-09-26 (`planner.Switch` in
+      `internal/planner`, with unit tests; used by `cmd/decision`).
   - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
 - **Decided: the CO2 forecast service is removed; the occupancy forecast is

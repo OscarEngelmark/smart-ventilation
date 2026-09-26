@@ -10,7 +10,7 @@ import (
 // a125 is the room model close to what the fit finds for A125.
 var a125 = roommodel.Model{A: 4.7, B0: 0.00875, B1: 0.0496}
 
-var settings = Settings{Target: 950, Horizon: time.Hour, Cout: 420}
+var settings = Settings{Target: 950, Horizon: time.Hour, Cout: 420, CloseBelow: 800}
 
 // at returns hour:minute UTC on Monday 2026-09-28.
 func at(hour, minute int) time.Time {
@@ -134,6 +134,33 @@ func TestUnexpectedCountIsHeldUnderTheTarget(t *testing.T) {
 	lower := d - 1.0/steps
 	if lower >= 0 && staysUnder(C, lower, six, a125, settings) {
 		t.Errorf("level %v also holds 6 people under, want it chosen over %v", lower, d)
+	}
+}
+
+func TestNoForecastPlansForTheCountedPeople(t *testing.T) {
+	none := Level(800, 3, at(10, 0), Forecast{}, a125, settings)
+	forecast := Level(800, 3, at(10, 0), day(three), a125, settings)
+
+	if none != forecast {
+		t.Errorf("level %v with no forecast, %v with 3 forecast, want the same for 3 counted", none, forecast)
+	}
+}
+
+func TestSwitchOpensAtTheTargetAndClosesBelowTheLowerLevel(t *testing.T) {
+	if got := Switch(950, 0, settings); got != 1 {
+		t.Errorf("level %v at 950 ppm, want 1", got)
+	}
+	if got := Switch(799, 1, settings); got != 0 {
+		t.Errorf("level %v at 799 ppm, want 0", got)
+	}
+}
+
+func TestSwitchKeepsTheLevelInBetween(t *testing.T) {
+	if got := Switch(900, 0, settings); got != 0 {
+		t.Errorf("level %v at 900 ppm while closed, want 0", got)
+	}
+	if got := Switch(800, 1, settings); got != 1 {
+		t.Errorf("level %v at 800 ppm while open, want 1", got)
 	}
 }
 
