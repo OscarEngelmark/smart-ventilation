@@ -813,8 +813,8 @@ _(nothing yet)_
     don't push a room held at the target over it. A reading at or above 950
     ppm opens the damper fully, since no lower level keeps CO2 under it,
     which covers a wrong model or a failed counter. Both numbers are
-    untuned defaults (`PLAN_TARGET_PPM` and `PLAN_HORIZON` in
-    `docker-compose.yml`); 60 minutes is longer than the 20–40 minutes a
+    untuned defaults (`PLAN_TARGET_PPM` in `sim.env`, shared with the
+    dashboard, and `PLAN_HORIZON` in `docker-compose.yml`); 60 minutes is longer than the 20–40 minutes a
     moderately open damper takes to clear the room. Rejected: a level for
     every minute ahead, chosen to use the least fan in total — it needs an
     optimization solver and is harder to test and explain. Rejected:
@@ -1215,7 +1215,28 @@ _(nothing yet)_
 
 ## 12. Dashboard
 
-_(nothing yet)_
+- **Decided: the dashboard is a small service of its own, serving one web
+  page that reads the room's history from the storage-service's REST
+  endpoints.** The page asks `GET /latest` for the newest stored room time
+  and draws the room time before it: CO2 with the 950 ppm target and the
+  1000 ppm threshold, the head count, and the damper level, refreshed every
+  5 real seconds. The service passes the page's `/api/...` requests on to
+  the storage-service, since a browser refuses to read from another address
+  than the page's own unless that address allows it. Rejected: Grafana
+  reading the same endpoints through a plugin. Grafana draws every chart
+  over a window of wall-clock time and hides data outside it, while stored
+  timestamps are room time, days ahead of the wall clock and, sped up,
+  drawing further ahead every second; a fixed shift of the window can't
+  follow that. Rejected: any tool reading the SQLite file directly — it
+  bypasses the storage interface (see *Decided: CO2 readings, occupancy
+  counts, and commands are persisted in…*, §7). Rejected: a page fed live
+  from MQTT — it shows only what arrived while it was open and needs the
+  broker to accept WebSocket connections; reading storage also shows the
+  pipeline serving monitoring. Trade-off: the page is code to write and
+  test, and it polls rather than being pushed each change. Charts use uPlot,
+  kept in the repository so the page needs no internet; chosen as a small
+  library with time axes built in, a low-stakes default. Decided 2026-09-27.
+  - Useful for: §4.4, §7.2, §12.
 
 ## 13. Risks and critical reflection
 

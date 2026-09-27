@@ -18,7 +18,5 @@ sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith 
 bs: "BuildSim\n[Software System, external]\nShared building state: people\nin each room, sensor values,\nactuator state"
 
 occupants -> bs: "are in the room, raising its CO2\n(simulated from a weekday schedule)"
-operator -> sys: "monitors [dashboard, not yet designed]" {
-  style.stroke-dash: 4
-}
+operator -> sys: "monitors [dashboard web page, HTTP]"
 sys <-> bs: "reads/writes room and actuator state [REST]"

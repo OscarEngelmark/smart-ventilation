@@ -109,7 +109,6 @@ services:
     environment:
       MQTT_BROKER_URL: *broker-url
       ACTUATOR_URL: http://actuator:8080
-      PLAN_TARGET_PPM: 950
       PLAN_LOWER_MARGIN_PPM: 20
       PLAN_HORIZON: 60m
       FALLBACK_CLOSE_PPM: 800
@@ -169,6 +168,24 @@ services:
       - mosquitto
     # The service exits if the broker isn't ready yet at startup; Docker then
     # starts it again.
+    restart: on-failure
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: cmd/dashboard/Dockerfile
+    # Shared values and the session's clock come from x-env-files; the
+    # settings below are this service's own wiring.
+    env_file: *env-files
+    environment:
+      STORAGE_URL: http://storage-service:8081
+      DASHBOARD_WINDOW: 6h
+    ports:
+      # Only reachable from this machine; open http://127.0.0.1:8082.
+      - "127.0.0.1:8082:8082"
+    depends_on:
+      - storage-service
+    # Docker starts the service again if it stops with an error.
     restart: on-failure
 
 volumes:

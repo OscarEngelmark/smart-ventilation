@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Ventilation</title>
+<link rel="stylesheet" href="uPlot.min.css">
+<style>
+  body { font-family: system-ui, sans-serif; margin: 16px; background: #fff; color: #222; }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  h2 { font-size: 1rem; margin: 20px 0 4px; }
+  #status { color: #666; font-size: 0.9rem; }
+  #status.error { color: #b00020; }
+  .now { display: flex; flex-wrap: wrap; gap: 32px; margin: 16px 0; }
+  .now div { color: #666; font-size: 0.9rem; }
+  .now span { display: block; color: #222; font-size: 1.6rem; }
+</style>
+</head>
+<body>
+<h1>Smart Ventilation, <span id="room"></span></h1>
+<div id="status">Loading…</div>
+<div class="now">
+  <div>Room time<span id="now-time">–</span></div>
+  <div>CO2<span id="now-co2">–</span></div>
+  <div>People<span id="now-people">–</span></div>
+  <div>Damper level<span id="now-damper">–</span></div>
+</div>
+<h2>CO2 (ppm)</h2>
+<div id="co2"></div>
+<h2>People in the room</h2>
+<div id="people"></div>
+<h2>Damper level (0 closed, 1 fully open)</h2>
+<div id="damper"></div>
+
+<script src="uPlot.iife.min.js"></script>
+<script>
+const tz = "Europe/Stockholm"; // the time zone the room's office hours follow
+const refreshMs = 5000; // real time between refreshes
+const chartHeight = 220;
+const stepped = uPlot.paths.stepped({ align: 1 }); // each value holds until the next
+
+// seconds turns a stored timestamp into Unix seconds, the time unit uPlot uses.
+const seconds = ts => Date.parse(ts) / 1000;
+
+// getJSON fetches path and reads the answer as JSON, failing on an error status.
+async function getJSON(path) {
+  const resp = await fetch(path);
+  if (!resp.ok) {
+    throw new Error(`${path}: ${resp.status} ${await resp.text()}`);
+  }
+  return resp.json();
+}
+
+// held turns values that each hold until the next into a line from since to latest.
+function held(points, since, latest) {
+  const xs = points.map(p => Math.max(p.t, since)); // a value from before since starts at since
+  const ys = points.map(p => p.v);
+  if (ys.length > 0) {
+    xs.push(latest);
+    ys.push(ys[ys.length - 1]);
+  }
+  return [xs, ys];
+}
+
+// makeChart draws an empty chart inside the element with the given id.
+function makeChart(id, series, yRange) {
+  const el = document.getElementById(id);
+  const opts = {
+    width: el.clientWidth,
+    height: chartHeight,
+    tzDate: ts => uPlot.tzDate(new Date(ts * 1000), tz),
+    scales: { x: { time: true }, y: { range: yRange } },
+    series: [{}, ...series],
+  };
+  const empty = [[], ...series.map(() => [])];
+  return new uPlot(opts, empty, el);
+}
+
+// formatTime writes Unix seconds as a weekday, date and time in the room's zone.
+function formatTime(s) {
+  return new Date(s * 1000).toLocaleString("en-GB", {
+    timeZone: tz, weekday: "short", day: "numeric", month: "short",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+// refresh fetches the room's recent history and redraws every chart with it.
+async function refresh(config, charts) {
+  const latestResp = await fetch("api/latest");
+  if (latestResp.status === 204) {
+    throw new Error("nothing stored yet");
+  }
+  const latest = seconds((await latestResp.text()).trim()); // newest stored room time
+  const since = latest - config.window_seconds;
+  const query = new URLSearchParams({
+    room: config.room,
+    since: new Date(since * 1000).toISOString(),
+  });
+  const [co2, people, commands] = await Promise.all([
+    getJSON(`api/co2?${query}`),
+    getJSON(`api/occupancy?${query}`),
+    getJSON(`api/commands?${query}`),
+  ]);
+
+  const co2Times = co2.map(r => seconds(r.ts));
+  charts.co2.setData([
+    co2Times,
+    co2.map(r => r.ppm),
+    co2Times.map(() => config.target_ppm),
+    co2Times.map(() => config.threshold_ppm),
+  ]);
+  const counts = people.map(r => ({ t: seconds(r.ts), v: r.count }));
+  charts.people.setData(held(counts, since, latest));
+  const levels = commands.map(c => ({ t: seconds(c.ts), v: c.level }));
+  charts.damper.setData(held(levels, since, latest));
+  for (const chart of Object.values(charts)) {
+    chart.setScale("x", { min: since, max: latest }); // same time span on every chart
+  }
+
+  document.getElementById("now-time").textContent = formatTime(latest);
+  const lastCO2 = co2.at(-1);
+  const lastCount = people.at(-1);
+  const lastCommand = commands.at(-1);
+  document.getElementById("now-co2").textContent = lastCO2 ? `${Math.round(lastCO2.ppm)} ppm` : "–";
+  document.getElementById("now-people").textContent = lastCount ? lastCount.count : "–";
+  document.getElementById("now-damper").textContent = lastCommand ? lastCommand.level.toFixed(2) : "–";
+}
+
+// setStatus shows a line under the heading, in red when it reports an error.
+function setStatus(text, isError) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = isError ? "error" : "";
+}
+
+async function main() {
+  const config = await getJSON("config");
+  document.getElementById("room").textContent = config.room;
+
+  const charts = {
+    co2: makeChart("co2", [
+      { label: "CO2", stroke: "#1f6feb", width: 2 },
+      { label: "Target", stroke: "#bf8700", dash: [6, 4] },
+      { label: "Threshold", stroke: "#cf222e", dash: [6, 4] },
+    ], (u, min, max) => [Math.min(400, min), Math.max(1100, max + 50)]),
+    people: makeChart("people", [
+      { label: "People", stroke: "#1a7f37", width: 2, paths: stepped },
+    ], (u, min, max) => [0, Math.max(1, max) + 1]),
+    damper: makeChart("damper", [
+      { label: "Damper level", stroke: "#8250df", width: 2, paths: stepped },
+    ], [0, 1.05]),
+  };
+  window.addEventListener("resize", () => {
+    for (const chart of Object.values(charts)) {
+      chart.setSize({ width: chart.root.parentElement.clientWidth, height: chartHeight });
+    }
+  });
+
+  async function tick() {
+    try {
+      await refresh(config, charts);
+      setStatus(`Updated ${new Date().toLocaleTimeString("en-GB")} (real time)`, false);
+    } catch (err) {
+      setStatus(`Could not update: ${err.message}`, true);
+    }
+    setTimeout(tick, refreshMs); // the next refresh starts once this one has finished
+  }
+  tick();
+}
+
+main().catch(err => setStatus(`Could not start: ${err.message}`, true));
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 # C4 Container diagram. Rationale for each choice: project_notes.md, section 4.
-# Dashed boxes and arrows are not decided yet. REST arrows point from the
-# caller to the service it calls; the response data flows back. Grids with
-# grid-rows are filled row by row; empty cells keep arrows clear of boxes.
+# Dashed outlines are boundaries. REST arrows point from the caller to the
+# service it calls; the response data flows back. Grids with grid-rows are
+# filled row by row; empty cells keep arrows clear of boxes.
 grid-rows: 2
 vertical-gap: 40
 
@@ -12,9 +12,7 @@ sys: "Smart Ventilation  [System]" {
   horizontal-gap: 220
   vertical-gap: 110
 
-  dash: "Dashboard\n[Container: not yet decided]" {
-    style.stroke-dash: 4
-  }
+  dash: "Dashboard\n[Container: Go, web page]\nShows CO2, head count and\ndamper level over recent\nroom time"
   storage: "Storage service\n[Container: Go]\nStores readings and\ncommands; serves\ntheir history"
   db: "Readings store\n[SQLite]\nAccessed only via\nstore.Store" {
     shape: cylinder
@@ -90,6 +88,4 @@ sys.roommodel -> sys.broker: "room/<room>/model,\nretained [MQTT]"
 sys.broker -> sys.storage: "readings and\ncommands [MQTT]"
 sys.roommodel -> sys.storage: "GET /co2, /occupancy,\n/commands [REST]"
 sys.storage <-> sys.db: "save / read\n[store.Store]"
-sys.dash -> sys.storage: "reads history\n[not yet decided]" {
-  style.stroke-dash: 4
-}
+sys.dash -> sys.storage: "GET /latest, /co2,\n/occupancy, /commands\n[REST]"
