@@ -6,14 +6,14 @@
 <title>Smart Ventilation</title>
 <link rel="stylesheet" href="uPlot.min.css">
 <style>
-  body { font-family: system-ui, sans-serif; margin: 16px; background: #fff; color: #222; }
+  body { font-family: system-ui, sans-serif; margin: 16px; background: #1e1e1e; color: #d4d4d4; }
   h1 { font-size: 1.3rem; margin: 0 0 4px; }
   h2 { font-size: 1rem; margin: 20px 0 4px; }
-  #status { color: #666; font-size: 0.9rem; }
-  #status.error { color: #b00020; }
+  #status { color: #9d9d9d; font-size: 0.9rem; }
+  #status.error { color: #f85149; }
   .now { display: flex; flex-wrap: wrap; gap: 32px; margin: 16px 0; }
-  .now div { color: #666; font-size: 0.9rem; }
-  .now span { display: block; color: #222; font-size: 1.6rem; }
+  .now div { color: #9d9d9d; font-size: 0.9rem; }
+  .now span { display: block; color: #d4d4d4; font-size: 1.6rem; }
   .now span.speed { display: inline; color: inherit; font-size: inherit; }
 </style>
 </head>
@@ -39,6 +39,7 @@ const tz = "Europe/Stockholm"; // the time zone the room's office hours follow
 const refreshMs = 5000; // real time between refreshes
 const chartHeight = 220;
 const stepped = uPlot.paths.stepped({ align: 1 }); // each value holds until the next
+const axis = { stroke: "#9d9d9d", grid: { stroke: "#333" }, ticks: { stroke: "#333" } };
 
 // seconds turns a stored timestamp into Unix seconds, the time unit uPlot uses.
 const seconds = ts => Date.parse(ts) / 1000;
@@ -73,6 +74,7 @@ function makeChart(id, series, yRange) {
     tzDate: ts => uPlot.tzDate(new Date(ts * 1000), tz),
     scales: { x: { time: true }, y: { range: yRange } },
     series: [{}, ...series],
+    axes: [axis, axis], // x axis, then y axis
   };
   const empty = [[], ...series.map(() => [])];
   return new uPlot(opts, empty, el);
@@ -147,15 +149,15 @@ function setStatus(text, isError) {
 function main() {
   const charts = {
     co2: makeChart("co2", [
-      { label: "CO2", stroke: "#1f6feb", width: 2 },
-      { label: "Target", stroke: "#bf8700", dash: [6, 4] },
-      { label: "Threshold", stroke: "#cf222e", dash: [6, 4] },
+      { label: "CO2", stroke: "#58a6ff", width: 2 },
+      { label: "Target", stroke: "#d29922", dash: [6, 4] },
+      { label: "Threshold", stroke: "#f85149", dash: [6, 4] },
     ], (u, min, max) => [Math.min(400, min), Math.max(1100, max + 50)]),
     people: makeChart("people", [
-      { label: "People", stroke: "#1a7f37", width: 2, paths: stepped },
+      { label: "People", stroke: "#3fb950", width: 2, paths: stepped },
     ], (u, min, max) => [0, Math.max(1, max) + 1]),
     damper: makeChart("damper", [
-      { label: "Damper level", stroke: "#8250df", width: 2, paths: stepped },
+      { label: "Damper level", stroke: "#a371f7", width: 2, paths: stepped },
     ], [0, 1.05]),
   };
   window.addEventListener("resize", () => {
