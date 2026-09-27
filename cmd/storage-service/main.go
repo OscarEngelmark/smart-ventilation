@@ -66,12 +66,16 @@ func main() {
 		command:   mustLoadSchema("ventilation_command.schema.json"),
 	}
 
+	handlers := storeHandlers(db, sch) // topic -> the function that saves a message from it
+
 	// Subscribing here rather than once after Connect: the client reconnects
-	// automatically, but with a clean session the broker forgets
-	// subscriptions on disconnect, so they must be renewed on every connect.
+	// automatically, but a broker restart forgets every session's
+	// subscriptions, so they must be renewed on every connect.
 	onConnect := func(client mqtt.Client) {
 		log.Printf("connected to broker, subscribing")
-		subscribeAll(client, db, sch)
+		for topic := range handlers {
+			subscribe(client, topic)
+		}
 	}
 	onConnectionLost := func(_ mqtt.Client, err error) {
 		log.Printf("connection to broker lost: %v", err)
@@ -80,9 +84,17 @@ func main() {
 	opts := mqtt.NewClientOptions().
 		AddBroker(brokerURL).
 		SetClientID("storage-service").
+		SetCleanSession(false). // the broker keeps QoS 1 messages for this client ID while it is away
 		SetOnConnectHandler(onConnect).
 		SetConnectionLostHandler(onConnectionLost)
 	client := mqtt.NewClient(opts)
+	// Handlers are attached before connecting because the broker sends the
+	// messages it held as soon as the connection opens, before onConnect runs.
+	for topic, handle := range handlers {
+		client.AddRoute(topic, func(_ mqtt.Client, msg mqtt.Message) {
+			handle(msg.Payload())
+		})
+	}
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatalf("connect to broker: %v", token.Error())
 	}
@@ -220,11 +232,14 @@ func fail(w http.ResponseWriter, status int, format string, args ...any) {
 	http.Error(w, msg, status)
 }
 
-// subscribeAll subscribes to every topic this service stores. Each message is
-// checked against its schema first, so an invalid one is logged and dropped
-// instead of being saved with zero values for missing fields.
-func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
-	subscribe(client, "co2/+/reading", func(payload []byte) {
+// storeHandlers gives, for every topic this service stores, the function that
+// saves one message from it. Each message is checked against its schema
+// first, so an invalid one is logged and dropped instead of being saved with
+// zero values for missing fields.
+func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload []byte) {
+	handlers := make(map[string]func(payload []byte))
+
+	handlers["co2/+/reading"] = func(payload []byte) {
 		if err := schemas.Validate(sch.reading, payload); err != nil {
 			log.Printf("reading: invalid payload: %v", err)
 			return
@@ -239,9 +254,9 @@ func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 		}); err != nil {
 			log.Printf("reading: save failed: %v", err)
 		}
-	})
+	}
 
-	subscribe(client, "occupancy/+/reading", func(payload []byte) {
+	handlers["occupancy/+/reading"] = func(payload []byte) {
 		if err := schemas.Validate(sch.occupancy, payload); err != nil {
 			log.Printf("occupancy: invalid payload: %v", err)
 			return
@@ -256,9 +271,9 @@ func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 		}); err != nil {
 			log.Printf("occupancy: save failed: %v", err)
 		}
-	})
+	}
 
-	subscribe(client, "ventilation/+/command", func(payload []byte) {
+	handlers["ventilation/+/command"] = func(payload []byte) {
 		if err := schemas.Validate(sch.command, payload); err != nil {
 			log.Printf("command: invalid payload: %v", err)
 			return
@@ -273,13 +288,15 @@ func subscribeAll(client mqtt.Client, db store.Store, sch payloadSchemas) {
 		}); err != nil {
 			log.Printf("command: save failed: %v", err)
 		}
-	})
+	}
+
+	return handlers
 }
 
-func subscribe(client mqtt.Client, topic string, handle func(payload []byte)) {
-	token := client.Subscribe(topic, 1, func(_ mqtt.Client, msg mqtt.Message) {
-		handle(msg.Payload())
-	})
+// subscribe asks the broker for topic's messages at QoS 1; they are delivered
+// to the handler already attached with AddRoute.
+func subscribe(client mqtt.Client, topic string) {
+	token := client.Subscribe(topic, 1, nil) // nil: no handler here, the route handles it
 	token.Wait()
 	if err := token.Error(); err != nil {
 		log.Fatalf("subscribe %s: %v", topic, err)

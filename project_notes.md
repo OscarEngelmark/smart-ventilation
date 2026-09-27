@@ -1120,8 +1120,8 @@ _(nothing yet)_
     broker restart would still lose the subscriptions.
   - **Decided: the storage-service connects with a persistent session, and
     each table refuses a second row with the same room and timestamp.**
-    Today it connects with a clean session, so the broker forgets it on
-    disconnect and every reading published while it is down is lost. With
+    With a clean session, the broker forgets it on disconnect and every
+    reading published while it is down is lost. With
     clean session off, the broker keeps its subscriptions and saves QoS 1
     messages for it until it reconnects under the same client ID. Mosquitto
     saves at most 1000 per absent client by default, about 14 real minutes
@@ -1133,9 +1133,27 @@ _(nothing yet)_
     that is already stored. Timestamps are whole seconds, so this assumes
     no source sends twice in one second. Rejected: QoS 2 (exactly once) —
     it holds only while the service remembers what it received, which it
-    forgets on restart, the case being guarded against. Decided 2026-09-26;
-    not implemented (working plan row 10). Existing duplicate rows must be
-    removed before the uniqueness rule can be added.
+    forgets on restart, the case being guarded against. Decided 2026-09-26,
+    implemented 2026-09-27 (`SetCleanSession(false)` in
+    `cmd/storage-service`; unique indexes and `ON CONFLICT DO NOTHING` in
+    `internal/store/sqlite.go`).
+    - SQLite can't add a unique index to a table that already holds
+      duplicates, so opening the file first deletes them, keeping the
+      earliest saved row. Rejected: a one-off cleanup by hand — the code
+      would then fail on any older copy of the database. The live database
+      held none (105,025 CO2 readings checked).
+    - The message handlers are attached to the MQTT client before it
+      connects (`AddRoute`), not when subscribing. The broker sends the
+      messages it held as soon as the connection opens, before the
+      on-connect handler has subscribed; the library leaves a message with
+      no handler unsaved and unacknowledged, so it waits for the next
+      connection. Found in a 60 s outage that lost the first 5 readings;
+      the broker delivered them once the fix was running.
+    - Evidence: unit tests for a reading saved twice (stored once) and for
+      opening a file that already holds a duplicate (the earlier row kept).
+      On the running stack at 10×, three 60 s stops of the storage-service
+      left no hole in the stored history: 248 CO2 readings, each 10 room
+      seconds after the last, and head counts every 60.
   - **Fixed 2026-09-27 (bug): a save or read that met another request's
     lock on the SQLite file failed at once with "database is locked".**
     In SQLite's default mode a write must wait for reads in progress and
@@ -1160,8 +1178,9 @@ _(nothing yet)_
     `GET /co2` every real second gave no failed request, lock error or
     failed save.
     - Indexes on `(room_id, ts)` would shorten each read, but not stop the
-      failures. Every query scans its whole table today; `GET /latest`
-      takes about 17 ms at two weeks of history. Left for the stress test.
+      failures. Each table has one since 2026-09-27, as the uniqueness rule
+      above; before that every query scanned its whole table, and
+      `GET /latest` took about 17 ms at two weeks of history.
   - **Revisit:** a bad payload or failed save is logged and dropped, never
     retried.
   - **Revisit:** only the sender's timestamp is stored (as text, whole
@@ -1360,4 +1379,14 @@ was caught. Kept for the report's reflection and the oral exam.
   listing BuildSim as started. Rebuilding one service alone takes
   `docker compose build decision`, then `docker compose up -d --no-deps
   decision`. Noted 2026-09-27.
+  - Useful for: §13.
+
+- **The assistant said a persistent session alone would keep the messages
+  published while the storage-service was down.** The broker did keep them,
+  but the service attached its message handlers only when subscribing after
+  connecting, and the first held messages arrived before that, so they
+  weren't saved. Caught by stopping the service for 60 s on the running
+  stack and listing the holes in the stored readings. The handlers are now
+  attached before connecting (see *Decided: the storage-service connects
+  with a persistent session…*, §7). Noted 2026-09-27.
   - Useful for: §13.
