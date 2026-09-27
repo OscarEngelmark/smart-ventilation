@@ -1181,24 +1181,39 @@ _(nothing yet)_
       failures. Each table has one since 2026-09-27, as the uniqueness rule
       above; before that every query scanned its whole table, and
       `GET /latest` took about 17 ms at two weeks of history.
-  - **Revisit:** a bad payload or failed save is logged and dropped, never
-    retried.
+  - **Known caveat — a bad payload or a failed save is logged and dropped,
+    never retried.** Accepted: a bad payload fails the same way on every
+    try, and the failed saves seen so far were lock errors, fixed at their
+    cause by WAL mode (above). Rejected: retrying — it would add a queue
+    and a retry limit for a failure that no longer occurs. Decided
+    2026-09-27.
   - **Revisit:** only the sender's timestamp is stored (as text, whole
     seconds), not the receive time — pipeline latency can't be measured from
     stored data.
   - Fixed 2026-09-17: the SQLite file was lost whenever the container was
     recreated. `docker-compose.yml` now stores it in a Docker volume (storage
     kept outside the container), so readings survive a restart or rebuild.
-  - **Revisit:** pure-Go SQLite driver (`modernc.org/sqlite`) chosen over
-    `mattn/go-sqlite3` without discussion — no C compiler needed in the
-    Docker build, at some speed cost.
-  - **Revisit:** configuration comes from environment variables (broker URL,
-    database path) with local defaults.
-  - **Revisit:** if the broker is unreachable at startup the process exits,
-    relying on Docker's restart policy.
-  - **Revisit:** no graceful shutdown — on container stop the database isn't
-    closed and the client doesn't disconnect (each insert is already
-    committed, so no data is lost).
+  - **Decided: the pure-Go SQLite library (`modernc.org/sqlite`).** The
+    service is built with no C compiler (`CGO_ENABLED=0`) into an image
+    holding only the program. Rejected: `mattn/go-sqlite3`, which wraps
+    SQLite's C code and would need a C compiler in the build and C libraries
+    in the image. Trade-off: the pure-Go library is slower, by an amount not
+    yet measured; the stress test shows whether it matters. Decided
+    2026-09-27.
+  - **Decided for convention: settings come from environment variables**
+    (broker URL, database path, listen address), each with a default for
+    running outside Docker; `docker-compose.yml` sets them. No alternative
+    was weighed. Decided 2026-09-27.
+  - **Decided: if the broker is unreachable at startup, the process exits
+    and Docker starts it again** (`restart: on-failure`). Rejected: retrying
+    inside the program — it would repeat what the restart policy already
+    does, and the same policy covers a crash later on. Decided 2026-09-27.
+  - **Known caveat — no graceful shutdown: on container stop the database
+    isn't closed and the client doesn't disconnect.** Accepted: each save is
+    committed as it happens, and the library confirms a message to the
+    broker only after its handler has returned, so a message cut off
+    mid-save is sent again after the restart and the duplicate check skips
+    it if it was saved after all. Decided 2026-09-27.
   - Useful for: §5, §7.2, §9, §10.
 
 ## 8. Behaviour
