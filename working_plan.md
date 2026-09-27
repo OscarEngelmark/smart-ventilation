@@ -6,6 +6,5 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 9 | Dashboard, step 2: changes after seeing it running | which changes, if any | 0–1 |
 | 10 | Storage-service review list (`project_notes.md` §7) | fix or document each as a known limitation | 1–2 |
 | 11 | Tests: one end-to-end test; fault injection (crashed service, frozen sensor, broker down); stress test to a breaking point | small ones per test | 6–8 |

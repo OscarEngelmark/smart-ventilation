@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 )
@@ -256,6 +257,59 @@ func TestLatestOnEmptyStoreIsNotFound(t *testing.T) {
 	}
 	if ok {
 		t.Errorf("found a latest timestamp in an empty store")
+	}
+}
+
+func TestOpenedFileIsInWALMode(t *testing.T) {
+	s := openTemp(t)
+
+	var mode string
+	if err := s.db.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil {
+		t.Fatalf("journal mode: %v", err)
+	}
+	if mode != "wal" {
+		t.Errorf("journal mode %q, want wal", mode)
+	}
+}
+
+func TestSavesAndReadsAtTheSameTimeAllSucceed(t *testing.T) {
+	s := openTemp(t)
+	for i := range 200 { // history for each read to go through
+		save(t, s, "level0/A125", 420, noon.Add(time.Duration(i)*time.Second))
+	}
+	ctx := context.Background()
+	done := make(chan struct{})     // closed once every save has been tried
+	readErrs := make(chan error, 4) // one slot per reader
+	var readers sync.WaitGroup
+
+	for range 4 {
+		readers.Go(func() { // runs alongside the saves below
+			for {
+				select { // stop once done is closed; otherwise read again
+				case <-done:
+					return
+				default:
+				}
+				if _, _, err := s.Latest(ctx); err != nil {
+					readErrs <- err
+					return
+				}
+			}
+		})
+	}
+	for i := range 200 {
+		r := CO2Reading{RoomID: "level0/A125", PPM: 420, Time: noon.Add(time.Hour + time.Duration(i)*time.Second)}
+		if err := s.SaveCO2Reading(ctx, r); err != nil {
+			t.Errorf("save %d of 200: %v", i+1, err)
+			break
+		}
+	}
+	close(done)
+	readers.Wait() // until every reader has returned
+	close(readErrs)
+
+	for err := range readErrs {
+		t.Errorf("read: %v", err)
 	}
 }
 

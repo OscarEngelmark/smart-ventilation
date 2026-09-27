@@ -15,8 +15,13 @@ type SQLiteStore struct {
 	db *sql.DB
 }
 
+// OpenSQLite opens the SQLite file at path, creating it and its tables if
+// needed. Reads and writes don't block each other (WAL mode), and a request
+// that finds the file locked waits up to 5 s instead of failing at once.
+// Reasoning: project_notes.md §7.
 func OpenSQLite(path string) (*SQLiteStore, error) {
-	db, err := sql.Open("sqlite", path)
+	dsn := "file:" + path + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)" // applied to every connection
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}

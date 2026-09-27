@@ -1136,6 +1136,32 @@ _(nothing yet)_
     forgets on restart, the case being guarded against. Decided 2026-09-26;
     not implemented (working plan row 10). Existing duplicate rows must be
     removed before the uniqueness rule can be added.
+  - **Fixed 2026-09-27 (bug): a save or read that met another request's
+    lock on the SQLite file failed at once with "database is locked".**
+    In SQLite's default mode a write must wait for reads in progress and
+    reads for a write, and the default wait allowed is zero. Over about 8
+    real hours of running the log held 86 such errors, 29 of them saves (27 CO2
+    readings, 2 head counts) that were lost; the others were reads, which
+    showed on the dashboard as a failed refresh. The file is now opened in
+    WAL mode, where new rows go to a side file first so reads and a write
+    don't block each other, with a 5 s wait on any lock left
+    (`OpenSQLite` in `internal/store/sqlite.go`). Rejected: the wait alone —
+    collisions would become short waits instead of errors, enough at
+    today's load, but reads would still hold up saves as readers are
+    added. Rejected: one database connection shared by every request, so
+    the program queues them itself — no lock ever meets another, but each
+    save waits behind whole reads, including the room model's 7-day fetch.
+    Trade-off: WAL keeps two extra files beside the database, and works
+    only while every program using the file runs on the same machine.
+    Evidence: a unit test saving readings while four goroutines read in a
+    loop failed on every run before the change (4 read errors per run) and
+    passes after it; a second test checks the file is in WAL mode. On the
+    running stack at 10×, 5 minutes of `GET /latest` and a 6-hour
+    `GET /co2` every real second gave no failed request, lock error or
+    failed save.
+    - Indexes on `(room_id, ts)` would shorten each read, but not stop the
+      failures. Every query scans its whole table today; `GET /latest`
+      takes about 17 ms at two weeks of history. Left for the stress test.
   - **Revisit:** a bad payload or failed save is logged and dropped, never
     retried.
   - **Revisit:** only the sender's timestamp is stored (as text, whole
