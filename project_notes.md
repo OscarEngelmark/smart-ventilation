@@ -1220,7 +1220,7 @@ _(nothing yet)_
   endpoints.** The page asks `GET /latest` for the newest stored room time
   and draws the room time before it: CO2 with the 950 ppm target and the
   1000 ppm threshold, the head count, and the damper level, refreshed every
-  5 real seconds. The service passes the page's `/api/...` requests on to
+  5 real seconds, with the session's speed beside the room time. The service passes the page's `/api/...` requests on to
   the storage-service, since a browser refuses to read from another address
   than the page's own unless that address allows it. Rejected: Grafana
   reading the same endpoints through a plugin. Grafana draws every chart

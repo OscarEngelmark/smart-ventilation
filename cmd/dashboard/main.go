@@ -24,6 +24,7 @@ var static embed.FS // the page and its chart library, built into the program
 // pageConfig is what the page needs to know before it asks for any data.
 type pageConfig struct {
 	Room          string  `json:"room"`
+	Speed         float64 `json:"speed"` // room time per real time, as start.sh set it
 	WindowSeconds float64 `json:"window_seconds"`
 	TargetPPM     float64 `json:"target_ppm"`
 	ThresholdPPM  float64 `json:"threshold_ppm"`
@@ -36,6 +37,7 @@ func main() {
 	roomName := env.String("ROOM_NAME", "A125")
 	config := pageConfig{
 		Room:          buildsim.RoomKey(level, roomName),
+		Speed:         env.Float("SIM_SPEED", 1),
 		WindowSeconds: env.Duration("DASHBOARD_WINDOW", 6*time.Hour).Seconds(),
 		TargetPPM:     env.Float("PLAN_TARGET_PPM", 950),
 		ThresholdPPM:  env.Float("CO2_THRESHOLD_PPM", 1000),
