@@ -971,10 +971,51 @@ _(nothing yet)_
   data-driven component. The simulated schedule repeats every weekday with
   little randomness, so the forecast here is close to the best any forecast
   could be, and the measured gain is close to the most a forecast could give
-  in this room. To settle it: run the same room day with and without the
-  `occupancy-forecast` container and compare the damper level over the day
-  and the peak CO2 (working plan row 8). Noted 2026-09-26.
-  - Useful for: §1, §4.4, §7.1, §11.
+  in this room. Noted 2026-09-26.
+  - **Decided: the comparison runs on the running stack, one weekday with
+    the forecast and the next without it.** The `occupancy-forecast`
+    container is stopped on the evening of the first day, so the second
+    day's plan has no forecast and plans from the head count alone. For
+    each day, `eval/day_summary.py` reads the storage-service and gives the
+    time-weighted mean damper level over the day, the hour before the
+    meeting, and the meeting hour, and the peak CO2. Both days run at 10×,
+    the speed of every earlier run. Rejected: a program that steps the
+    physical model, the schedule and the planner together, replaying the
+    same date with and without the forecast. It pairs the days exactly and
+    runs many in seconds, but skips the sensors and the broker, among them
+    the head count reaching the decision service up to a minute late, a
+    disadvantage of planning without the forecast. Trade-off: the two days'
+    arrivals differ by up to ±20 minutes per person, so a very small
+    difference can't be told apart from that spread with one day each; a
+    second pair of days is added if the result is borderline. Decided
+    2026-09-27.
+  - **Result: the day with the forecast used more fan, and its one gain
+    was 0.05 of damper level while the room was full.** Monday 2026-10-05
+    ran with the forecast, Tuesday 2026-10-06 without, both at 10× with
+    nearly the same room model:
+
+    | | With forecast | Without |
+    |---|---|---|
+    | Mean damper level, whole day | 0.160 | 0.132 |
+    | Mean damper level, 12:00–13:00 | 0.644 | 0.111 |
+    | Mean damper level, 13:00–14:00 | 0.858 | 0.813 |
+    | Peak CO2 | 949 ppm | 935 ppm |
+    | Person-minutes over the day | 1656 | 1567 |
+    | Minutes with the room full | 48 | 34 |
+
+    With the forecast, the damper opened from 12:00 and CO2 fell from 892
+    to about 650 ppm before the meeting; the full room was then held at
+    0.85. Without it, the damper stayed closed over lunch, CO2 fell to 750
+    ppm on the background airflow alone, and the level rose to 0.90 once
+    six people were counted: the 0.85 against 0.9 computed beforehand. The
+    hour before the meeting accounts for 0.022 of the 0.028 difference over
+    the day; Tuesday's fewer people for the rest. Both days stayed under the
+    950 ppm target; Tuesday's lower peak follows its shorter meeting. The
+    difference is not borderline, so no second pair of days was run.
+    Evidence: `python3 eval/day_summary.py 2026-10-05` and `2026-10-06`;
+    averaging instead the level in force at each CO2 reading gives the same
+    means to within 0.001. Measured 2026-09-27.
+  - Useful for: §1, §4.4, §7.1, §10, §11.
 
 - **Decided: the CO2 forecast service is removed; the occupancy forecast is
   the system's only forecast.** The CO2 forecast was a least-squares straight
@@ -1300,4 +1341,13 @@ was caught. Kept for the report's reflection and the oral exam.
   by comparing the room start in `run.env` with the time the history should
   have stopped, then listing the gaps in the stored readings. Noted
   2026-09-26.
+  - Useful for: §13.
+
+- **The assistant reported the same CO2 level, 848.5 ppm, at 13:00 on both
+  days of the forecast comparison.** Its one-off check fetched every reading
+  from 12:55 onwards and looked them up by clock time, so the second day's
+  readings overwrote the first day's. Caught by the assistant itself, since an
+  identical level after very different damper levels in the hour before was
+  implausible; a trace of each day showed 724 ppm with the forecast and 845
+  ppm without. Noted 2026-09-27.
   - Useful for: §13.
