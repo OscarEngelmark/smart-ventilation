@@ -20,7 +20,10 @@ sys: "Smart Ventilation  [System]" {
     shape: cylinder
   }
 
-  forecast: "Occupancy forecast\n[Container: Go]\nLearns when people come:\nexpected head count per\n5-minute slot of the day"
+  gap3: "" {
+    style.stroke-width: 0
+    style.fill: transparent
+  }
   gap: "" {
     style.stroke-width: 0
     style.fill: transparent
@@ -80,13 +83,11 @@ sys.actuator -> below.room.bs: "sets the damper\nposition [REST]"
 
 sys.co2sensor -> sys.broker: "co2/<room>/reading\n[MQTT]"
 sys.occsensor -> sys.broker: "occupancy/<room>/reading\n[MQTT]"
-sys.broker <-> sys.decision: "to decision: readings,\nforecast, room model;\nto broker: ventilation/<room>/\ncommand, copy once accepted\n[MQTT]"
+sys.broker <-> sys.decision: "to decision: readings,\nroom model;\nto broker: ventilation/<room>/\ncommand, copy once accepted\n[MQTT]"
 sys.decision -> sys.actuator: "POST /command\n[REST]"
-sys.forecast -> sys.broker: "occupancy/<room>/forecast,\nretained [MQTT]"
 sys.roommodel -> sys.broker: "room/<room>/model,\nretained [MQTT]"
 
 sys.broker -> sys.storage: "readings and\ncommands [MQTT]"
-sys.forecast -> sys.storage: "GET /occupancy\n[REST]"
 sys.roommodel -> sys.storage: "GET /co2, /occupancy,\n/commands [REST]"
 sys.storage <-> sys.db: "save / read\n[store.Store]"
 sys.dash -> sys.storage: "reads history\n[not yet decided]" {

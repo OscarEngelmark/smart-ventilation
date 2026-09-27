@@ -1,5 +1,5 @@
 // decision chooses the damper level for one room. It keeps the latest CO2
-// reading, head count, occupancy forecast and room model from the broker,
+// reading, head count and room model from the broker,
 // chooses a level on every CO2 reading, and commands the actuator whenever
 // the level changes, publishing a copy of each command for storage.
 // Reasoning: project_notes.md §4 and §7.
@@ -42,20 +42,6 @@ type occupancyReading struct {
 	Ts     time.Time `json:"ts"`
 }
 
-// occupancyForecast is the occupancy_forecast message, defined by
-// schemas/occupancy_forecast.schema.json.
-type occupancyForecast struct {
-	RoomID      string         `json:"room_id"`
-	Date        string         `json:"date"`
-	SlotMinutes int            `json:"slot_minutes"`
-	Slots       []slotForecast `json:"slots"`
-}
-
-type slotForecast struct {
-	Start  time.Time `json:"start"`
-	People float64   `json:"people"`
-}
-
 // roomModel is the room_model message, defined by
 // schemas/room_model.schema.json.
 type roomModel struct {
@@ -84,10 +70,9 @@ type commandResponse struct {
 // inputs is the latest of each message the decision is made from. A nil
 // field has not arrived yet.
 type inputs struct {
-	co2      *co2Reading
-	people   *occupancyReading
-	forecast *occupancyForecast
-	model    *roomModel
+	co2    *co2Reading
+	people *occupancyReading
+	model  *roomModel
 }
 
 // latest holds the inputs as the broker delivers them. The broker's handlers
@@ -169,9 +154,8 @@ func main() {
 
 // choose returns the damper level, 0 (closed) to 1 (fully open), for the
 // room's current inputs, where current is the level the damper is at now.
-// Without a room model it switches on CO2 alone; without a forecast the
-// planner plans for the counted people alone; before the first head count it
-// is given 0 people counted, so it plans from the forecast alone.
+// Without a room model it switches on CO2 alone; before the first head count
+// it plans for an empty room.
 func choose(in inputs, s planner.Settings, current float64) float64 {
 	if in.model == nil {
 		return planner.Switch(in.co2.PPM, current, s)
@@ -180,21 +164,8 @@ func choose(in inputs, s planner.Settings, current float64) float64 {
 	if in.people != nil {
 		counted = in.people.Count
 	}
-	var f planner.Forecast // no slots: nobody expected
-	if in.forecast != nil {
-		f = plannerForecast(in.forecast)
-	}
 	m := roommodel.Model{A: in.model.A, B0: in.model.B0, B1: in.model.B1}
-	return planner.Level(in.co2.PPM, current, counted, in.co2.Ts, f, m, s)
-}
-
-// plannerForecast turns the forecast message into the planner's form.
-func plannerForecast(msg *occupancyForecast) planner.Forecast {
-	f := planner.Forecast{SlotLength: time.Duration(msg.SlotMinutes) * time.Minute}
-	for _, slot := range msg.Slots {
-		f.Slots = append(f.Slots, planner.Slot{Start: slot.Start, N: slot.People})
-	}
-	return f
+	return planner.Level(in.co2.PPM, current, counted, m, s)
 }
 
 // send commands the actuator to the level and, once the actuator has accepted
@@ -231,7 +202,7 @@ func (c *commander) send(level float64) error {
 	return nil
 }
 
-// subscribeAll subscribes to the room's four inputs. Each message is stored as
+// subscribeAll subscribes to the room's three inputs. Each message is stored as
 // the latest of its kind; a CO2 reading is also queued for a decision.
 func subscribeAll(client mqtt.Client, roomName string, state *latest, readings chan<- co2Reading) {
 	subscribe(client, "co2/"+roomName+"/reading", func(payload []byte) {
@@ -257,17 +228,6 @@ func subscribeAll(client mqtt.Client, roomName string, state *latest, readings c
 		if changed {
 			log.Printf("head count %d", r.Count)
 		}
-	})
-
-	subscribe(client, "occupancy/"+roomName+"/forecast", func(payload []byte) {
-		var f occupancyForecast
-		if !decode("forecast", payload, &f) {
-			return
-		}
-		state.mu.Lock()
-		state.in.forecast = &f
-		state.mu.Unlock()
-		log.Printf("forecast for %s, %d slots", f.Date, len(f.Slots))
 	})
 
 	subscribe(client, "room/"+roomName+"/model", func(payload []byte) {

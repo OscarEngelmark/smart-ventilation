@@ -6,14 +6,14 @@ vars: {
 }
 direction: down
 
-operator: "Operator\n[Person]\nWatches CO2, the occupancy\nforecast, and damper decisions" {
+operator: "Operator\n[Person]\nWatches CO2, the head\ncount, and damper decisions" {
   shape: person
 }
 occupants: "Room occupants\n[Person, simulated]\nRaise CO2 by being in the room" {
   shape: person
 }
 
-sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith the fan as low as possible,\nventilating ahead of expected people"
+sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith the fan as low as possible"
 
 bs: "BuildSim\n[Software System, external]\nShared building state: people\nin each room, sensor values,\nactuator state"
 
