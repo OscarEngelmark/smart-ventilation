@@ -624,14 +624,25 @@ _(nothing yet)_
     `unless-stopped` and stopping the system by hand before every shutdown —
     one forgotten stop gives a silent jump; with `on-failure`, forgetting
     `./start.sh` just leaves the simulation off. Decided and implemented
-    2026-09-24; not yet confirmed across a real reboot.
+    2026-09-24. Confirmed across a reboot 2026-09-27: no container started
+    until `./start.sh` ran, and the new session resumed room time at the last
+    stored reading (23:33:42 UTC, 2026-10-08).
   - Changing speed means running `./start.sh` again. That recreates only the
     project's own services, which read the three values; BuildSim and the
     broker keep running, so the room's CO2 and damper carry on.
   - **Known caveat —** a full shutdown restarts BuildSim, which keeps state
     only in memory, so the room's CO2 resumes from outdoor air while room
     time continues. Ending sessions outside office hours hides this, since
-    an empty room's CO2 decays toward outdoor air overnight anyway.
+    an empty room's CO2 decays toward outdoor air overnight anyway. Seen
+    after the 2026-09-27 reboot: the empty room's CO2 stepped from 454.3 to
+    420 ppm between two readings.
+    - **Revisit:** the room model's fit treats that step as a real change.
+      The two readings were 24 room seconds apart, inside the fit's 1-minute
+      limit, with the damper and head count unchanged, so the step enters
+      the next seven fits as a drop of 86 ppm per minute. At night the
+      effect is small; a reboot with people present would give a far larger
+      false drop, pulling the learned clearing rates up. Size of the effect
+      not measured.
   - Useful for: §6, §9, §11.
 
 - **Decided: occupancy comes from a time-of-day schedule (arrivals, a meeting
