@@ -16,6 +16,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
 //go:embed static
@@ -31,6 +32,8 @@ type pageConfig struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	storageURL := env.String("STORAGE_URL", "http://localhost:8081")
 	addr := env.String("DASHBOARD_ADDR", ":8082")
 	level := env.String("ROOM_LEVEL", "level0")

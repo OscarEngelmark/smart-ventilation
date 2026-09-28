@@ -625,18 +625,21 @@ _(nothing yet)_
     one forgotten stop gives a silent jump; with `on-failure`, forgetting
     `./start.sh` just leaves the simulation off. Decided and implemented
     2026-09-24.
-    - Found 2026-09-28 not to hold as stated. A Go program that is its
-      container's main process exits with code 2 when Docker stops it, and
-      Docker counts that as a failure, so at boot it starts every project
-      service again. Only the broker and BuildSim exit with code 0 and stay
-      off, and without them the others exit and restart in a loop until
-      `./start.sh` starts the broker and replaces them. Room time doesn't
-      jump, since nothing can run without the broker and BuildSim. But
-      Docker's wait between restarts doubles up to about a minute, longer
-      than the 30 s `./start.sh` waits for the storage-service, so
-      `./start.sh` failed once and worked when run again.
-    - **Revisit:** make every service exit with code 0 when Docker stops it,
-      so that none starts at boot.
+    - Fixed 2026-09-28: every service now exits with code 0 when Docker
+      stops it (`internal/shutdown`). Before, a Go program that is its
+      container's main process exited with code 2, which Docker counts as a
+      failure, so at boot it started every project service again. Without
+      the broker and BuildSim, which exit with code 0 and stayed off, those
+      services exited and restarted in a loop until `./start.sh`. Docker's
+      wait between restarts grows to about a minute, longer than the 30 s
+      `./start.sh` waits for the storage-service, so `./start.sh` failed
+      once. Rejected: a longer wait in `./start.sh`, which hides the loop
+      instead of removing it. Checked: the dashboard and storage-service
+      exit with code 0 when stopped. A crash still exits with another code
+      and is restarted; at that boot the storage-service restarted 12 times.
+    - `docker kill` counts as a manual stop too: Docker doesn't restart the
+      container whatever its exit code. A crash test has to kill the process
+      from the host instead (`sudo kill -9` on the PID from `docker inspect`).
   - Changing speed means running `./start.sh` again. That recreates only the
     project's own services, which read the three values; BuildSim and the
     broker keep running, so the room's CO2 and damper carry on.
@@ -1434,4 +1437,11 @@ was caught. Kept for the report's reflection and the oral exam.
   next boot, when `./start.sh` gave up waiting for the storage-service (see
   *Decided: every service restarts by itself after a crash but not when the
   PC boots*, §6). Noted 2026-09-28.
+  - Useful for: §13.
+
+- **The assistant said a crash test could use `docker kill`, since the
+  process then exits with code 137 and `restart: on-failure` restarts it.**
+  Docker treats `docker kill` as a manual stop and never restarts after it.
+  Caught by killing the dashboard: it exited with 137 and stayed off, and
+  Docker's log said "restart canceled". Noted 2026-09-28.
   - Useful for: §13.

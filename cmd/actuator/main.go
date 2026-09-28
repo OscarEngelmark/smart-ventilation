@@ -17,6 +17,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
 
@@ -46,6 +47,8 @@ type commandResponse struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")

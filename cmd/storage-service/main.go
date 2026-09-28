@@ -17,6 +17,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 	"github.com/OscarEngelmark/smart-ventilation/internal/store"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
@@ -48,6 +49,8 @@ type ventilationCommandPayload struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	dbPath := env.String("SQLITE_PATH", "storage-service.db")
 	addr := env.String("STORAGE_ADDR", ":8081")

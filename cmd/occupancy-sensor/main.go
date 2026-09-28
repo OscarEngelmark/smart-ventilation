@@ -15,6 +15,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
 // publisher is what one reading needs: the room it counts, the device it
@@ -37,6 +38,8 @@ type occupancyReading struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	level := env.String("ROOM_LEVEL", "level0")

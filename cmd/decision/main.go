@@ -24,6 +24,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/planner"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
 // co2Reading is the co2_reading message, defined by
@@ -100,6 +101,8 @@ type commander struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	actuatorURL := env.String("ACTUATOR_URL", "http://localhost:8080")
 	level := env.String("ROOM_LEVEL", "level0")

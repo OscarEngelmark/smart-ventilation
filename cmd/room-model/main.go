@@ -23,6 +23,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
 // retryWait is the real-time pause between tries at the storage-service.
@@ -72,6 +73,8 @@ type roomModel struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	storageURL := env.String("STORAGE_URL", "http://localhost:8081")
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	level := env.String("ROOM_LEVEL", "level0")

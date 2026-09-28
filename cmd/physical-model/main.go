@@ -16,6 +16,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/room"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
+	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
 // model is what one cycle needs: the room's parameters, and the devices its
@@ -34,6 +35,8 @@ type model struct {
 }
 
 func main() {
+	shutdown.ExitZeroOnStop()
+
 	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
