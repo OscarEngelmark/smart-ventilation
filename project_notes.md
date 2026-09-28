@@ -1473,3 +1473,11 @@ was caught. Kept for the report's reflection and the oral exam.
   Caught by killing the dashboard: it exited with 137 and stayed off, and
   Docker's log said "restart canceled". Noted 2026-09-28.
   - Useful for: §13.
+
+- **The assistant said `docker compose build` followed by `./start.sh` would
+  leave BuildSim running with the room's state, since its image hadn't
+  changed.** The image indeed kept the same ID, but `./start.sh` recreated
+  the BuildSim container anyway, so the room's CO2 restarted from outdoor
+  air. Why it was recreated is not known. Caught from `./start.sh`'s output
+  listing BuildSim as started. Noted 2026-09-28.
+  - Useful for: §13.
