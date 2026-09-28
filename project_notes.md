@@ -363,15 +363,18 @@ _(nothing yet)_
     can't fail the check, while a receiver is handed bytes another process
     wrote and would otherwise let `json.Unmarshal` fill a missing field with
     a zero — a command with no `level` reads as a valid "close the damper".
-    - **Revisit:** each message is therefore defined twice over, as a schema
-      and as a Go struct (one shared struct per message, see *Decided: each
-      message has one Go type...*, below), and nothing catches the two
-      drifting apart: renaming a field in a schema leaves the publisher
-      sending the old name and every receiver rejecting it, at runtime. The
-      cheap fix is a test in `internal/message` that marshals each filled
-      struct and validates it against its schema, failing `go test` instead;
-      generating the structs from the schemas would be stronger but adds a
-      build step. Noted 2026-09-23, not urgent while the schemas are stable.
+    - Each message is therefore defined twice over, as a schema and as a Go
+      struct (one shared struct per message, see *Decided: each message has
+      one Go type...*, below). A test in `internal/message/message_test.go`
+      marshals a filled struct of each type and validates it against its
+      schema, so a field renamed in one but not the other fails `go test`
+      rather than every receiver rejecting the message at runtime. Every
+      service that uses the types runs this test in its Dockerfile before
+      building, so a mismatched image can't be built. Rejected: running it
+      only in CI on push, which leaves a local build unchecked. Also rejected:
+      generating the structs from the schemas, which removes the second
+      definition altogether but adds a build step. Noted 2026-09-23;
+      decided and implemented 2026-09-28.
   - Useful for: §5, §7.2, §10.
 
 - **Decided: each message has one Go type, in `internal/message`, shared by

@@ -6,6 +6,8 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+# Refuse to build if a shared message type no longer matches its schema.
+RUN go test ./internal/message
 RUN CGO_ENABLED=0 go build -o /room-model ./cmd/room-model
 
 FROM gcr.io/distroless/static-debian12
