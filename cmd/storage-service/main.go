@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -95,7 +97,7 @@ func main() {
 	// messages it held as soon as the connection opens, before onConnect runs.
 	for topic, handle := range handlers {
 		client.AddRoute(topic, func(_ mqtt.Client, msg mqtt.Message) {
-			handle(msg.Payload())
+			handle(msg.Topic(), msg.Payload())
 		})
 	}
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -236,13 +238,14 @@ func fail(w http.ResponseWriter, status int, format string, args ...any) {
 }
 
 // storeHandlers gives, for every topic this service stores, the function that
-// saves one message from it. Each message is checked against its schema
-// first, so an invalid one is logged and dropped instead of being saved with
-// zero values for missing fields.
-func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload []byte) {
-	handlers := make(map[string]func(payload []byte))
+// saves one message from it, given the topic it arrived on. Each message is
+// checked against its schema first, so an invalid one is logged and dropped
+// instead of being saved with zero values for missing fields. A message whose
+// room_id names another room than its topic is dropped too.
+func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(topic string, payload []byte) {
+	handlers := make(map[string]func(topic string, payload []byte))
 
-	handlers["co2/+/reading"] = func(payload []byte) {
+	handlers["co2/+/reading"] = func(topic string, payload []byte) {
 		if err := schemas.Validate(sch.reading, payload); err != nil {
 			log.Printf("reading: invalid payload: %v", err)
 			return
@@ -252,6 +255,10 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload [
 			log.Printf("reading: bad payload: %v", err)
 			return
 		}
+		if !roomMatchesTopic(p.RoomID, topic) {
+			log.Printf("reading: room %q doesn't match topic %s", p.RoomID, topic)
+			return
+		}
 		if err := db.SaveCO2Reading(context.Background(), store.CO2Reading{
 			RoomID: p.RoomID, PPM: p.PPM, Time: p.Ts,
 		}); err != nil {
@@ -259,7 +266,7 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload [
 		}
 	}
 
-	handlers["occupancy/+/reading"] = func(payload []byte) {
+	handlers["occupancy/+/reading"] = func(topic string, payload []byte) {
 		if err := schemas.Validate(sch.occupancy, payload); err != nil {
 			log.Printf("occupancy: invalid payload: %v", err)
 			return
@@ -269,6 +276,10 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload [
 			log.Printf("occupancy: bad payload: %v", err)
 			return
 		}
+		if !roomMatchesTopic(p.RoomID, topic) {
+			log.Printf("occupancy: room %q doesn't match topic %s", p.RoomID, topic)
+			return
+		}
 		if err := db.SaveOccupancy(context.Background(), store.Occupancy{
 			RoomID: p.RoomID, Count: p.Count, Time: p.Ts,
 		}); err != nil {
@@ -276,7 +287,7 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload [
 		}
 	}
 
-	handlers["ventilation/+/command"] = func(payload []byte) {
+	handlers["ventilation/+/command"] = func(topic string, payload []byte) {
 		if err := schemas.Validate(sch.command, payload); err != nil {
 			log.Printf("command: invalid payload: %v", err)
 			return
@@ -284,6 +295,10 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(payload [
 		var p ventilationCommandPayload
 		if err := json.Unmarshal(payload, &p); err != nil {
 			log.Printf("command: bad payload: %v", err)
+			return
+		}
+		if !roomMatchesTopic(p.RoomID, topic) {
+			log.Printf("command: room %q doesn't match topic %s", p.RoomID, topic)
 			return
 		}
 		if err := db.SaveCommand(context.Background(), store.Command{
@@ -304,6 +319,17 @@ func subscribe(client mqtt.Client, topic string) {
 	if err := token.Error(); err != nil {
 		log.Fatalf("subscribe %s: %v", topic, err)
 	}
+}
+
+// roomMatchesTopic reports whether roomID ("level0/A125") names the same room
+// as topic ("co2/A125/reading"). The topic holds no level, so only the room
+// name is compared.
+func roomMatchesTopic(roomID, topic string) bool {
+	parts := strings.Split(topic, "/") // e.g. ["co2", "A125", "reading"]
+	if len(parts) != 3 {
+		return false
+	}
+	return path.Base(roomID) == parts[1] // path.Base gives the part after the last "/"
 }
 
 // mustLoadSchema exits the process if a schema can't be loaded, so the

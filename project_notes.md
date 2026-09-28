@@ -1132,8 +1132,18 @@ _(nothing yet)_
     drift apart. Verified with Mosquitto: a valid reading was saved; a
     missing `ppm`, a negative `ppm`, an invalid `ts`, and a `level` of 7
     were each rejected with a clear log line.
-  - **Revisit:** the room in the topic (`co2/155/reading`) isn't compared to
-    the `room_id` inside the message; the message's value is trusted.
+  - **Decided: a message whose `room_id` names another room than its topic
+    is dropped** — `level0/B200` arriving on `co2/A125/reading` is logged
+    and not saved. Before, only `room_id` was used, so a publisher bug would
+    have filed readings under the wrong room without any sign. Today the two
+    can't disagree, since each publisher builds both from the same level and
+    room name settings. Rejected: documenting it as a known limitation —
+    simpler, but a wrong-room save would stay silent. Tested by
+    `cmd/storage-service/main_test.go` and by publishing a mismatched message
+    to the running stack. Decided and implemented 2026-09-28.
+    - **Known caveat —** topics hold the room name but not the level, so only
+      the name is compared, and two rooms with the same name on different
+      floors would share a topic.
   - **Fixed 2026-09-17 (bug):** after a broker restart, the MQTT client
     reconnected but didn't resubscribe (the default clean session makes the
     broker forget subscriptions), so the service kept running and silently
