@@ -107,13 +107,7 @@ func main() {
 	actuatorURL := env.String("ACTUATOR_URL", "http://localhost:8080")
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
-	settings := planner.Settings{
-		Target:      env.Float("PLAN_TARGET_PPM", 950),
-		LowerMargin: env.Float("PLAN_LOWER_MARGIN_PPM", 20),
-		Horizon:     env.Duration("PLAN_HORIZON", time.Hour),
-		Cout:        env.Float("OUTDOOR_CO2_PPM", 420),
-		CloseBelow:  env.Float("FALLBACK_CLOSE_PPM", 800),
-	}
+	settings := planSettings()
 
 	clock := roomtime.FromEnv()
 	state := &latest{}
@@ -137,11 +131,29 @@ func main() {
 	log.Printf("deciding for %s, commanding %s, keeping CO2 under %.0f ppm over the next %v",
 		c.roomID, c.actuatorURL, settings.Target, settings.Horizon)
 
+	decide(readings, state, settings, c)
+}
+
+// planSettings reads the planner's settings from the environment.
+func planSettings() planner.Settings {
+	return planner.Settings{
+		Target:      env.Float("PLAN_TARGET_PPM", 950),
+		LowerMargin: env.Float("PLAN_LOWER_MARGIN_PPM", 20),
+		Horizon:     env.Duration("PLAN_HORIZON", time.Hour),
+		Cout:        env.Float("OUTDOOR_CO2_PPM", 420),
+		CloseBelow:  env.Float("FALLBACK_CLOSE_PPM", 800),
+	}
+}
+
+// decide chooses a level on every CO2 reading and sends it to the actuator
+// whenever it differs from the last level the actuator accepted. A level the
+// actuator doesn't accept is tried again on the next reading.
+func decide(readings <-chan co2Reading, state *latest, s planner.Settings, c *commander) {
 	var sent bool        // whether a level has been accepted by the actuator yet
 	var last float64     // the last level the actuator accepted
 	for range readings { // wait for each CO2 reading in turn
 		in := state.snapshot()
-		chosen := choose(in, settings, last)
+		chosen := choose(in, s, last)
 		if sent && chosen == last {
 			continue
 		}
@@ -183,12 +195,21 @@ func (c *commander) send(level float64) error {
 	if err != nil {
 		return err
 	}
+	if err := c.post(payload); err != nil {
+		return err
+	}
+	c.publishCopy(payload)
+	return nil
+}
 
+// post sends a ventilation_command payload to the actuator and returns an
+// error unless the actuator accepts it.
+func (c *commander) post(payload []byte) error {
 	resp, err := c.http.Post(c.actuatorURL+"/command", "application/json", bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close() // run when send returns
+	defer resp.Body.Close() // run when post returns
 	var answer commandResponse
 	if err := json.NewDecoder(resp.Body).Decode(&answer); err != nil {
 		return fmt.Errorf("read actuator answer: %w", err)
@@ -196,53 +217,70 @@ func (c *commander) send(level float64) error {
 	if !answer.Accepted {
 		return fmt.Errorf("actuator refused the command: %s", resp.Status)
 	}
+	return nil
+}
 
+// publishCopy publishes an applied command on the command topic for storage,
+// logging if the broker doesn't take it.
+func (c *commander) publishCopy(payload []byte) {
 	token := c.broker.Publish(c.topic, 1, false, payload)
 	token.Wait() // block until the broker has taken the message
 	if err := token.Error(); err != nil {
 		log.Printf("command applied but its copy was not published: %v", err)
 	}
-	return nil
 }
 
 // subscribeAll subscribes to the room's three inputs. Each message is stored as
 // the latest of its kind; a CO2 reading is also queued for a decision.
 func subscribeAll(client mqtt.Client, roomName string, state *latest, readings chan<- co2Reading) {
 	subscribe(client, "co2/"+roomName+"/reading", func(payload []byte) {
-		var r co2Reading
-		if !decode("CO2 reading", payload, &r) {
-			return
+		if r, ok := state.keepCO2(payload); ok {
+			readings <- r
 		}
-		state.mu.Lock()
-		state.in.co2 = &r
-		state.mu.Unlock()
-		readings <- r
 	})
+	subscribe(client, "occupancy/"+roomName+"/reading", state.keepHeadCount)
+	subscribe(client, "room/"+roomName+"/model", state.keepModel)
+}
 
-	subscribe(client, "occupancy/"+roomName+"/reading", func(payload []byte) {
-		var r occupancyReading
-		if !decode("head count", payload, &r) {
-			return
-		}
-		state.mu.Lock()
-		changed := state.in.people == nil || state.in.people.Count != r.Count
-		state.in.people = &r
-		state.mu.Unlock()
-		if changed {
-			log.Printf("head count %d", r.Count)
-		}
-	})
+// keepCO2 stores a CO2 reading as the latest and returns it, or reports false
+// if the payload can't be read.
+func (l *latest) keepCO2(payload []byte) (co2Reading, bool) {
+	var r co2Reading
+	if !decode("CO2 reading", payload, &r) {
+		return r, false
+	}
+	l.mu.Lock()
+	l.in.co2 = &r
+	l.mu.Unlock()
+	return r, true
+}
 
-	subscribe(client, "room/"+roomName+"/model", func(payload []byte) {
-		var m roomModel
-		if !decode("room model", payload, &m) {
-			return
-		}
-		state.mu.Lock()
-		state.in.model = &m
-		state.mu.Unlock()
-		log.Printf("room model from %s: a=%.4g b0=%.4g b1=%.4g", m.Date, m.A, m.B0, m.B1)
-	})
+// keepHeadCount stores a head count as the latest, logging it when it differs
+// from the one before.
+func (l *latest) keepHeadCount(payload []byte) {
+	var r occupancyReading
+	if !decode("head count", payload, &r) {
+		return
+	}
+	l.mu.Lock()
+	changed := l.in.people == nil || l.in.people.Count != r.Count
+	l.in.people = &r
+	l.mu.Unlock()
+	if changed {
+		log.Printf("head count %d", r.Count)
+	}
+}
+
+// keepModel stores a room model as the latest and logs its rates.
+func (l *latest) keepModel(payload []byte) {
+	var m roomModel
+	if !decode("room model", payload, &m) {
+		return
+	}
+	l.mu.Lock()
+	l.in.model = &m
+	l.mu.Unlock()
+	log.Printf("room model from %s: a=%.4g b0=%.4g b1=%.4g", m.Date, m.A, m.B0, m.B1)
 }
 
 func subscribe(client mqtt.Client, topic string, handle func(payload []byte)) {
