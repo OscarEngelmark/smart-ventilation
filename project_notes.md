@@ -624,9 +624,19 @@ _(nothing yet)_
     `unless-stopped` and stopping the system by hand before every shutdown —
     one forgotten stop gives a silent jump; with `on-failure`, forgetting
     `./start.sh` just leaves the simulation off. Decided and implemented
-    2026-09-24. Confirmed across a reboot 2026-09-27: no container started
-    until `./start.sh` ran, and the new session resumed room time at the last
-    stored reading (23:33:42 UTC, 2026-10-08).
+    2026-09-24.
+    - Found 2026-09-28 not to hold as stated. A Go program that is its
+      container's main process exits with code 2 when Docker stops it, and
+      Docker counts that as a failure, so at boot it starts every project
+      service again. Only the broker and BuildSim exit with code 0 and stay
+      off, and without them the others exit and restart in a loop until
+      `./start.sh` starts the broker and replaces them. Room time doesn't
+      jump, since nothing can run without the broker and BuildSim. But
+      Docker's wait between restarts doubles up to about a minute, longer
+      than the 30 s `./start.sh` waits for the storage-service, so
+      `./start.sh` failed once and worked when run again.
+    - **Revisit:** make every service exit with code 0 when Docker stops it,
+      so that none starts at boot.
   - Changing speed means running `./start.sh` again. That recreates only the
     project's own services, which read the three values; BuildSim and the
     broker keep running, so the room's CO2 and damper carry on.
@@ -1415,4 +1425,13 @@ was caught. Kept for the report's reflection and the oral exam.
   stack and listing the holes in the stored readings. The handlers are now
   attached before connecting (see *Decided: the storage-service connects
   with a persistent session…*, §7). Noted 2026-09-27.
+  - Useful for: §13.
+
+- **The assistant concluded from one reboot that no container started until
+  `./start.sh` ran.** It checked only the containers' start times, which
+  `./start.sh` resets when it replaces them. The storage-service's own log
+  showed it trying to reach the broker from 7 s after boot. Caught at the
+  next boot, when `./start.sh` gave up waiting for the storage-service (see
+  *Decided: every service restarts by itself after a crash but not when the
+  PC boots*, §6). Noted 2026-09-28.
   - Useful for: §13.
