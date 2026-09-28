@@ -193,6 +193,33 @@ func (s *SQLiteStore) Latest(ctx context.Context) (time.Time, bool, error) {
 	return latest, true, nil
 }
 
+func (s *SQLiteStore) DeleteBefore(ctx context.Context, before time.Time) (int64, error) {
+	cutoff := before.UTC().Format(time.RFC3339) // compared as UTC text, as in CO2ReadingsSince
+	queries := []string{
+		`DELETE FROM co2_readings WHERE ts < ?`,
+		`DELETE FROM occupancy WHERE ts < ?`,
+		// Older than the room's last command before the cutoff, which is kept.
+		`DELETE FROM commands WHERE ts < (
+	SELECT MAX(ts) FROM commands AS kept
+	WHERE kept.room_id = commands.room_id AND kept.ts < ?
+)`,
+	}
+
+	var deleted int64
+	for _, query := range queries {
+		result, err := s.db.ExecContext(ctx, query, cutoff)
+		if err != nil {
+			return deleted, err
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			return deleted, err
+		}
+		deleted += n
+	}
+	return deleted, nil
+}
+
 func (s *SQLiteStore) Close() error {
 	return s.db.Close()
 }

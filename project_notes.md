@@ -1107,15 +1107,28 @@ _(nothing yet)_
       with a bare slash silently reads a different room.
     - **Replaces** the write-only storage-writer (2026-09-16), renamed when
       it took on reads.
-  - **Decided: no retention policy — stored readings are kept
-    indefinitely.** At this project's actual scale (one room, a few weeks of
-    data before the deadline), storage size never becomes a real problem.
-    Rejected: time-window deletion and downsampling — both solve a
-    storage-growth problem this project's data volume doesn't reach. Decided
-    2026-09-16.
+  - **Decided: the storage-service keeps the last 90 room days, measured
+    back from the newest stored timestamp, and deletes older rows once every
+    real hour, keeping each room's command in force at the cutoff.** A
+    service that runs unattended shouldn't be able to fill the disk, however
+    long it runs. The window is counted in room time because the stored
+    timestamps are room time and the speed changes between sessions.
+    Rejected: a real-time window, which would keep a different number of
+    room days after every session; downsampling old readings to hourly
+    means, which keeps a longer history in less space but needs a second
+    table and code path. 90 days caps the file at about 120 MB (about 1.3 MB
+    per room day, measured over 16.5 room days) and keeps experiment days
+    long enough to be analyzed for the report, since room time advances
+    about 60 days per real day at speed 60. SQLite reuses the space of
+    deleted rows rather than returning it to the disk, so the file stops
+    growing at its largest size. `RETENTION_DAYS` sets the window. Decided
+    and implemented 2026-09-28 (`DeleteBefore` in `internal/store`, with unit
+    tests; run by `cmd/storage-service`).
+    - Replaces *no retention policy*, decided 2026-09-16 on the grounds that
+      one room's data over a few weeks stays small. That holds for the
+      size, but it left growth unbounded for as long as the stack runs.
     - **Revisit:** if scale changes (see the rejected InfluxDB alternative
-      above), retention becomes a real requirement again — InfluxDB has one
-      built in.
+      above), InfluxDB has retention built in.
   - **Decided: the CO2 forecast service read recent readings from the
     storage-service over REST** to rebuild its window after a restart,
     retrying three times, 2 s apart, before filling it from the

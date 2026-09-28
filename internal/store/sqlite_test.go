@@ -261,6 +261,48 @@ func TestLatestOnEmptyStoreIsNotFound(t *testing.T) {
 	}
 }
 
+func TestDeleteBeforeKeepsOnlyRowsFromTheCutoffOn(t *testing.T) {
+	s := openTemp(t)
+	save(t, s, "level0/A125", 500, noon.Add(-time.Second))
+	save(t, s, "level0/A125", 600, noon)
+	saveCount(t, s, "level0/A125", 2, noon.Add(-time.Second))
+	saveCount(t, s, "level0/A125", 3, noon)
+
+	deleted, err := s.DeleteBefore(context.Background(), noon)
+	if err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+
+	if deleted != 2 {
+		t.Errorf("deleted %d rows, want 2", deleted)
+	}
+	want(t, ppmSince(t, s, "level0/A125", time.Time{}), []float64{600})
+	counts, err := s.OccupancySince(context.Background(), "level0/A125", time.Time{})
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if len(counts) != 1 || counts[0].Count != 3 {
+		t.Errorf("got %+v, want only the count of 3", counts)
+	}
+}
+
+// Each room's command in force at the cutoff is kept, so the damper level is
+// still known from the cutoff on.
+func TestDeleteBeforeKeepsEachRoomsCommandInForce(t *testing.T) {
+	s := openTemp(t)
+	saveCommand(t, s, "level0/A125", 0.2, noon.Add(-2*time.Hour))
+	saveCommand(t, s, "level0/A125", 0.3, noon.Add(-time.Hour))
+	saveCommand(t, s, "level0/A125", 0.8, noon.Add(time.Minute))
+	saveCommand(t, s, "level0/B210", 0.9, noon.Add(-3*time.Hour))
+
+	if _, err := s.DeleteBefore(context.Background(), noon); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+
+	want(t, levelsInForceSince(t, s, "level0/A125", time.Time{}), []float64{0.3, 0.8})
+	want(t, levelsInForceSince(t, s, "level0/B210", time.Time{}), []float64{0.9})
+}
+
 // The broker may deliver a QoS 1 message twice.
 func TestSameReadingSavedTwiceIsStoredOnce(t *testing.T) {
 	s := openTemp(t)

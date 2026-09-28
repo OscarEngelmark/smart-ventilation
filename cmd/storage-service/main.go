@@ -39,6 +39,7 @@ func main() {
 	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
 	dbPath := env.String("SQLITE_PATH", "storage-service.db")
 	addr := env.String("STORAGE_ADDR", ":8081")
+	retentionDays := int(env.Float("RETENTION_DAYS", 90))
 
 	var db store.Store
 	var err error
@@ -58,7 +59,37 @@ func main() {
 	client := connectBroker(brokerURL, handlers)
 	defer client.Disconnect(250)
 
+	go deleteOldEveryHour(db, retentionDays) // runs alongside the server below
 	serve(db, addr)
+}
+
+// deleteOldEveryHour runs deleteOld at startup and then once every real hour.
+func deleteOldEveryHour(db store.Store, days int) {
+	ticker := time.NewTicker(time.Hour)
+	for {
+		if err := deleteOld(context.Background(), db, days); err != nil {
+			log.Printf("retention: %v", err)
+		}
+		<-ticker.C // wait for the next tick
+	}
+}
+
+// deleteOld deletes what is stored from more than days room days before the
+// newest stored timestamp, keeping each room's command in force at the cutoff.
+func deleteOld(ctx context.Context, db store.Store, days int) error {
+	latest, ok, err := db.Latest(ctx)
+	if err != nil || !ok {
+		return err
+	}
+	cutoff := latest.AddDate(0, 0, -days)
+	deleted, err := db.DeleteBefore(ctx, cutoff)
+	if err != nil {
+		return err
+	}
+	if deleted > 0 {
+		log.Printf("retention: deleted %d rows from before %s", deleted, cutoff.Format(time.RFC3339))
+	}
+	return nil
 }
 
 // connectBroker opens the link to the broker, with each topic's messages

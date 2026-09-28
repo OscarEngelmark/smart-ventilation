@@ -52,5 +52,10 @@ type Store interface {
 	// nothing is stored yet.
 	Latest(ctx context.Context) (time.Time, bool, error)
 
+	// DeleteBefore deletes every CO2 reading, occupancy count and command
+	// older than before, except each room's last command before it, which is
+	// still in force. It returns how many rows it deleted.
+	DeleteBefore(ctx context.Context, before time.Time) (int64, error)
+
 	Close() error
 }
