@@ -72,7 +72,15 @@ func main() {
 	}
 
 	handlers := storeHandlers(db, sch) // topic -> the function that saves a message from it
+	client := connectBroker(brokerURL, handlers)
+	defer client.Disconnect(250)
 
+	serve(db, addr)
+}
+
+// connectBroker opens the link to the broker, with each topic's messages
+// routed to its handler. The client reconnects on its own.
+func connectBroker(brokerURL string, handlers map[string]func(topic string, payload []byte)) mqtt.Client {
 	// Subscribing here rather than once after Connect: the client reconnects
 	// automatically, but a broker restart forgets every session's
 	// subscriptions, so they must be renewed on every connect.
@@ -93,18 +101,26 @@ func main() {
 		SetOnConnectHandler(onConnect).
 		SetConnectionLostHandler(onConnectionLost)
 	client := mqtt.NewClient(opts)
-	// Handlers are attached before connecting because the broker sends the
-	// messages it held as soon as the connection opens, before onConnect runs.
+	addRoutes(client, handlers)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		log.Fatalf("connect to broker: %v", token.Error())
+	}
+	return client
+}
+
+// addRoutes attaches each topic's handler to the client. It must run before
+// connecting, because the broker sends the messages it held as soon as the
+// connection opens, before onConnect runs.
+func addRoutes(client mqtt.Client, handlers map[string]func(topic string, payload []byte)) {
 	for topic, handle := range handlers {
 		client.AddRoute(topic, func(_ mqtt.Client, msg mqtt.Message) {
 			handle(msg.Topic(), msg.Payload())
 		})
 	}
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatalf("connect to broker: %v", token.Error())
-	}
-	defer client.Disconnect(250)
+}
 
+// serve answers the read endpoints on addr until the process stops.
+func serve(db store.Store, addr string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /co2", serveCO2(db))
 	mux.HandleFunc("GET /occupancy", serveOccupancy(db))
@@ -134,10 +150,7 @@ func serveCO2(db store.Store) http.HandlerFunc {
 		for _, s := range stored {
 			body = append(body, co2ReadingPayload{RoomID: s.RoomID, PPM: s.PPM, Ts: s.Time})
 		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(body); err != nil {
-			log.Printf("co2: write response: %v", err)
-		}
+		writeJSON(w, "co2", body)
 	}
 }
 
@@ -161,10 +174,7 @@ func serveOccupancy(db store.Store) http.HandlerFunc {
 		for _, s := range stored {
 			body = append(body, occupancyReadingPayload{RoomID: s.RoomID, Count: s.Count, Ts: s.Time})
 		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(body); err != nil {
-			log.Printf("occupancy: write response: %v", err)
-		}
+		writeJSON(w, "occupancy", body)
 	}
 }
 
@@ -189,10 +199,16 @@ func serveCommands(db store.Store) http.HandlerFunc {
 		for _, s := range stored {
 			body = append(body, ventilationCommandPayload{RoomID: s.RoomID, Level: s.Level, Ts: s.Time})
 		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(body); err != nil {
-			log.Printf("commands: write response: %v", err)
-		}
+		writeJSON(w, "commands", body)
+	}
+}
+
+// writeJSON answers with body encoded as JSON, logging under kind if the
+// answer can't be written.
+func writeJSON(w http.ResponseWriter, kind string, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		log.Printf("%s: write response: %v", kind, err)
 	}
 }
 
@@ -244,71 +260,74 @@ func fail(w http.ResponseWriter, status int, format string, args ...any) {
 // room_id names another room than its topic is dropped too.
 func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(topic string, payload []byte) {
 	handlers := make(map[string]func(topic string, payload []byte))
-
 	handlers["co2/+/reading"] = func(topic string, payload []byte) {
-		if err := schemas.Validate(sch.reading, payload); err != nil {
-			log.Printf("reading: invalid payload: %v", err)
-			return
-		}
-		var p co2ReadingPayload
-		if err := json.Unmarshal(payload, &p); err != nil {
-			log.Printf("reading: bad payload: %v", err)
-			return
-		}
-		if !roomMatchesTopic(p.RoomID, topic) {
-			log.Printf("reading: room %q doesn't match topic %s", p.RoomID, topic)
-			return
-		}
-		if err := db.SaveCO2Reading(context.Background(), store.CO2Reading{
-			RoomID: p.RoomID, PPM: p.PPM, Time: p.Ts,
-		}); err != nil {
-			log.Printf("reading: save failed: %v", err)
-		}
+		saveCO2Reading(db, sch.reading, topic, payload)
 	}
-
 	handlers["occupancy/+/reading"] = func(topic string, payload []byte) {
-		if err := schemas.Validate(sch.occupancy, payload); err != nil {
-			log.Printf("occupancy: invalid payload: %v", err)
-			return
-		}
-		var p occupancyReadingPayload
-		if err := json.Unmarshal(payload, &p); err != nil {
-			log.Printf("occupancy: bad payload: %v", err)
-			return
-		}
-		if !roomMatchesTopic(p.RoomID, topic) {
-			log.Printf("occupancy: room %q doesn't match topic %s", p.RoomID, topic)
-			return
-		}
-		if err := db.SaveOccupancy(context.Background(), store.Occupancy{
-			RoomID: p.RoomID, Count: p.Count, Time: p.Ts,
-		}); err != nil {
-			log.Printf("occupancy: save failed: %v", err)
-		}
+		saveOccupancy(db, sch.occupancy, topic, payload)
 	}
-
 	handlers["ventilation/+/command"] = func(topic string, payload []byte) {
-		if err := schemas.Validate(sch.command, payload); err != nil {
-			log.Printf("command: invalid payload: %v", err)
-			return
-		}
-		var p ventilationCommandPayload
-		if err := json.Unmarshal(payload, &p); err != nil {
-			log.Printf("command: bad payload: %v", err)
-			return
-		}
-		if !roomMatchesTopic(p.RoomID, topic) {
-			log.Printf("command: room %q doesn't match topic %s", p.RoomID, topic)
-			return
-		}
-		if err := db.SaveCommand(context.Background(), store.Command{
-			RoomID: p.RoomID, Level: p.Level, Time: p.Ts,
-		}); err != nil {
-			log.Printf("command: save failed: %v", err)
-		}
+		saveCommand(db, sch.command, topic, payload)
 	}
-
 	return handlers
+}
+
+// saveCO2Reading saves one message from co2/+/reading, or logs why it was
+// dropped.
+func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
+	var p co2ReadingPayload
+	if !accept("reading", sch, topic, payload, &p, &p.RoomID) {
+		return
+	}
+	r := store.CO2Reading{RoomID: p.RoomID, PPM: p.PPM, Time: p.Ts}
+	if err := db.SaveCO2Reading(context.Background(), r); err != nil {
+		log.Printf("reading: save failed: %v", err)
+	}
+}
+
+// saveOccupancy saves one message from occupancy/+/reading, or logs why it
+// was dropped.
+func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
+	var p occupancyReadingPayload
+	if !accept("occupancy", sch, topic, payload, &p, &p.RoomID) {
+		return
+	}
+	o := store.Occupancy{RoomID: p.RoomID, Count: p.Count, Time: p.Ts}
+	if err := db.SaveOccupancy(context.Background(), o); err != nil {
+		log.Printf("occupancy: save failed: %v", err)
+	}
+}
+
+// saveCommand saves one message from ventilation/+/command, or logs why it
+// was dropped.
+func saveCommand(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
+	var p ventilationCommandPayload
+	if !accept("command", sch, topic, payload, &p, &p.RoomID) {
+		return
+	}
+	c := store.Command{RoomID: p.RoomID, Level: p.Level, Time: p.Ts}
+	if err := db.SaveCommand(context.Background(), c); err != nil {
+		log.Printf("command: save failed: %v", err)
+	}
+}
+
+// accept checks payload against sch, decodes it into out, and checks that the
+// room it names, read from roomID once decoded, is the one in topic. It logs
+// under kind and returns false for a message that fails any check.
+func accept(kind string, sch *jsonschema.Schema, topic string, payload []byte, out any, roomID *string) bool {
+	if err := schemas.Validate(sch, payload); err != nil {
+		log.Printf("%s: invalid payload: %v", kind, err)
+		return false
+	}
+	if err := json.Unmarshal(payload, out); err != nil {
+		log.Printf("%s: bad payload: %v", kind, err)
+		return false
+	}
+	if !roomMatchesTopic(*roomID, topic) {
+		log.Printf("%s: room %q doesn't match topic %s", kind, *roomID, topic)
+		return false
+	}
+	return true
 }
 
 // subscribe asks the broker for topic's messages at QoS 1; they are delivered
