@@ -99,15 +99,21 @@ func main() {
 		l.roomID, l.days, l.topic)
 
 	for {
-		for {
-			err := l.publish(context.Background(), clock.Now())
-			if err == nil {
-				break
-			}
-			log.Printf("retry in %s: %v", retryWait, err)
-			time.Sleep(retryWait)
-		}
+		l.publishUntilDone(clock)
 		time.Sleep(clock.Wall(untilMidnight(clock.Now())))
+	}
+}
+
+// publishUntilDone runs publish, trying again every retryWait until it
+// succeeds.
+func (l *learner) publishUntilDone(clock *roomtime.Clock) {
+	for {
+		err := l.publish(context.Background(), clock.Now())
+		if err == nil {
+			return
+		}
+		log.Printf("retry in %s: %v", retryWait, err)
+		time.Sleep(retryWait)
 	}
 }
 
@@ -136,19 +142,24 @@ func (l *learner) publish(ctx context.Context, now time.Time) error {
 		B0:     fit.B0,
 		B1:     fit.B1,
 	}
-	payload, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	// Retained: the broker keeps this message and hands it to any later subscriber.
-	token := l.broker.Publish(l.topic, 1, true, payload)
-	token.Wait() // block until the broker has taken the message
-	if err := token.Error(); err != nil {
+	if err := l.sendRetained(msg); err != nil {
 		return err
 	}
 	log.Printf("%s: model for %s from %d readings: a=%.4g b0=%.4g b1=%.4g",
 		l.roomID, msg.Date, len(co2), fit.A, fit.B0, fit.B1)
 	return nil
+}
+
+// sendRetained publishes msg on the model topic as a retained message, which
+// the broker keeps and hands to any later subscriber.
+func (l *learner) sendRetained(msg roomModel) error {
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	token := l.broker.Publish(l.topic, 1, true, payload)
+	token.Wait() // block until the broker has taken the message
+	return token.Error()
 }
 
 // history returns the room's CO2 readings, head counts and damper levels

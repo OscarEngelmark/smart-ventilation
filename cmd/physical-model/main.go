@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -40,6 +41,30 @@ func main() {
 	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
 	level := env.String("ROOM_LEVEL", "level0")
 	roomName := env.String("ROOM_NAME", "A125")
+
+	clock := roomtime.FromEnv()
+	client := buildsim.New(baseURL) // this program's link to BuildSim
+	ctx := context.Background()     // empty context, no cancellation or timeout
+
+	m, err := newModel(ctx, client, level, roomName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ticker := clock.NewTicker(m.dt)
+	for {
+		// A cycle fails while a device is missing, which is the normal state
+		// until the sensor and actuator processes have registered theirs.
+		if err := m.step(ctx); err != nil {
+			log.Printf("skip this cycle: %v", err)
+		}
+		<-ticker.C // wait for the next tick
+	}
+}
+
+// newModel builds the room's model from its settings and from its floor area,
+// which it reads from BuildSim.
+func newModel(ctx context.Context, client *buildsim.Client, level, roomName string) (*model, error) {
 	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)
 	ceilingHeight := env.Float("CEILING_HEIGHT_M", 2.4)
 	G := env.Float("CO2_PER_PERSON_LPS", 0.0056)
@@ -47,17 +72,12 @@ func main() {
 	Cthres := env.Float("CO2_THRESHOLD_PPM", 1000)
 	minPerArea := env.Float("MIN_AIRFLOW_LPS_PER_M2", 0.35)
 	factor := env.Float("MAX_AIRFLOW_FACTOR", 1.2)
-	dt := env.Duration("SIM_STEP", 10*time.Second)
-
-	clock := roomtime.FromEnv()
-	client := buildsim.New(baseURL) // this program's link to BuildSim
-	ctx := context.Background()     // empty context, no cancellation or timeout
 	roomKey := buildsim.RoomKey(level, roomName)
 
 	// Read the room's area from BuildSim; every parameter below follows from it.
 	area, err := client.RoomArea(ctx, level, roomName)
 	if err != nil {
-		log.Fatalf("read area of %s: %v", roomKey, err)
+		return nil, fmt.Errorf("read area of %s: %w", roomKey, err)
 	}
 	m := &model{
 		client:   client,
@@ -69,20 +89,11 @@ func main() {
 		Qmax:     room.MaxAirflow(area, areaPerPerson, G, Cthres, Cout, factor),
 		G:        G,
 		Cout:     Cout,
-		dt:       dt,
+		dt:       env.Duration("SIM_STEP", 10*time.Second),
 	}
 	log.Printf("room %s is %.1f m², holding %.1f m³ of air, ventilated at %.1f to %.1f L/s",
 		roomKey, area, m.V, m.Qmin, m.Qmax)
-
-	ticker := clock.NewTicker(dt)
-	for {
-		// A cycle fails while a device is missing, which is the normal state
-		// until the sensor and actuator processes have registered theirs.
-		if err := m.step(ctx); err != nil {
-			log.Printf("skip this cycle: %v", err)
-		}
-		<-ticker.C // wait for the next tick
-	}
+	return m, nil
 }
 
 // step advances the room by dt: read the state BuildSim holds, compute the
