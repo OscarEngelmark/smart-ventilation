@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
@@ -55,7 +55,10 @@ func main() {
 		log.Fatalf("register %s: %v", sensorID, err)
 	}
 
-	broker := connect(brokerURL, roomName)
+	broker, err := mqttclient.Connect(brokerURL, "occupancy-sensor-"+roomName, nil)
+	if err != nil {
+		log.Fatalf("connect to broker: %v", err)
+	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
 	p := &publisher{
@@ -96,13 +99,7 @@ func (p *publisher) publish(ctx context.Context) error {
 		Count:  count,
 		Ts:     p.clock.Now().UTC(),
 	}
-	payload, err := json.Marshal(reading)
-	if err != nil {
-		return err
-	}
-	token := p.broker.Publish(p.topic, 1, false, payload)
-	token.Wait() // block until the broker has taken the message
-	if err := token.Error(); err != nil {
+	if err := mqttclient.PublishJSON(p.broker, p.topic, false, reading); err != nil {
 		return err
 	}
 	log.Printf("%s: %d people", p.roomID, count)
@@ -128,22 +125,4 @@ func equipment(sensorID, level, roomName string) buildsim.Equipment {
 		Room:     roomName,
 		Sensors:  []buildsim.Sensor{device},
 	}
-}
-
-// connect opens the link to the broker. The client reconnects on its own, so
-// a broker restart doesn't end this process.
-func connect(brokerURL, roomName string) mqtt.Client {
-	onConnectionLost := func(_ mqtt.Client, err error) {
-		log.Printf("connection to broker lost: %v", err)
-	}
-
-	opts := mqtt.NewClientOptions().
-		AddBroker(brokerURL).
-		SetClientID("occupancy-sensor-" + roomName).
-		SetConnectionLostHandler(onConnectionLost)
-	broker := mqtt.NewClient(opts)
-	if token := broker.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatalf("connect to broker: %v", token.Error())
-	}
-	return broker
 }

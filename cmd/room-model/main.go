@@ -21,6 +21,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
@@ -83,7 +84,10 @@ func main() {
 	Cout := env.Float("OUTDOOR_CO2_PPM", 420)
 
 	clock := roomtime.FromEnv()
-	broker := connect(brokerURL, roomName)
+	broker, err := mqttclient.Connect(brokerURL, "room-model-"+roomName, nil)
+	if err != nil {
+		log.Fatalf("connect to broker: %v", err)
+	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
 	l := &learner{
@@ -142,24 +146,13 @@ func (l *learner) publish(ctx context.Context, now time.Time) error {
 		B0:     fit.B0,
 		B1:     fit.B1,
 	}
-	if err := l.sendRetained(msg); err != nil {
+	// Retained: the broker keeps this message and hands it to any later subscriber.
+	if err := mqttclient.PublishJSON(l.broker, l.topic, true, msg); err != nil {
 		return err
 	}
 	log.Printf("%s: model for %s from %d readings: a=%.4g b0=%.4g b1=%.4g",
 		l.roomID, msg.Date, len(co2), fit.A, fit.B0, fit.B1)
 	return nil
-}
-
-// sendRetained publishes msg on the model topic as a retained message, which
-// the broker keeps and hands to any later subscriber.
-func (l *learner) sendRetained(msg roomModel) error {
-	payload, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	token := l.broker.Publish(l.topic, 1, true, payload)
-	token.Wait() // block until the broker has taken the message
-	return token.Error()
 }
 
 // history returns the room's CO2 readings, head counts and damper levels
@@ -226,22 +219,4 @@ func startOfDay(t time.Time) time.Time {
 // untilMidnight is how much room time is left of t's date.
 func untilMidnight(t time.Time) time.Duration {
 	return startOfDay(t).AddDate(0, 0, 1).Sub(t)
-}
-
-// connect opens the link to the broker. The client reconnects on its own, so
-// a broker restart doesn't end this process.
-func connect(brokerURL, roomName string) mqtt.Client {
-	onConnectionLost := func(_ mqtt.Client, err error) {
-		log.Printf("connection to broker lost: %v", err)
-	}
-
-	opts := mqtt.NewClientOptions().
-		AddBroker(brokerURL).
-		SetClientID("room-model-" + roomName).
-		SetConnectionLostHandler(onConnectionLost)
-	broker := mqtt.NewClient(opts)
-	if token := broker.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatalf("connect to broker: %v", token.Error())
-	}
-	return broker
 }

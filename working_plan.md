@@ -6,5 +6,5 @@ themselves go in `project_notes.md`. Target: code and experiments done by
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 10 | Readability refactor: find and merge duplicated code across services | how to share duplicated code (e.g. `connect`, `equipment`) between services | 1–2 |
+| 10 | Readability refactor: message types written out in each service | whether services share one Go type per message or keep their own copies | 1 |
 | 11 | Tests: one end-to-end test; fault injection (crashed service, frozen sensor, broker down); stress test to a breaking point | small ones per test; whether to store each message's receive time, so pipeline delay can be measured from stored data | 6–8 |

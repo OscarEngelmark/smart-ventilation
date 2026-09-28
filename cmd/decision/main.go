@@ -21,6 +21,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/planner"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
@@ -113,11 +114,15 @@ func main() {
 	state := &latest{}
 	readings := make(chan co2Reading, 10) // CO2 readings waiting for a decision
 
+	// Runs on every connect, since the broker forgets subscriptions on disconnect.
 	onConnect := func(client mqtt.Client) {
 		log.Printf("connected to broker, subscribing")
 		subscribeAll(client, roomName, state, readings)
 	}
-	broker := connect(brokerURL, roomName, onConnect)
+	broker, err := mqttclient.Connect(brokerURL, "decision-"+roomName, onConnect)
+	if err != nil {
+		log.Fatalf("connect to broker: %v", err)
+	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
 	c := &commander{
@@ -198,7 +203,7 @@ func (c *commander) send(level float64) error {
 	if err := c.post(payload); err != nil {
 		return err
 	}
-	c.publishCopy(payload)
+	c.publishCopy(cmd)
 	return nil
 }
 
@@ -222,10 +227,8 @@ func (c *commander) post(payload []byte) error {
 
 // publishCopy publishes an applied command on the command topic for storage,
 // logging if the broker doesn't take it.
-func (c *commander) publishCopy(payload []byte) {
-	token := c.broker.Publish(c.topic, 1, false, payload)
-	token.Wait() // block until the broker has taken the message
-	if err := token.Error(); err != nil {
+func (c *commander) publishCopy(cmd ventilationCommand) {
+	if err := mqttclient.PublishJSON(c.broker, c.topic, false, cmd); err != nil {
 		log.Printf("command applied but its copy was not published: %v", err)
 	}
 }
@@ -309,24 +312,4 @@ func headCount(r *occupancyReading) string {
 		return "unknown"
 	}
 	return fmt.Sprint(r.Count)
-}
-
-// connect opens the link to the broker. The client reconnects on its own, and
-// onConnect runs on every connect, since with a clean session the broker
-// forgets subscriptions on disconnect.
-func connect(brokerURL, roomName string, onConnect mqtt.OnConnectHandler) mqtt.Client {
-	onConnectionLost := func(_ mqtt.Client, err error) {
-		log.Printf("connection to broker lost: %v", err)
-	}
-
-	opts := mqtt.NewClientOptions().
-		AddBroker(brokerURL).
-		SetClientID("decision-" + roomName).
-		SetOnConnectHandler(onConnect).
-		SetConnectionLostHandler(onConnectionLost)
-	broker := mqtt.NewClient(opts)
-	if token := broker.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatalf("connect to broker: %v", token.Error())
-	}
-	return broker
 }
