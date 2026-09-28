@@ -10,12 +10,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
@@ -29,21 +29,6 @@ type commands struct {
 	clock    *roomtime.Clock
 	damperID string
 	roomID   string
-}
-
-// ventilationCommand is the ventilation_command message, defined by
-// schemas/ventilation_command.schema.json.
-type ventilationCommand struct {
-	RoomID string    `json:"room_id"`
-	Level  float64   `json:"level"`
-	Ts     time.Time `json:"ts"`
-}
-
-// commandResponse is the ventilation_command_response message, defined by
-// schemas/ventilation_command_response.schema.json.
-type commandResponse struct {
-	Accepted bool      `json:"accepted"`
-	Ts       time.Time `json:"ts"`
 }
 
 func main() {
@@ -95,7 +80,7 @@ func (c *commands) serve(w http.ResponseWriter, r *http.Request) {
 		c.reject(w, http.StatusBadRequest, "invalid command: %v", err)
 		return
 	}
-	var cmd ventilationCommand
+	var cmd message.VentilationCommand
 	if err := json.Unmarshal(payload, &cmd); err != nil {
 		c.reject(w, http.StatusBadRequest, "bad command: %v", err)
 		return
@@ -122,7 +107,7 @@ func (c *commands) reject(w http.ResponseWriter, status int, format string, args
 
 // respond answers with one ventilation_command_response.
 func (c *commands) respond(w http.ResponseWriter, status int, accepted bool) {
-	body := commandResponse{
+	body := message.CommandResponse{
 		Accepted: accepted,
 		Ts:       c.clock.Now().UTC(),
 	}

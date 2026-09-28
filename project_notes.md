@@ -364,14 +364,29 @@ _(nothing yet)_
     wrote and would otherwise let `json.Unmarshal` fill a missing field with
     a zero — a command with no `level` reads as a valid "close the damper".
     - **Revisit:** each message is therefore defined twice over, as a schema
-      and as a Go struct per service, and nothing catches the two drifting
-      apart: renaming a field in a schema leaves the publisher sending the
-      old name and every receiver rejecting it, at runtime. The cheap fix is
-      a test that marshals a filled struct and validates it against its
-      schema, failing `go test` instead; generating the structs from the
-      schemas would be stronger but adds a build step. Noted 2026-09-23, not
-      urgent while the schemas are stable.
+      and as a Go struct (one shared struct per message, see *Decided: each
+      message has one Go type...*, below), and nothing catches the two
+      drifting apart: renaming a field in a schema leaves the publisher
+      sending the old name and every receiver rejecting it, at runtime. The
+      cheap fix is a test in `internal/message` that marshals each filled
+      struct and validates it against its schema, failing `go test` instead;
+      generating the structs from the schemas would be stronger but adds a
+      build step. Noted 2026-09-23, not urgent while the schemas are stable.
   - Useful for: §5, §7.2, §10.
+
+- **Decided: each message has one Go type, in `internal/message`, shared by
+  every service that sends or receives it.** A field is then changed in one
+  place, and the compiler flags every service that no longer agrees with it.
+  Before, the CO2 reading, head count and command were each written out
+  separately in up to four services. Rejected: a copy per service, which
+  keeps each service's source self-contained but lets the copies drift apart
+  unnoticed. The cost is a build-time link: changing a type changes every
+  service that uses it at its next image build. Running containers are
+  unaffected, since each program holds its own compiled copy and still
+  restarts on its own; what forces services to be updated together is a
+  change to the JSON itself, which holds either way. Decided and implemented
+  2026-09-28.
+  - Useful for: §4.4, §5.
 
 - **Decided: room A125's devices in BuildSim are a CO2 sensor `A125-co2`
   (value in ppm) and a ventilation damper `A125-damper` (state 0–1, 0 closed,

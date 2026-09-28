@@ -13,6 +13,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
@@ -27,14 +28,6 @@ type publisher struct {
 	sensorID string
 	roomID   string
 	topic    string
-}
-
-// occupancyReading is the occupancy_reading message, defined by
-// schemas/occupancy_reading.schema.json.
-type occupancyReading struct {
-	RoomID string    `json:"room_id"`
-	Count  int       `json:"count"`
-	Ts     time.Time `json:"ts"`
 }
 
 func main() {
@@ -94,7 +87,7 @@ func (p *publisher) publish(ctx context.Context) error {
 		return err
 	}
 
-	reading := occupancyReading{
+	reading := message.OccupancyReading{
 		RoomID: p.roomID,
 		Count:  count,
 		Ts:     p.clock.Now().UTC(),

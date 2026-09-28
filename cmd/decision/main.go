@@ -21,6 +21,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/planner"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
@@ -28,53 +29,12 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
-// co2Reading is the co2_reading message, defined by
-// schemas/co2_reading.schema.json.
-type co2Reading struct {
-	RoomID string    `json:"room_id"`
-	PPM    float64   `json:"ppm"`
-	Ts     time.Time `json:"ts"`
-}
-
-// occupancyReading is the occupancy_reading message, defined by
-// schemas/occupancy_reading.schema.json.
-type occupancyReading struct {
-	RoomID string    `json:"room_id"`
-	Count  int       `json:"count"`
-	Ts     time.Time `json:"ts"`
-}
-
-// roomModel is the room_model message, defined by
-// schemas/room_model.schema.json.
-type roomModel struct {
-	RoomID string  `json:"room_id"`
-	Date   string  `json:"date"`
-	A      float64 `json:"a"`
-	B0     float64 `json:"b0"`
-	B1     float64 `json:"b1"`
-}
-
-// ventilationCommand is the ventilation_command message, defined by
-// schemas/ventilation_command.schema.json.
-type ventilationCommand struct {
-	RoomID string    `json:"room_id"`
-	Level  float64   `json:"level"`
-	Ts     time.Time `json:"ts"`
-}
-
-// commandResponse is the ventilation_command_response message, defined by
-// schemas/ventilation_command_response.schema.json.
-type commandResponse struct {
-	Accepted bool      `json:"accepted"`
-	Ts       time.Time `json:"ts"`
-}
-
 // inputs is the latest of each message the decision is made from. A nil
 // field has not arrived yet.
 type inputs struct {
-	co2    *co2Reading
-	people *occupancyReading
-	model  *roomModel
+	co2    *message.CO2Reading
+	people *message.OccupancyReading
+	model  *message.RoomModel
 }
 
 // latest holds the inputs as the broker delivers them. The broker's handlers
@@ -112,7 +72,7 @@ func main() {
 
 	clock := roomtime.FromEnv()
 	state := &latest{}
-	readings := make(chan co2Reading, 10) // CO2 readings waiting for a decision
+	readings := make(chan message.CO2Reading, 10) // CO2 readings waiting for a decision
 
 	// Runs on every connect, since the broker forgets subscriptions on disconnect.
 	onConnect := func(client mqtt.Client) {
@@ -153,7 +113,7 @@ func planSettings() planner.Settings {
 // decide chooses a level on every CO2 reading and sends it to the actuator
 // whenever it differs from the last level the actuator accepted. A level the
 // actuator doesn't accept is tried again on the next reading.
-func decide(readings <-chan co2Reading, state *latest, s planner.Settings, c *commander) {
+func decide(readings <-chan message.CO2Reading, state *latest, s planner.Settings, c *commander) {
 	var sent bool        // whether a level has been accepted by the actuator yet
 	var last float64     // the last level the actuator accepted
 	for range readings { // wait for each CO2 reading in turn
@@ -191,7 +151,7 @@ func choose(in inputs, s planner.Settings, current float64) float64 {
 // send commands the actuator to the level and, once the actuator has accepted
 // it, publishes a copy on the command topic.
 func (c *commander) send(level float64) error {
-	cmd := ventilationCommand{
+	cmd := message.VentilationCommand{
 		RoomID: c.roomID,
 		Level:  level,
 		Ts:     c.clock.Now().UTC(),
@@ -215,7 +175,7 @@ func (c *commander) post(payload []byte) error {
 		return err
 	}
 	defer resp.Body.Close() // run when post returns
-	var answer commandResponse
+	var answer message.CommandResponse
 	if err := json.NewDecoder(resp.Body).Decode(&answer); err != nil {
 		return fmt.Errorf("read actuator answer: %w", err)
 	}
@@ -227,7 +187,7 @@ func (c *commander) post(payload []byte) error {
 
 // publishCopy publishes an applied command on the command topic for storage,
 // logging if the broker doesn't take it.
-func (c *commander) publishCopy(cmd ventilationCommand) {
+func (c *commander) publishCopy(cmd message.VentilationCommand) {
 	if err := mqttclient.PublishJSON(c.broker, c.topic, false, cmd); err != nil {
 		log.Printf("command applied but its copy was not published: %v", err)
 	}
@@ -235,7 +195,7 @@ func (c *commander) publishCopy(cmd ventilationCommand) {
 
 // subscribeAll subscribes to the room's three inputs. Each message is stored as
 // the latest of its kind; a CO2 reading is also queued for a decision.
-func subscribeAll(client mqtt.Client, roomName string, state *latest, readings chan<- co2Reading) {
+func subscribeAll(client mqtt.Client, roomName string, state *latest, readings chan<- message.CO2Reading) {
 	subscribe(client, "co2/"+roomName+"/reading", func(payload []byte) {
 		if r, ok := state.keepCO2(payload); ok {
 			readings <- r
@@ -247,8 +207,8 @@ func subscribeAll(client mqtt.Client, roomName string, state *latest, readings c
 
 // keepCO2 stores a CO2 reading as the latest and returns it, or reports false
 // if the payload can't be read.
-func (l *latest) keepCO2(payload []byte) (co2Reading, bool) {
-	var r co2Reading
+func (l *latest) keepCO2(payload []byte) (message.CO2Reading, bool) {
+	var r message.CO2Reading
 	if !decode("CO2 reading", payload, &r) {
 		return r, false
 	}
@@ -261,7 +221,7 @@ func (l *latest) keepCO2(payload []byte) (co2Reading, bool) {
 // keepHeadCount stores a head count as the latest, logging it when it differs
 // from the one before.
 func (l *latest) keepHeadCount(payload []byte) {
-	var r occupancyReading
+	var r message.OccupancyReading
 	if !decode("head count", payload, &r) {
 		return
 	}
@@ -276,7 +236,7 @@ func (l *latest) keepHeadCount(payload []byte) {
 
 // keepModel stores a room model as the latest and logs its rates.
 func (l *latest) keepModel(payload []byte) {
-	var m roomModel
+	var m message.RoomModel
 	if !decode("room model", payload, &m) {
 		return
 	}
@@ -307,7 +267,7 @@ func decode(kind string, payload []byte, out any) bool {
 }
 
 // headCount is the head count as text, or "unknown" before the first one.
-func headCount(r *occupancyReading) string {
+func headCount(r *message.OccupancyReading) string {
 	if r == nil {
 		return "unknown"
 	}

@@ -19,6 +19,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 	"github.com/OscarEngelmark/smart-ventilation/internal/store"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
@@ -30,24 +31,6 @@ type payloadSchemas struct {
 	reading   *jsonschema.Schema
 	occupancy *jsonschema.Schema
 	command   *jsonschema.Schema
-}
-
-type co2ReadingPayload struct {
-	RoomID string    `json:"room_id"`
-	PPM    float64   `json:"ppm"`
-	Ts     time.Time `json:"ts"`
-}
-
-type occupancyReadingPayload struct {
-	RoomID string    `json:"room_id"`
-	Count  int       `json:"count"`
-	Ts     time.Time `json:"ts"`
-}
-
-type ventilationCommandPayload struct {
-	RoomID string    `json:"room_id"`
-	Level  float64   `json:"level"`
-	Ts     time.Time `json:"ts"`
 }
 
 func main() {
@@ -146,9 +129,9 @@ func serveCO2(db store.Store) http.HandlerFunc {
 			return
 		}
 
-		body := make([]co2ReadingPayload, 0, len(stored)) // empty rather than nil, so no readings encodes as [] and not null
+		body := make([]message.CO2Reading, 0, len(stored)) // empty rather than nil, so no readings encodes as [] and not null
 		for _, s := range stored {
-			body = append(body, co2ReadingPayload{RoomID: s.RoomID, PPM: s.PPM, Ts: s.Time})
+			body = append(body, message.CO2Reading{RoomID: s.RoomID, PPM: s.PPM, Ts: s.Time})
 		}
 		writeJSON(w, "co2", body)
 	}
@@ -170,9 +153,9 @@ func serveOccupancy(db store.Store) http.HandlerFunc {
 			return
 		}
 
-		body := make([]occupancyReadingPayload, 0, len(stored)) // encodes as [] when empty
+		body := make([]message.OccupancyReading, 0, len(stored)) // encodes as [] when empty
 		for _, s := range stored {
-			body = append(body, occupancyReadingPayload{RoomID: s.RoomID, Count: s.Count, Ts: s.Time})
+			body = append(body, message.OccupancyReading{RoomID: s.RoomID, Count: s.Count, Ts: s.Time})
 		}
 		writeJSON(w, "occupancy", body)
 	}
@@ -195,9 +178,9 @@ func serveCommands(db store.Store) http.HandlerFunc {
 			return
 		}
 
-		body := make([]ventilationCommandPayload, 0, len(stored)) // encodes as [] when empty
+		body := make([]message.VentilationCommand, 0, len(stored)) // encodes as [] when empty
 		for _, s := range stored {
-			body = append(body, ventilationCommandPayload{RoomID: s.RoomID, Level: s.Level, Ts: s.Time})
+			body = append(body, message.VentilationCommand{RoomID: s.RoomID, Level: s.Level, Ts: s.Time})
 		}
 		writeJSON(w, "commands", body)
 	}
@@ -275,7 +258,7 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(topic str
 // saveCO2Reading saves one message from co2/+/reading, or logs why it was
 // dropped.
 func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
-	var p co2ReadingPayload
+	var p message.CO2Reading
 	if !accept("reading", sch, topic, payload, &p, &p.RoomID) {
 		return
 	}
@@ -288,7 +271,7 @@ func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payloa
 // saveOccupancy saves one message from occupancy/+/reading, or logs why it
 // was dropped.
 func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
-	var p occupancyReadingPayload
+	var p message.OccupancyReading
 	if !accept("occupancy", sch, topic, payload, &p, &p.RoomID) {
 		return
 	}
@@ -301,7 +284,7 @@ func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload
 // saveCommand saves one message from ventilation/+/command, or logs why it
 // was dropped.
 func saveCommand(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
-	var p ventilationCommandPayload
+	var p message.VentilationCommand
 	if !accept("command", sch, topic, payload, &p, &p.RoomID) {
 		return
 	}

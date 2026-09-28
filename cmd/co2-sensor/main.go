@@ -13,6 +13,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
@@ -27,14 +28,6 @@ type publisher struct {
 	sensorID string
 	roomID   string
 	topic    string
-}
-
-// co2Reading is the co2_reading message, defined by
-// schemas/co2_reading.schema.json.
-type co2Reading struct {
-	RoomID string    `json:"room_id"`
-	PPM    float64   `json:"ppm"`
-	Ts     time.Time `json:"ts"`
 }
 
 func main() {
@@ -89,7 +82,7 @@ func (p *publisher) publish(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	reading := co2Reading{
+	reading := message.CO2Reading{
 		RoomID: p.roomID,
 		PPM:    ppm,
 		Ts:     p.clock.Now().UTC(),

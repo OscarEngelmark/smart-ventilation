@@ -21,6 +21,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
@@ -40,37 +41,6 @@ type learner struct {
 	topic      string
 	days       int
 	Cout       float64 // outdoor CO2, ppm
-}
-
-// co2Reading is the co2_reading message the storage-service returns, defined
-// by schemas/co2_reading.schema.json.
-type co2Reading struct {
-	PPM float64   `json:"ppm"`
-	Ts  time.Time `json:"ts"`
-}
-
-// occupancyReading is the occupancy_reading message the storage-service
-// returns, defined by schemas/occupancy_reading.schema.json.
-type occupancyReading struct {
-	Count int       `json:"count"`
-	Ts    time.Time `json:"ts"`
-}
-
-// ventilationCommand is the ventilation_command message the storage-service
-// returns, defined by schemas/ventilation_command.schema.json.
-type ventilationCommand struct {
-	Level float64   `json:"level"`
-	Ts    time.Time `json:"ts"`
-}
-
-// roomModel is the room_model message, defined by
-// schemas/room_model.schema.json.
-type roomModel struct {
-	RoomID string  `json:"room_id"`
-	Date   string  `json:"date"`
-	A      float64 `json:"a"`
-	B0     float64 `json:"b0"`
-	B1     float64 `json:"b1"`
 }
 
 func main() {
@@ -139,7 +109,7 @@ func (l *learner) publish(ctx context.Context, now time.Time) error {
 		return nil
 	}
 
-	msg := roomModel{
+	msg := message.RoomModel{
 		RoomID: l.roomID,
 		Date:   now.Format(time.DateOnly),
 		A:      fit.A,
@@ -159,15 +129,15 @@ func (l *learner) publish(ctx context.Context, now time.Time) error {
 // stored from since onwards, each in time order. The damper levels are led by
 // the command in force at since.
 func (l *learner) history(ctx context.Context, since time.Time) (co2, people, damper []roommodel.Sample, err error) {
-	var readings []co2Reading
+	var readings []message.CO2Reading
 	if err := l.get(ctx, "/co2", since, &readings); err != nil {
 		return nil, nil, nil, err
 	}
-	var counts []occupancyReading
+	var counts []message.OccupancyReading
 	if err := l.get(ctx, "/occupancy", since, &counts); err != nil {
 		return nil, nil, nil, err
 	}
-	var commands []ventilationCommand
+	var commands []message.VentilationCommand
 	if err := l.get(ctx, "/commands", since, &commands); err != nil {
 		return nil, nil, nil, err
 	}
