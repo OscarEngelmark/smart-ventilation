@@ -389,6 +389,11 @@ _(nothing yet)_
   restarts on its own; what forces services to be updated together is a
   change to the JSON itself, which holds either way. Decided and implemented
   2026-09-28.
+  - The store (`internal/store`) saves and returns these same types, so a
+    reading keeps one type from its sensor through storage to the room
+    model. It replaces a second set of row types the store had defined for
+    itself, which the storage-service converted to and from. Implemented
+    2026-10-04.
   - Useful for: §4.4, §5.
 
 - **Decided: room A125's devices in BuildSim are a CO2 sensor `A125-co2`

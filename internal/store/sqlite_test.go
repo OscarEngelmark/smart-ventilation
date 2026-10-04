@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 )
 
 // The time the tests place their readings around.
@@ -27,7 +29,7 @@ func openTemp(t *testing.T) *SQLiteStore {
 // save stores one reading, its ppm standing in for which reading it is.
 func save(t *testing.T, s *SQLiteStore, room string, ppm float64, ts time.Time) {
 	t.Helper()
-	r := CO2Reading{RoomID: room, PPM: ppm, Time: ts}
+	r := message.CO2Reading{RoomID: room, PPM: ppm, Ts: ts}
 	if err := s.SaveCO2Reading(context.Background(), r); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -87,8 +89,8 @@ func TestNoReadingsIsNotAnError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
-	if len(got) != 0 {
-		t.Errorf("got %d readings, want none", len(got))
+	if got == nil || len(got) != 0 {
+		t.Errorf("got %#v, want an empty list", got)
 	}
 }
 
@@ -114,7 +116,7 @@ func TestReadingComesBackAsItWasSaved(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("got %d readings, want 1", len(got))
 	}
-	if got[0].RoomID != "level0/A125" || got[0].PPM != 543.5 || !got[0].Time.Equal(noon) {
+	if got[0].RoomID != "level0/A125" || got[0].PPM != 543.5 || !got[0].Ts.Equal(noon) {
 		t.Errorf("got %+v, want level0/A125 543.5 at %v", got[0], noon)
 	}
 }
@@ -122,7 +124,7 @@ func TestReadingComesBackAsItWasSaved(t *testing.T) {
 // saveCount stores one occupancy count.
 func saveCount(t *testing.T, s *SQLiteStore, room string, count int, ts time.Time) {
 	t.Helper()
-	o := Occupancy{RoomID: room, Count: count, Time: ts}
+	o := message.OccupancyReading{RoomID: room, Count: count, Ts: ts}
 	if err := s.SaveOccupancy(context.Background(), o); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -161,7 +163,7 @@ func TestOccupancyComesBackAsItWasSaved(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("got %d counts, want 1", len(got))
 	}
-	if got[0].RoomID != "level0/A125" || got[0].Count != 5 || !got[0].Time.Equal(noon) {
+	if got[0].RoomID != "level0/A125" || got[0].Count != 5 || !got[0].Ts.Equal(noon) {
 		t.Errorf("got %+v, want level0/A125 5 at %v", got[0], noon)
 	}
 }
@@ -169,7 +171,7 @@ func TestOccupancyComesBackAsItWasSaved(t *testing.T) {
 // saveCommand stores one command, its level standing in for which command it is.
 func saveCommand(t *testing.T, s *SQLiteStore, room string, level float64, ts time.Time) {
 	t.Helper()
-	c := Command{RoomID: room, Level: level, Time: ts}
+	c := message.VentilationCommand{RoomID: room, Level: level, Ts: ts}
 	if err := s.SaveCommand(context.Background(), c); err != nil {
 		t.Fatalf("save: %v", err)
 	}
@@ -219,7 +221,7 @@ func TestLatestIsNewestAcrossTables(t *testing.T) {
 	ctx := context.Background()
 	save(t, s, "level0/A125", 500, noon)
 	saveCount(t, s, "level0/A125", 3, noon.Add(2*time.Minute))
-	if err := s.SaveCommand(ctx, Command{RoomID: "level0/A125", Level: 1, Time: noon.Add(time.Minute)}); err != nil {
+	if err := s.SaveCommand(ctx, message.VentilationCommand{RoomID: "level0/A125", Level: 1, Ts: noon.Add(time.Minute)}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -375,7 +377,7 @@ func TestSavesAndReadsAtTheSameTimeAllSucceed(t *testing.T) {
 		})
 	}
 	for i := range 200 {
-		r := CO2Reading{RoomID: "level0/A125", PPM: 420, Time: noon.Add(time.Hour + time.Duration(i)*time.Second)}
+		r := message.CO2Reading{RoomID: "level0/A125", PPM: 420, Ts: noon.Add(time.Hour + time.Duration(i)*time.Second)}
 		if err := s.SaveCO2Reading(ctx, r); err != nil {
 			t.Errorf("save %d of 200: %v", i+1, err)
 			break

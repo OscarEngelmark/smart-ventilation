@@ -154,17 +154,12 @@ func serveCO2(db store.Store) http.HandlerFunc {
 			fail(w, http.StatusBadRequest, "co2: %v", err)
 			return
 		}
-		stored, err := db.CO2ReadingsSince(r.Context(), roomID, since)
+		readings, err := db.CO2ReadingsSince(r.Context(), roomID, since)
 		if err != nil {
 			fail(w, http.StatusInternalServerError, "co2: read %s: %v", roomID, err)
 			return
 		}
-
-		body := make([]message.CO2Reading, 0, len(stored)) // empty rather than nil, so no readings encodes as [] and not null
-		for _, s := range stored {
-			body = append(body, message.CO2Reading{RoomID: s.RoomID, PPM: s.PPM, Ts: s.Time})
-		}
-		writeJSON(w, "co2", body)
+		writeJSON(w, "co2", readings)
 	}
 }
 
@@ -178,17 +173,12 @@ func serveOccupancy(db store.Store) http.HandlerFunc {
 			fail(w, http.StatusBadRequest, "occupancy: %v", err)
 			return
 		}
-		stored, err := db.OccupancySince(r.Context(), roomID, since)
+		counts, err := db.OccupancySince(r.Context(), roomID, since)
 		if err != nil {
 			fail(w, http.StatusInternalServerError, "occupancy: read %s: %v", roomID, err)
 			return
 		}
-
-		body := make([]message.OccupancyReading, 0, len(stored)) // encodes as [] when empty
-		for _, s := range stored {
-			body = append(body, message.OccupancyReading{RoomID: s.RoomID, Count: s.Count, Ts: s.Time})
-		}
-		writeJSON(w, "occupancy", body)
+		writeJSON(w, "occupancy", counts)
 	}
 }
 
@@ -203,17 +193,12 @@ func serveCommands(db store.Store) http.HandlerFunc {
 			fail(w, http.StatusBadRequest, "commands: %v", err)
 			return
 		}
-		stored, err := db.CommandsInForceSince(r.Context(), roomID, since)
+		commands, err := db.CommandsInForceSince(r.Context(), roomID, since)
 		if err != nil {
 			fail(w, http.StatusInternalServerError, "commands: read %s: %v", roomID, err)
 			return
 		}
-
-		body := make([]message.VentilationCommand, 0, len(stored)) // encodes as [] when empty
-		for _, s := range stored {
-			body = append(body, message.VentilationCommand{RoomID: s.RoomID, Level: s.Level, Ts: s.Time})
-		}
-		writeJSON(w, "commands", body)
+		writeJSON(w, "commands", commands)
 	}
 }
 
@@ -289,11 +274,10 @@ func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(topic str
 // saveCO2Reading saves one message from co2/+/reading, or logs why it was
 // dropped.
 func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
-	var p message.CO2Reading
-	if !accept("reading", sch, topic, payload, &p, &p.RoomID) {
+	var r message.CO2Reading
+	if !accept("reading", sch, topic, payload, &r, &r.RoomID) {
 		return
 	}
-	r := store.CO2Reading{RoomID: p.RoomID, PPM: p.PPM, Time: p.Ts}
 	if err := db.SaveCO2Reading(context.Background(), r); err != nil {
 		log.Printf("reading: save failed: %v", err)
 	}
@@ -302,11 +286,10 @@ func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payloa
 // saveOccupancy saves one message from occupancy/+/reading, or logs why it
 // was dropped.
 func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
-	var p message.OccupancyReading
-	if !accept("occupancy", sch, topic, payload, &p, &p.RoomID) {
+	var o message.OccupancyReading
+	if !accept("occupancy", sch, topic, payload, &o, &o.RoomID) {
 		return
 	}
-	o := store.Occupancy{RoomID: p.RoomID, Count: p.Count, Time: p.Ts}
 	if err := db.SaveOccupancy(context.Background(), o); err != nil {
 		log.Printf("occupancy: save failed: %v", err)
 	}
@@ -315,11 +298,10 @@ func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload
 // saveCommand saves one message from ventilation/+/command, or logs why it
 // was dropped.
 func saveCommand(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
-	var p message.VentilationCommand
-	if !accept("command", sch, topic, payload, &p, &p.RoomID) {
+	var c message.VentilationCommand
+	if !accept("command", sch, topic, payload, &c, &c.RoomID) {
 		return
 	}
-	c := store.Command{RoomID: p.RoomID, Level: p.Level, Time: p.Ts}
 	if err := db.SaveCommand(context.Background(), c); err != nil {
 		log.Printf("command: save failed: %v", err)
 	}

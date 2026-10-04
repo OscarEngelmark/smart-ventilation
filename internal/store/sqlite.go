@@ -7,6 +7,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 )
 
 // SQLiteStore is the current implementation of Store, backed by a local
@@ -70,28 +72,28 @@ CREATE UNIQUE INDEX IF NOT EXISTS commands_room_ts ON commands (room_id, ts);
 	return err
 }
 
-func (s *SQLiteStore) SaveCO2Reading(ctx context.Context, r CO2Reading) error {
+func (s *SQLiteStore) SaveCO2Reading(ctx context.Context, r message.CO2Reading) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO co2_readings (room_id, ppm, ts) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
-		r.RoomID, r.PPM, r.Time.UTC().Format(time.RFC3339)) // stored as UTC text, so text order is time order
+		r.RoomID, r.PPM, r.Ts.UTC().Format(time.RFC3339)) // stored as UTC text, so text order is time order
 	return err
 }
 
-func (s *SQLiteStore) SaveOccupancy(ctx context.Context, o Occupancy) error {
+func (s *SQLiteStore) SaveOccupancy(ctx context.Context, o message.OccupancyReading) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO occupancy (room_id, count, ts) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
-		o.RoomID, o.Count, o.Time.UTC().Format(time.RFC3339))
+		o.RoomID, o.Count, o.Ts.UTC().Format(time.RFC3339))
 	return err
 }
 
-func (s *SQLiteStore) SaveCommand(ctx context.Context, c Command) error {
+func (s *SQLiteStore) SaveCommand(ctx context.Context, c message.VentilationCommand) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO commands (room_id, level, ts) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
-		c.RoomID, c.Level, c.Time.UTC().Format(time.RFC3339))
+		c.RoomID, c.Level, c.Ts.UTC().Format(time.RFC3339))
 	return err
 }
 
-func (s *SQLiteStore) CO2ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]CO2Reading, error) {
+func (s *SQLiteStore) CO2ReadingsSince(ctx context.Context, roomID string, since time.Time) ([]message.CO2Reading, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT room_id, ppm, ts FROM co2_readings WHERE room_id = ? AND ts >= ? ORDER BY ts`,
 		roomID, since.UTC().Format(time.RFC3339)) // timestamps are stored as UTC text, which sorts and compares in time order
@@ -100,14 +102,14 @@ func (s *SQLiteStore) CO2ReadingsSince(ctx context.Context, roomID string, since
 	}
 	defer rows.Close() // runs when this function returns, however it returns
 
-	var readings []CO2Reading
+	readings := []message.CO2Reading{} // empty rather than nil, so a caller's JSON gets [] and not null
 	for rows.Next() {
-		var r CO2Reading
+		var r message.CO2Reading
 		var ts string
 		if err := rows.Scan(&r.RoomID, &r.PPM, &ts); err != nil {
 			return nil, err
 		}
-		r.Time, err = time.Parse(time.RFC3339, ts)
+		r.Ts, err = time.Parse(time.RFC3339, ts)
 		if err != nil {
 			return nil, fmt.Errorf("parse stored timestamp %q: %w", ts, err)
 		}
@@ -116,7 +118,7 @@ func (s *SQLiteStore) CO2ReadingsSince(ctx context.Context, roomID string, since
 	return readings, rows.Err()
 }
 
-func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since time.Time) ([]Occupancy, error) {
+func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since time.Time) ([]message.OccupancyReading, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT room_id, count, ts FROM occupancy WHERE room_id = ? AND ts >= ? ORDER BY ts`,
 		roomID, since.UTC().Format(time.RFC3339)) // compared as UTC text, as in CO2ReadingsSince
@@ -125,14 +127,14 @@ func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since t
 	}
 	defer rows.Close() // runs when this function returns, however it returns
 
-	var counts []Occupancy
+	counts := []message.OccupancyReading{} // empty rather than nil, as in CO2ReadingsSince
 	for rows.Next() {
-		var o Occupancy
+		var o message.OccupancyReading
 		var ts string
 		if err := rows.Scan(&o.RoomID, &o.Count, &ts); err != nil {
 			return nil, err
 		}
-		o.Time, err = time.Parse(time.RFC3339, ts)
+		o.Ts, err = time.Parse(time.RFC3339, ts)
 		if err != nil {
 			return nil, fmt.Errorf("parse stored timestamp %q: %w", ts, err)
 		}
@@ -141,7 +143,7 @@ func (s *SQLiteStore) OccupancySince(ctx context.Context, roomID string, since t
 	return counts, rows.Err()
 }
 
-func (s *SQLiteStore) CommandsInForceSince(ctx context.Context, roomID string, since time.Time) ([]Command, error) {
+func (s *SQLiteStore) CommandsInForceSince(ctx context.Context, roomID string, since time.Time) ([]message.VentilationCommand, error) {
 	from := since.UTC().Format(time.RFC3339) // compared as UTC text, as in CO2ReadingsSince
 	rows, err := s.db.QueryContext(ctx, `
 SELECT room_id, level, ts FROM (
@@ -157,14 +159,14 @@ ORDER BY ts`,
 	}
 	defer rows.Close() // runs when this function returns, however it returns
 
-	var commands []Command
+	commands := []message.VentilationCommand{} // empty rather than nil, as in CO2ReadingsSince
 	for rows.Next() {
-		var c Command
+		var c message.VentilationCommand
 		var ts string
 		if err := rows.Scan(&c.RoomID, &c.Level, &ts); err != nil {
 			return nil, err
 		}
-		c.Time, err = time.Parse(time.RFC3339, ts)
+		c.Ts, err = time.Parse(time.RFC3339, ts)
 		if err != nil {
 			return nil, fmt.Errorf("parse stored timestamp %q: %w", ts, err)
 		}
