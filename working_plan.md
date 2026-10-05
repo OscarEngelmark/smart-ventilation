@@ -11,7 +11,7 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
 | 13 | One crash-and-restart test: a container killed and restarted re-registers with BuildSim and the loop continues | which container | 1 |
-| 14 | Report setup: `latex/report/` from the course template, and a checklist of everything the template and guide ask for, section by section | none | 1 |
+| 14 | Report setup: `latex/report/` from the course template | none | 1 |
 | 15 | Report §1–13, one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step | small ones per section | ~20 |
 
 ## Phase 2: higher grade (2026-10-11, and any time left)
@@ -27,4 +27,5 @@ Each result also updates report §10 and §11.
 
 ## 2026-10-12
 
-Check the report against the checklist from row 14, build, and submit.
+Check the report against the template's own "Checklist before submission",
+build, and submit.

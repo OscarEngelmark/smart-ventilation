@@ -1372,7 +1372,7 @@ _(nothing yet)_
   loop's answer: the reading stored, a fully open command stored, the damper
   open in BuildSim, and CO2 falling.** `test/e2e/loop_test.go` verifies
   FR-1 to FR-3 (§3) against the running stack, run with
-  `go test -tags e2e -v ./test/e2e`. The physical model continues from the
+  `go test -tags e2e -v -count=1 ./test/e2e`. The physical model continues from the
   CO2 that BuildSim holds, so the injected value runs the whole loop like a
   room that has just filled. 980 ppm is above the 950 ppm target, which
   opens the damper fully with or without a room model, and below the
@@ -1384,9 +1384,12 @@ _(nothing yet)_
   enters the stored history the next room-model fit uses, an effect not
   measured. Decided and implemented 2026-10-05.
   - Result, 2026-10-05, at speed 10 with the room empty and the damper
-    closed: passed in 3.5 real seconds. Stored 979 ppm; a 1.00 command
-    stamped in the same room second; CO2 973.8 → 963.1 ppm over the first
-    three readings after it.
+    closed: passed in 4.0 real seconds. CO2 went from 454 ppm to 979 ppm at
+    the injection; a 1.00 command was stamped in the same room second; CO2
+    then fell about 5 ppm per reading, 979 → 953 ppm over five readings.
+    Evidence in `test/results/`: the test's output
+    (`e2e_2026-10-05.txt`) and the stored CO2 readings, commands and head
+    counts of the run's window (`e2e_2026-10-05_*.json`).
   - Useful for: §10, §11.
 
 - **Decided: failure testing covers a sensor giving bad readings, a component
@@ -1565,3 +1568,11 @@ was caught. Kept for the report's reflection and the oral exam.
   air. Why it was recreated is not known. Caught from `./start.sh`'s output
   listing BuildSim as started. Noted 2026-09-28.
   - Useful for: §13.
+
+- **The assistant gave the end-to-end test's run command without
+  `-count=1`.** Without it, `go test` may report a remembered earlier pass,
+  marked `(cached)`, instead of running the test, so a repeat run against
+  the stack could show a pass that never happened. Caught by the assistant
+  while explaining the command's flags; the flag is now in the command in
+  `test/e2e/loop_test.go`. Noted 2026-10-05.
+  - Useful for: §10, §13.

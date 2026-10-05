@@ -6,7 +6,9 @@
 // It needs the whole stack running, so it is left out of a plain `go test ./...`.
 // Start the stack with ./start.sh, then run:
 //
-//	go test -tags e2e -v ./test/e2e
+//	go test -tags e2e -v -count=1 ./test/e2e
+//
+// -count=1 makes Go run the test every time instead of reusing a cached pass.
 //
 // The requirements it verifies (FR-1 to FR-3) are in project_notes.md §3.
 package e2e
