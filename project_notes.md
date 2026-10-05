@@ -43,7 +43,34 @@ _(nothing yet)_
 
 ## 3. Requirements
 
-_(nothing yet)_
+- **Decided: twelve requirements, each traced to a test that exists or is
+  planned.** Rejected: a requirement per container — more rows than tests,
+  so the extra rows would be untested gaps. Requirements whose test is
+  planned but not yet run stay in the table and are reported as unverified
+  if the test isn't done. Decided 2026-10-05.
+
+  | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
+  |---|---|---|---|---|
+  | FR-1 | Functional | Must | Every CO2 reading reaches the decision service and storage | End-to-end test |
+  | FR-2 | Functional | Must | On every CO2 reading the decision service picks a level; a changed level is applied to the damper in BuildSim | End-to-end test |
+  | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
+  | FR-4 | Functional | Must | Every reading and command is stored for 90 room days and served by room and time | Unit tests, `internal/store`; the daily cleanup in the storage-service log |
+  | FR-5 | Functional | Must | The room model is refit at room midnight from the last 7 days; nothing is published when the history can't separate the rates | Unit tests, `internal/roommodel`; the refit in the room-model log |
+  | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
+  | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level, refreshed every 5 s | Manual check, screenshot |
+  | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Peak CO2 over a room day, `eval/day_summary.py` |
+  | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 room minutes | Crash-and-restart test |
+  | NFR-2 | Non-functional | Should | The damper runs lower on average than under the CO2-only fallback | Decision-quality comparison |
+  | NFR-3 | Non-functional | Should | A frozen CO2 sensor or a downed broker doesn't push CO2 over 1000 ppm | Fault tests |
+  | NFR-4 | Non-functional | Could | Time from a reading to its command stays under a limit set once it is measured | Delay measurement |
+
+  - REG-1's threshold is general advice (FoHMFS 2014:18), not a binding
+    rule; see *Threshold `C_threshold` = 1000 ppm*, §7.
+  - NFR-1's 2 minutes is derived, not from a source: with the damper
+    closed, a full room raises CO2 about 23 ppm/min (§7, *Decided: the
+    system pursues three goals…*), so the 50 ppm between the 950 ppm target
+    and the threshold lasts about 2 minutes.
+  - Useful for: §3, §10, §11.
 
 ## 4. Architecture
 
