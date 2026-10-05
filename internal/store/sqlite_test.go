@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"path/filepath"
 	"slices"
 	"sync"
@@ -310,31 +309,6 @@ func TestSameReadingSavedTwiceIsStoredOnce(t *testing.T) {
 	s := openTemp(t)
 	save(t, s, "level0/A125", 500, noon)
 	save(t, s, "level0/A125", 500, noon)
-
-	want(t, ppmSince(t, s, "level0/A125", noon), []float64{500})
-}
-
-// A file written before the uniqueness rule may already hold duplicates.
-func TestOpeningFileWithDuplicatesKeepsTheEarliest(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "readings.db")
-	old, err := sql.Open("sqlite", "file:"+path)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	_, err = old.Exec(`
-CREATE TABLE co2_readings (room_id TEXT NOT NULL, ppm REAL NOT NULL, ts TEXT NOT NULL);
-INSERT INTO co2_readings VALUES ('level0/A125', 500, '2026-09-23T12:00:00Z');
-INSERT INTO co2_readings VALUES ('level0/A125', 600, '2026-09-23T12:00:00Z');`)
-	old.Close()
-	if err != nil {
-		t.Fatalf("write old file: %v", err)
-	}
-
-	s, err := OpenSQLite(path)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	t.Cleanup(func() { s.Close() })
 
 	want(t, ppmSince(t, s, "level0/A125", noon), []float64{500})
 }

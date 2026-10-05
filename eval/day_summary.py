@@ -2,8 +2,7 @@
 
 Prints the time-weighted mean damper level over the whole day, the hour before
 the meeting, and the meeting hour, and the highest stored CO2 reading. Used to
-compare a day planned with the occupancy forecast against a day planned
-without it (project_notes.md §7).
+compare room days run under different settings or code (project_notes.md §7).
 
 Usage: python3 eval/day_summary.py 2026-10-05 [--room level0/A125]
 """

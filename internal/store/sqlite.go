@@ -20,8 +20,7 @@ type SQLiteStore struct {
 // OpenSQLite opens the SQLite file at path, creating it and its tables if
 // needed. Reads and writes don't block each other (WAL mode), and a request
 // that finds the file locked waits up to 5 s instead of failing at once.
-// Each table holds at most one row per room and timestamp; duplicates
-// already in the file are removed on opening, keeping the earliest saved.
+// Each table holds at most one row per room and timestamp.
 // Reasoning: project_notes.md §7.
 func OpenSQLite(path string) (*SQLiteStore, error) {
 	dsn := "file:" + path + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)" // applied to every connection
@@ -52,16 +51,6 @@ CREATE TABLE IF NOT EXISTS commands (
 	room_id TEXT NOT NULL,
 	level REAL NOT NULL,
 	ts TEXT NOT NULL
-);
-
-DELETE FROM co2_readings WHERE rowid NOT IN (
-	SELECT MIN(rowid) FROM co2_readings GROUP BY room_id, ts
-);
-DELETE FROM occupancy WHERE rowid NOT IN (
-	SELECT MIN(rowid) FROM occupancy GROUP BY room_id, ts
-);
-DELETE FROM commands WHERE rowid NOT IN (
-	SELECT MIN(rowid) FROM commands GROUP BY room_id, ts
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS co2_readings_room_ts ON co2_readings (room_id, ts);

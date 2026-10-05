@@ -1222,10 +1222,12 @@ _(nothing yet)_
     `cmd/storage-service`; unique indexes and `ON CONFLICT DO NOTHING` in
     `internal/store/sqlite.go`).
     - SQLite can't add a unique index to a table that already holds
-      duplicates, so opening the file first deletes them, keeping the
-      earliest saved row. Rejected: a one-off cleanup by hand — the code
-      would then fail on any older copy of the database. The live database
-      held none (105,025 CO2 readings checked).
+      duplicates. Opening the file first deleted them, keeping the earliest
+      saved row, until 2026-10-05; the live database held none (105,025 CO2
+      readings checked) and has had the indexes since 2026-09-27, so the
+      cleanup was removed. Rejected: keeping it, so an older copy of the
+      database still opens. Trade-off: an older copy that holds duplicates
+      now fails to open, with SQLite's error; no such copy exists.
     - The message handlers are attached to the MQTT client before it
       connects (`AddRoute`), not when subscribing. The broker sends the
       messages it held as soon as the connection opens, before the
@@ -1233,9 +1235,8 @@ _(nothing yet)_
       no handler unsaved and unacknowledged, so it waits for the next
       connection. Found in a 60 s outage that lost the first 5 readings;
       the broker delivered them once the fix was running.
-    - Evidence: unit tests for a reading saved twice (stored once) and for
-      opening a file that already holds a duplicate (the earlier row kept).
-      On the running stack at 10×, three 60 s stops of the storage-service
+    - Evidence: a unit test for a reading saved twice (stored once). On
+      the running stack at 10×, three 60 s stops of the storage-service
       left no hole in the stored history: 248 CO2 readings, each 10 room
       seconds after the last, and head counts every 60.
   - **Fixed 2026-09-27 (bug): a save or read that met another request's
