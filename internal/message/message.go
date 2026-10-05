@@ -39,10 +39,3 @@ type VentilationCommand struct {
 	Level  float64   `json:"level"`
 	Ts     time.Time `json:"ts"`
 }
-
-// CommandResponse is the ventilation_command_response message, defined by
-// schemas/ventilation_command_response.schema.json.
-type CommandResponse struct {
-	Accepted bool      `json:"accepted"`
-	Ts       time.Time `json:"ts"`
-}

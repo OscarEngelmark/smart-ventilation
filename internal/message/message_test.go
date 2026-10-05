@@ -18,7 +18,6 @@ func TestEveryMessageMatchesItsSchema(t *testing.T) {
 		{"occupancy_reading.schema.json", OccupancyReading{RoomID: "level0/A125", Count: 6, Ts: ts}},
 		{"room_model.schema.json", RoomModel{RoomID: "level0/A125", Date: "2026-10-09", A: 4.7, B0: 0.00875, B1: 0.0496}},
 		{"ventilation_command.schema.json", VentilationCommand{RoomID: "level0/A125", Level: 0.4, Ts: ts}},
-		{"ventilation_command_response.schema.json", CommandResponse{Accepted: true, Ts: ts}},
 	}
 	for _, c := range cases {
 		sch, err := schemas.Load(c.schema)

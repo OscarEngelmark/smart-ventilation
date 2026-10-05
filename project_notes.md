@@ -341,14 +341,14 @@ _(nothing yet)_
   (see *Decided: failure testing covers a sensor giving bad readings, a
   component going down, and delayed or dropped communication*, §10) needs
   anyway; a bare example payload is only documentation, nothing checks
-  against it. Five schemas exist so far: `co2_reading`,
+  against it. Four schemas exist so far: `co2_reading`,
   `occupancy_reading` and `room_model` (the MQTT payloads) and
-  `ventilation_command` / `ventilation_command_response` (the REST
-  request/response for the decision→actuator link, see *Decided: two
-  different communication patterns...*, §4). Decided and implemented
-  2026-09-15; `co2_forecast` was removed with the CO2 forecast service
-  2026-09-25, and `occupancy_forecast` with the occupancy forecast
-  2026-09-27.
+  `ventilation_command` (the REST request for the decision→actuator link,
+  see *Decided: two different communication patterns...*, §4). Decided and
+  implemented 2026-09-15; `co2_forecast` was removed with the CO2 forecast
+  service 2026-09-25, `occupancy_forecast` with the occupancy forecast
+  2026-09-27, and `ventilation_command_response` 2026-10-05 (see *Decided:
+  the actuator serves one endpoint…*, below).
   - `ventilation_command`'s `level` field (0–1) was a placeholder; now
     settled to match the damper state in BuildSim (see *Decided: room A125's
     devices in BuildSim...*, below).
@@ -423,18 +423,21 @@ _(nothing yet)_
   - Useful for: §5, §7.2.
 
 - **Decided: the actuator serves one endpoint, `POST /command` on port 8080,
-  taking a `ventilation_command` and answering a
-  `ventilation_command_response`.** The answer is sent only after BuildSim
-  has stored the new damper position, so a caller that gets no acceptance
-  knows the command did not land and can send it again — the retry the REST
+  taking a `ventilation_command` and answering 200 OK once it is applied.**
+  The answer is sent only after BuildSim has stored the new damper position,
+  so a caller that gets any other status knows the command did not land and can send it again — the retry the REST
   link was chosen for (see *Decided: two different communication patterns...*,
   §4). A command for another room is refused with 404 rather than obeyed: one
   actuator process serves one room, so a foreign `room_id` means something is
   misrouted. Malformed or schema-invalid commands are refused with 400 and a
-  failed BuildSim write with 502, each answering `accepted: false`. Rejected:
-  accepting on receipt and writing the damper afterwards, which is cheaper to
-  serve but leaves the decision service unable to tell a stored command from
-  a lost one. Decided and implemented 2026-09-23.
+  failed BuildSim write with 502, each with the reason as plain text.
+  Rejected: accepting on receipt and writing the damper afterwards, which is
+  cheaper to serve but leaves the decision service unable to tell a stored
+  command from a lost one. Decided and implemented 2026-09-23.
+  - Replaces, 2026-10-05, a JSON answer (`ventilation_command_response`)
+    whose `accepted` field was true exactly when the status was 200, and
+    whose timestamp nothing read. Rejected: keeping it, which documents the
+    answer as a schema but states the outcome twice.
   - Useful for: §5, §8.1, §10.
 
 - **Decided: the BuildSim client keeps BuildSim's nested

@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/message"
-	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
@@ -26,7 +26,6 @@ import (
 type commands struct {
 	client   *buildsim.Client
 	schema   *jsonschema.Schema
-	clock    *roomtime.Clock
 	damperID string
 	roomID   string
 }
@@ -40,7 +39,6 @@ func main() {
 	damperID := env.String("DAMPER_ID")
 	addr := ":8080" // the port this program listens on inside its container
 
-	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
@@ -56,7 +54,6 @@ func main() {
 	c := &commands{
 		client:   client,
 		schema:   schema,
-		clock:    clock,
 		damperID: damperID,
 		roomID:   buildsim.RoomKey(level, roomName),
 	}
@@ -68,8 +65,8 @@ func main() {
 }
 
 // serve takes one ventilation command and writes its level to the damper. It
-// answers only after BuildSim has stored the new position, so a caller that
-// gets no acceptance can send the command again.
+// answers 200 OK only after BuildSim has stored the new position, so a caller
+// that gets any other status can send the command again.
 func (c *commands) serve(w http.ResponseWriter, r *http.Request) {
 	payload, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
 	if err != nil {
@@ -96,26 +93,15 @@ func (c *commands) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("%s: damper %.2f", c.roomID, cmd.Level)
-	c.respond(w, http.StatusOK, true)
+	w.WriteHeader(http.StatusOK)
 }
 
-// reject logs why a command was refused and answers that it was not accepted.
+// reject logs why a command was refused and answers with that reason as plain
+// text, so the caller sees the same message the log holds.
 func (c *commands) reject(w http.ResponseWriter, status int, format string, args ...any) {
-	log.Printf(format, args...)
-	c.respond(w, status, false)
-}
-
-// respond answers with one ventilation_command_response.
-func (c *commands) respond(w http.ResponseWriter, status int, accepted bool) {
-	body := message.CommandResponse{
-		Accepted: accepted,
-		Ts:       c.clock.Now().UTC(),
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(body); err != nil {
-		log.Printf("write response: %v", err)
-	}
+	msg := fmt.Sprintf(format, args...)
+	log.Print(msg)
+	http.Error(w, msg, status)
 }
 
 // equipment is the device record this process registers: one equipment record

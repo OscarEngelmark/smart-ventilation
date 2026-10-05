@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -168,19 +169,16 @@ func (c *commander) send(level float64) error {
 }
 
 // post sends a ventilation_command payload to the actuator and returns an
-// error unless the actuator accepts it.
+// error unless the actuator answers 200 OK, its sign of a stored command.
 func (c *commander) post(payload []byte) error {
 	resp, err := c.http.Post(c.actuatorURL+"/command", "application/json", bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close() // run when post returns
-	var answer message.CommandResponse
-	if err := json.NewDecoder(resp.Body).Decode(&answer); err != nil {
-		return fmt.Errorf("read actuator answer: %w", err)
-	}
-	if !answer.Accepted {
-		return fmt.Errorf("actuator refused the command: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		reason, _ := io.ReadAll(io.LimitReader(resp.Body, 512)) // the actuator's plain-text reason
+		return fmt.Errorf("actuator refused the command: %s: %s", resp.Status, bytes.TrimSpace(reason))
 	}
 	return nil
 }
