@@ -1368,6 +1368,27 @@ _(nothing yet)_
 
 ## 10. Test plan
 
+- **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
+  loop's answer: the reading stored, a fully open command stored, the damper
+  open in BuildSim, and CO2 falling.** `test/e2e/loop_test.go` verifies
+  FR-1 to FR-3 (§3) against the running stack, run with
+  `go test -tags e2e -v ./test/e2e`. The physical model continues from the
+  CO2 that BuildSim holds, so the injected value runs the whole loop like a
+  room that has just filled. 980 ppm is above the 950 ppm target, which
+  opens the damper fully with or without a room model, and below the
+  threshold. Rejected: waiting for the occupancy schedule to change the
+  damper — it only works in occupied room hours, and a normal level change
+  moves CO2 by under 1 ppm per reading, too little to check. Trade-offs: the
+  test covers the full opening, not the plan choosing a level in between
+  (covered by the unit tests in `internal/planner`); and the injected jump
+  enters the stored history the next room-model fit uses, an effect not
+  measured. Decided and implemented 2026-10-05.
+  - Result, 2026-10-05, at speed 10 with the room empty and the damper
+    closed: passed in 3.5 real seconds. Stored 979 ppm; a 1.00 command
+    stamped in the same room second; CO2 973.8 → 963.1 ppm over the first
+    three readings after it.
+  - Useful for: §10, §11.
+
 - **Decided: failure testing covers a sensor giving bad readings, a component
   going down, and delayed or dropped communication.** These are the failure
   modes named in proposal sections 6 and 7. No concrete tests designed yet.

@@ -10,7 +10,6 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 12 | One end-to-end test: a CO2 reading in, a damper command out, its effect in the next reading | how it runs: a Go test against the running stack, or a script | 1 |
 | 13 | One crash-and-restart test: a container killed and restarted re-registers with BuildSim and the loop continues | which container | 1 |
 | 14 | Report setup: `latex/report/` from the course template, and a checklist of everything the template and guide ask for, section by section | none | 1 |
 | 15 | Report §1–13, one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step | small ones per section | ~20 |
