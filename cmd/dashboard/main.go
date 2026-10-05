@@ -12,10 +12,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"time"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
+	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 )
 
@@ -34,16 +34,16 @@ type pageConfig struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	storageURL := env.String("STORAGE_URL", "http://localhost:8081")
-	addr := env.String("DASHBOARD_ADDR", ":8082")
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
+	storageURL := env.String("STORAGE_URL")
+	addr := ":8082" // the port this program listens on inside its container
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
 	config := pageConfig{
 		Room:          buildsim.RoomKey(level, roomName),
-		Speed:         env.Float("SIM_SPEED", 1),
-		WindowSeconds: env.Duration("DASHBOARD_WINDOW", 6*time.Hour).Seconds(),
-		TargetPPM:     env.Float("PLAN_TARGET_PPM", 950),
-		ThresholdPPM:  env.Float("CO2_THRESHOLD_PPM", 1000),
+		Speed:         roomtime.FromEnv().Speed(),
+		WindowSeconds: env.Duration("DASHBOARD_WINDOW").Seconds(),
+		TargetPPM:     env.Float("PLAN_TARGET_PPM"),
+		ThresholdPPM:  env.Float("CO2_THRESHOLD_PPM"),
 	}
 
 	storage, err := url.Parse(storageURL)

@@ -34,11 +34,11 @@ type commands struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
-	damperID := env.String("DAMPER_ID", roomName+"-damper")
-	addr := env.String("ACTUATOR_ADDR", ":8080")
+	baseURL := env.String("BUILDSIM_URL")
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
+	damperID := env.String("DAMPER_ID")
+	addr := ":8080" // the port this program listens on inside its container
 
 	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim

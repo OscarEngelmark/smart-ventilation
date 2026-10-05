@@ -528,6 +528,20 @@ _(nothing yet)_
       as a distance in ppm below the threshold, which is how the same word
       had already produced a wrong comment on `room.MaxAirflow`, while the
       value multiplies an airflow.
+    - **Decided: every setting is required, with no fallback value in the
+      code** (`internal/env`). A setting that is missing stops the service at
+      startup with `<NAME>: not set`, so each value lives only in `sim.env`
+      or `docker-compose.yml`. Rejected: a fallback per setting in the code,
+      which lets a service start without Compose but keeps a second copy of
+      each value that drifts silently, as the occupancy sensor's interval
+      had (10 s in the code, 1 minute in Compose). Nothing in the project
+      starts a service without Compose; the unit tests pass their values in
+      directly. The listen ports are fixed in the code instead of being
+      settings: each is the container's own port, which Compose's port
+      mappings and URLs already name, and a different port on the host is
+      set by the mapping alone. The session clock written by `start.sh` is
+      the exception: unset means no session, so room time is the wall clock
+      (`internal/roomtime`). Decided and implemented 2026-10-05.
   - **Ceiling height 2.4 m:** BuildSim gives no height. This is the minimum
     the Swedish Work Environment Authority advises for workplaces (general
     advice to section 5 of AFS 2023:12,
@@ -1271,9 +1285,9 @@ _(nothing yet)_
     yet measured; the stress test shows whether it matters. Decided
     2026-09-27.
   - **Decided for convention: settings come from environment variables**
-    (broker URL, database path, listen address), each with a default for
-    running outside Docker; `docker-compose.yml` sets them. No alternative
-    was weighed. Decided 2026-09-27.
+    (broker URL, database path, retention), set in `docker-compose.yml` and
+    required (see *Decided: every setting is required…*, §6). No
+    alternative to environment variables was weighed. Decided 2026-09-27.
   - **Decided: if the broker is unreachable at startup, the process exits
     and Docker starts it again** (`restart: on-failure`). Rejected: retrying
     inside the program — it would repeat what the restart policy already

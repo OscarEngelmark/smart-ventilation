@@ -1,6 +1,7 @@
 // Package env reads a service's settings from environment variables, which is
-// how Docker Compose passes them in. Every setting has a fallback, so a
-// service also runs outside Compose. See project_notes.md §6.
+// how Docker Compose passes them in from sim.env and docker-compose.yml. Every
+// setting is required: one that is missing or unreadable stops the service at
+// startup. See project_notes.md §6.
 package env
 
 import (
@@ -10,22 +11,18 @@ import (
 	"time"
 )
 
-// String is the value of key, or fallback when key is unset or empty.
-func String(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-// Float is key read as a number. A value that isn't one stops the service:
-// starting with the fallback instead would hide the mistake.
-func Float(key string, fallback float64) float64 {
+// String is the value of key. An unset or empty key stops the service.
+func String(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		return fallback
+		log.Fatalf("%s: not set", key)
 	}
-	parsed, err := strconv.ParseFloat(v, 64)
+	return v
+}
+
+// Float is key read as a number. A value that isn't one stops the service.
+func Float(key string) float64 {
+	parsed, err := strconv.ParseFloat(String(key), 64)
 	if err != nil {
 		log.Fatalf("%s: %v", key, err)
 	}
@@ -33,12 +30,8 @@ func Float(key string, fallback float64) float64 {
 }
 
 // Duration is key read as a length of time, written as Go does it, e.g. "10s".
-func Duration(key string, fallback time.Duration) time.Duration {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	parsed, err := time.ParseDuration(v)
+func Duration(key string) time.Duration {
+	parsed, err := time.ParseDuration(String(key))
 	if err != nil {
 		log.Fatalf("%s: %v", key, err)
 	}

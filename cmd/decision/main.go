@@ -64,10 +64,10 @@ type commander struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
-	actuatorURL := env.String("ACTUATOR_URL", "http://localhost:8080")
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
+	brokerURL := env.String("MQTT_BROKER_URL")
+	actuatorURL := env.String("ACTUATOR_URL")
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
 	settings := planSettings()
 
 	clock := roomtime.FromEnv()
@@ -102,11 +102,11 @@ func main() {
 // planSettings reads the planner's settings from the environment.
 func planSettings() planner.Settings {
 	return planner.Settings{
-		Target:      env.Float("PLAN_TARGET_PPM", 950),
-		LowerMargin: env.Float("PLAN_LOWER_MARGIN_PPM", 20),
-		Horizon:     env.Duration("PLAN_HORIZON", time.Hour),
-		Cout:        env.Float("OUTDOOR_CO2_PPM", 420),
-		CloseBelow:  env.Float("FALLBACK_CLOSE_PPM", 800),
+		Target:      env.Float("PLAN_TARGET_PPM"),
+		LowerMargin: env.Float("PLAN_LOWER_MARGIN_PPM"),
+		Horizon:     env.Duration("PLAN_HORIZON"),
+		Cout:        env.Float("OUTDOOR_CO2_PPM"),
+		CloseBelow:  env.Float("FALLBACK_CLOSE_PPM"),
 	}
 }
 

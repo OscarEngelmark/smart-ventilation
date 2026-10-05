@@ -38,9 +38,9 @@ type model struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
+	baseURL := env.String("BUILDSIM_URL")
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
 
 	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
@@ -65,13 +65,13 @@ func main() {
 // newModel builds the room's model from its settings and from its floor area,
 // which it reads from BuildSim.
 func newModel(ctx context.Context, client *buildsim.Client, level, roomName string) (*model, error) {
-	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)
-	ceilingHeight := env.Float("CEILING_HEIGHT_M", 2.4)
-	G := env.Float("CO2_PER_PERSON_LPS", 0.0056)
-	Cout := env.Float("OUTDOOR_CO2_PPM", 420)
-	Cthres := env.Float("CO2_THRESHOLD_PPM", 1000)
-	minPerArea := env.Float("MIN_AIRFLOW_LPS_PER_M2", 0.35)
-	factor := env.Float("MAX_AIRFLOW_FACTOR", 1.2)
+	areaPerPerson := env.Float("AREA_PER_PERSON_M2")
+	ceilingHeight := env.Float("CEILING_HEIGHT_M")
+	G := env.Float("CO2_PER_PERSON_LPS")
+	Cout := env.Float("OUTDOOR_CO2_PPM")
+	Cthres := env.Float("CO2_THRESHOLD_PPM")
+	minPerArea := env.Float("MIN_AIRFLOW_LPS_PER_M2")
+	factor := env.Float("MAX_AIRFLOW_FACTOR")
 	roomKey := buildsim.RoomKey(level, roomName)
 
 	// Read the room's area from BuildSim; every parameter below follows from it.
@@ -82,14 +82,14 @@ func newModel(ctx context.Context, client *buildsim.Client, level, roomName stri
 	m := &model{
 		client:   client,
 		roomKey:  roomKey,
-		sensorID: env.String("CO2_SENSOR_ID", roomName+"-co2"),
-		damperID: env.String("DAMPER_ID", roomName+"-damper"),
+		sensorID: env.String("CO2_SENSOR_ID"),
+		damperID: env.String("DAMPER_ID"),
 		V:        room.Volume(area, ceilingHeight),
 		Qmin:     room.MinAirflow(area, minPerArea),
 		Qmax:     room.MaxAirflow(area, areaPerPerson, G, Cthres, Cout, factor),
 		G:        G,
 		Cout:     Cout,
-		dt:       env.Duration("SIM_STEP", 10*time.Second),
+		dt:       env.Duration("SIM_STEP"),
 	}
 	log.Printf("room %s is %.1f m², holding %.1f m³ of air, ventilated at %.1f to %.1f L/s",
 		roomKey, area, m.V, m.Qmin, m.Qmax)

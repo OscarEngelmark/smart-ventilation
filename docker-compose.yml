@@ -91,6 +91,7 @@ services:
     environment:
       BUILDSIM_URL: *buildsim-url
       MQTT_BROKER_URL: *broker-url
+      OCCUPANCY_SENSOR_ID: A125-occupancy
       SENSOR_INTERVAL: 1m
     depends_on:
       - buildsim
@@ -159,6 +160,7 @@ services:
     environment:
       MQTT_BROKER_URL: *broker-url
       SQLITE_PATH: /data/storage-service.db
+      RETENTION_DAYS: 90
     ports:
       # Only reachable from this machine, for reading stored readings by hand.
       - "127.0.0.1:8081:8081"

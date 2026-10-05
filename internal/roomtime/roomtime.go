@@ -40,7 +40,7 @@ func FromEnv() *Clock {
 
 	sessionStart := mustParse("SIM_SESSION_START", sessionText)
 	roomStart := mustParse("SIM_ROOM_START", roomText)
-	speed := env.Float("SIM_SPEED", 0)
+	speed := env.Float("SIM_SPEED")
 	if speed <= 0 {
 		log.Fatalf("SIM_SPEED: must be above 0, got %v", speed)
 	}
@@ -66,6 +66,11 @@ func (c *Clock) At(wall time.Time) time.Time {
 	elapsed := wall.Sub(c.sessionStart)
 	roomElapsed := time.Duration(float64(elapsed) * c.speed)
 	return c.roomStart.Add(roomElapsed).In(time.Local)
+}
+
+// Speed is how many room seconds pass per wall-clock second.
+func (c *Clock) Speed() float64 {
+	return c.speed
 }
 
 // Wall is how long d of room time takes on the wall clock.

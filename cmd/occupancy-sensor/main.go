@@ -7,7 +7,6 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
@@ -33,12 +32,12 @@ type publisher struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
-	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
-	sensorID := env.String("OCCUPANCY_SENSOR_ID", roomName+"-occupancy")
-	interval := env.Duration("SENSOR_INTERVAL", 10*time.Second)
+	baseURL := env.String("BUILDSIM_URL")
+	brokerURL := env.String("MQTT_BROKER_URL")
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
+	sensorID := env.String("OCCUPANCY_SENSOR_ID")
+	interval := env.Duration("SENSOR_INTERVAL")
 
 	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim

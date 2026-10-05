@@ -46,12 +46,12 @@ type learner struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	storageURL := env.String("STORAGE_URL", "http://localhost:8081")
-	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
-	days := int(env.Float("FIT_DAYS", 7))
-	Cout := env.Float("OUTDOOR_CO2_PPM", 420)
+	storageURL := env.String("STORAGE_URL")
+	brokerURL := env.String("MQTT_BROKER_URL")
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
+	days := int(env.Float("FIT_DAYS"))
+	Cout := env.Float("OUTDOOR_CO2_PPM")
 
 	clock := roomtime.FromEnv()
 	broker, err := mqttclient.Connect(brokerURL, "room-model-"+roomName, nil)

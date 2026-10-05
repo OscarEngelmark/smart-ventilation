@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	// The image carries no timezone database, so TZ is otherwise ignored.
 	_ "time/tzdata"
@@ -24,11 +23,11 @@ import (
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	baseURL := env.String("BUILDSIM_URL", buildsim.DefaultURL)
-	level := env.String("ROOM_LEVEL", "level0")
-	roomName := env.String("ROOM_NAME", "A125")
-	areaPerPerson := env.Float("AREA_PER_PERSON_M2", 5)
-	interval := env.Duration("OCCUPANCY_INTERVAL", 10*time.Second)
+	baseURL := env.String("BUILDSIM_URL")
+	level := env.String("ROOM_LEVEL")
+	roomName := env.String("ROOM_NAME")
+	areaPerPerson := env.Float("AREA_PER_PERSON_M2")
+	interval := env.Duration("OCCUPANCY_INTERVAL")
 
 	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim

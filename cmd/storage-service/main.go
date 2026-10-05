@@ -36,10 +36,10 @@ type payloadSchemas struct {
 func main() {
 	shutdown.ExitZeroOnStop()
 
-	brokerURL := env.String("MQTT_BROKER_URL", "tcp://localhost:1883")
-	dbPath := env.String("SQLITE_PATH", "storage-service.db")
-	addr := env.String("STORAGE_ADDR", ":8081")
-	retentionDays := int(env.Float("RETENTION_DAYS", 90))
+	brokerURL := env.String("MQTT_BROKER_URL")
+	dbPath := env.String("SQLITE_PATH")
+	addr := ":8081" // the port this program listens on inside its container
+	retentionDays := int(env.Float("RETENTION_DAYS"))
 
 	var db store.Store
 	var err error
