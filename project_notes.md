@@ -1518,12 +1518,13 @@ _(nothing yet)_
   first full weekday of that session; Wednesday 2026-10-21 was left out
   because its peak, 980 ppm at 04:13, was written into BuildSim by a test.
   The mean damper level was 0.132 over the day and 0.772 in the meeting
-  hour. Evidence in `test/results/`: `reg1_2026-10-22.txt` (the output of
-  `eval/day_summary.py`) and the day's stored CO2 readings, commands and
-  head counts (`reg1_2026-10-22_*.json`). Measured 2026-10-06.
+  hour. Evidence in `test/results/`: `day_model_2026-10-22.txt` (the
+  output of `eval/day_summary.py`) and the day's stored CO2 readings,
+  commands and head counts (`day_model_2026-10-22_*.json`). Measured
+  2026-10-06.
   - The same day verifies FR-1: 8640 CO2 readings are stored, one for
     every 10 s, and 1440 head counts, one for every room minute
-    (`reg1_2026-10-22_co2.json`, `reg1_2026-10-22_occupancy.json`).
+    (`day_model_2026-10-22_co2.json` and `_occupancy.json`).
     Rejected: the end-to-end test, which shows one reading stored where
     the day shows all of them, and would wait up to a minute at speed 1
     for the occupancy sensor's next count. Decided 2026-10-06.
@@ -1555,6 +1556,45 @@ _(nothing yet)_
   No other metric was weighed; chosen because the tool and a first result
   already exist. Decided 2026-10-06.
   - Useful for: §3 (NFR-2), §10, §11.
+
+- **Decided: the CO2-only day runs on the normal stack, with a setting that
+  makes the decision service ignore room models.** With
+  `IGNORE_ROOM_MODEL: "true"` in `docker-compose.yml`, the decision service
+  never subscribes to the room-model topic, so it has no model and runs the
+  CO2-only switch (FR-6), the same code a new system runs before its first
+  fit. Thursday 2026-10-22 (the REG-1 day) is the room-model day, and
+  Tuesday 2026-10-27 the switch day, both at speed 60. Rejected: stopping
+  the room-model service, deleting its retained model from the broker and
+  restarting the decision service by hand, which needs no code but is
+  three manual steps to get right and undo. Trade-off: as in the forecast
+  comparison (§7), arrivals differ by up to ±20 minutes per person between
+  the days, so a second pair of days is added if the result is borderline.
+  Decided and implemented 2026-10-06.
+  - **Result: NFR-2 holds; the room model used 0.132 of damper level over
+    the day against the switch's 0.152.**
+
+    | | Room model, Thu 2026-10-22 | CO2-only switch, Tue 2026-10-27 |
+    |---|---|---|
+    | Mean damper level, whole day | 0.132 | 0.152 |
+    | Mean damper level, 12:00–13:00 | 0.107 | 0.143 |
+    | Mean damper level, 13:00–14:00 (meeting) | 0.772 | 1.000 |
+    | Peak CO2 | 937 ppm at 13:48 | 951 ppm at 09:28 |
+    | Person-minutes over the day | 1558 | 1642 |
+    | Minutes with the room full (6) | 35 | 48 |
+    | Distinct damper levels commanded | 11 | 2 (0 and 1) |
+
+    The meeting hour shows the difference most directly: with six people
+    in both rooms, the switch held the damper fully open while the room
+    model held it at about 0.77. Tuesday had 5% more person-minutes, which
+    raises its damper use; scaling Tuesday's mean down by that share gives
+    0.144 (derived, assumes damper use grows in step with people), still
+    above Thursday's, so the result was judged not borderline and no
+    second pair was run. The switch also crossed the 950 ppm target, as it
+    only opens once a reading reaches it; both days stayed under 1000 ppm.
+    Evidence in `test/results/`: `day_model_2026-10-22*` and `day_switch_2026-10-27*`
+    (the day summaries and each day's stored readings, commands and head
+    counts). Measured 2026-10-06.
+  - Useful for: §7.1, §10, §11.
 
 ## 12. Dashboard
 

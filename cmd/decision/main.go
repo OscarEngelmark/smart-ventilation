@@ -70,6 +70,7 @@ func main() {
 	level := env.String("ROOM_LEVEL")
 	roomName := env.String("ROOM_NAME")
 	settings := planSettings()
+	ignoreModel := env.Bool("IGNORE_ROOM_MODEL") // true runs the CO2-only switch all the time
 
 	clock := roomtime.FromEnv()
 	state := &latest{}
@@ -78,7 +79,7 @@ func main() {
 	// Runs on every connect, since the broker forgets subscriptions on disconnect.
 	onConnect := func(client mqtt.Client) {
 		log.Printf("connected to broker, subscribing")
-		subscribeAll(client, roomName, state, readings)
+		subscribeAll(client, roomName, ignoreModel, state, readings)
 	}
 	broker, err := mqttclient.Connect(brokerURL, "decision-"+roomName, onConnect)
 	if err != nil {
@@ -96,6 +97,9 @@ func main() {
 	}
 	log.Printf("deciding for %s, commanding %s, keeping CO2 under %.0f ppm over the next %v",
 		c.roomID, c.actuatorURL, settings.Target, settings.Horizon)
+	if ignoreModel {
+		log.Printf("IGNORE_ROOM_MODEL is set: no room model is used, the damper switches on CO2 alone")
+	}
 
 	decide(readings, state, settings, c)
 }
@@ -191,16 +195,22 @@ func (c *commander) publishCopy(cmd message.VentilationCommand) {
 	}
 }
 
-// subscribeAll subscribes to the room's three inputs. Each message is stored as
-// the latest of its kind; a CO2 reading is also queued for a decision.
-func subscribeAll(client mqtt.Client, roomName string, state *latest, readings chan<- message.CO2Reading) {
+// subscribeAll subscribes to the room's three inputs, leaving out the room
+// model when ignoreModel is true. Each message is stored as the latest of its
+// kind; a CO2 reading is also queued for a decision.
+func subscribeAll(
+	client mqtt.Client, roomName string, ignoreModel bool,
+	state *latest, readings chan<- message.CO2Reading,
+) {
 	subscribe(client, "co2/"+roomName+"/reading", func(payload []byte) {
 		if r, ok := state.keepCO2(payload); ok {
 			readings <- r
 		}
 	})
 	subscribe(client, "occupancy/"+roomName+"/reading", state.keepHeadCount)
-	subscribe(client, "room/"+roomName+"/model", state.keepModel)
+	if !ignoreModel {
+		subscribe(client, "room/"+roomName+"/model", state.keepModel)
+	}
 }
 
 // keepCO2 stores a CO2 reading as the latest and returns it, or reports false

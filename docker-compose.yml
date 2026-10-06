@@ -113,6 +113,7 @@ services:
       PLAN_LOWER_MARGIN_PPM: 20
       PLAN_HORIZON: 60m
       FALLBACK_CLOSE_PPM: 800
+      IGNORE_ROOM_MODEL: "false" # "true" only for the CO2-only comparison day
     depends_on:
       - mosquitto
       - actuator

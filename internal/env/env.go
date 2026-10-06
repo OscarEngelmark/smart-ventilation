@@ -37,3 +37,12 @@ func Duration(key string) time.Duration {
 	}
 	return parsed
 }
+
+// Bool is key read as true or false. Any other value stops the service.
+func Bool(key string) bool {
+	parsed, err := strconv.ParseBool(String(key))
+	if err != nil {
+		log.Fatalf("%s: %v", key, err)
+	}
+	return parsed
+}

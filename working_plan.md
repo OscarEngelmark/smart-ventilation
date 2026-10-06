@@ -10,7 +10,6 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 19 | Decision quality (NFR-2), the only live evidence of the room model deciding: the learned-model plan against the CO2-only switch; the learned-model day is the REG-1 day, 2026-10-22, so only one weekday runs with the switch | how to force the decision service onto the CO2-only switch | 1 |
 | 15 | Report §2–13, then §1, which summarizes the rest; one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step, and the dashboard screenshot (FR-7) is saved in §12's; the report's Makefile runs a fixed two LaTeX passes, but the cross-references now need a third to settle | small ones per section | ~20 |
 
 ## Phase 2: higher grade (2026-10-11, and any time left)
