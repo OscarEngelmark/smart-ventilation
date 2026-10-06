@@ -41,6 +41,18 @@ _(nothing yet)_
   2026-09-15.
   - Useful for: §2, §6.
 
+- **Why the use case matters: no fixed ventilation level meets both CO2
+  and fan goals through a weekday.** The ventilation is sized for a full
+  room, since a room can fill without warning, but for most of the day
+  A125 holds three people or none. The full-room setting all day keeps CO2
+  low at a cost in noise and energy; a fixed low setting lets CO2 cross
+  1000 ppm when the 13:00 meeting fills the room. The level that meets
+  both depends on the head count now and on how the room responds, which
+  is what the decision service plans from (see *Decided: the system
+  pursues three goals…*, §7). Reasoned from the project's own goals; no
+  external source on building energy use was added. Noted 2026-10-06.
+  - Useful for: §2.
+
 ## 3. Requirements
 
 - **Decided: twelve requirements, each traced to a test that exists or is
