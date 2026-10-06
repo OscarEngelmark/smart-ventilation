@@ -42,7 +42,7 @@
 \setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
 \setlength{\emergencystretch}{3em}
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{-\maxdimen}
+\setcounter{secnumdepth}{2}
 \usepackage{newunicodechar}
 \usepackage{textcomp}
 \usepackage{amssymb}
@@ -65,7 +65,7 @@
 \cfoot{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 \usepackage{titlesec}
-\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\section}{\Large\bfseries}{\thesection.}{0.6em}{}
 \titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
 \usepackage{microtype}
 \usepackage{pgfplots}
@@ -109,7 +109,7 @@
 \tableofcontents
 }
 
-\section{1. Summary}
+\section{Summary}\label{sec:summary}
 
 \guidance{One short paragraph: what the system does and the single guiding
 principle that threads through the design. Then the summary table, and a brief note
@@ -120,6 +120,7 @@ of what changed since the Week 2 proposal and why.}
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.35}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.65}}@{}}
+\caption{Project overview.}\label{tab:overview}\\
 \toprule
 \textbf{Field} & \textbf{Value} \\
 \midrule
@@ -136,7 +137,7 @@ of what changed since the Week 2 proposal and why.}
 \fillin{List the design changes made since the proposal, and the evidence that
 forced each one. If nothing changed, state that and say why.}
 
-\section{2. Use case and building context}
+\section{Use case and building context}\label{sec:usecase}
 
 % Required points (report guide, section 3.2; template, section 2):
 % - the use case, and how it connects to BuildSim; BuildSim is not modified
@@ -148,7 +149,7 @@ forced each one. If nothing changed, state that and say why.}
 
 \textbf{The use case.} The system manages the indoor air quality of one
 office room. It keeps the room's CO₂ concentration under 1000 ppm
-(Section 7.1) while running the ventilation as low as it can. CO₂ rises
+(Section~\ref{sec:decision-logic}) while running the ventilation as low as it can. CO₂ rises
 as the people in the room breathe and falls as ventilation replaces room
 air with outdoor air. The system therefore senses one variable, CO₂, and
 acts through one device: a ventilation damper whose level runs from 0
@@ -173,7 +174,7 @@ room-model service, and the dashboard never do.
 \tightlist
 \item
   \textbf{The occupancy simulator and the physical model} stand in for the
-  physical world (Section 6). The occupancy simulator writes who is in each
+  physical world (Section~\ref{sec:simulation}). The occupancy simulator writes who is in each
   room (\texttt{PUT /api/occupancy}). The physical model reads the people
   in the room, the damper's state, and the current CO₂, steps the CO₂
   forward, and writes the result as the CO₂ sensor's value
@@ -200,10 +201,10 @@ and the damper actuator each register their own device when they start
 (\texttt{POST /api/equipment/bulk}).
 
 \textbf{Actors.} The \textbf{operator} watches the room's CO₂, head count,
-and damper level on the dashboard (Section 12), which reads the stored
+and damper level on the dashboard (Section~\ref{sec:dashboard}), which reads the stored
 history rather than BuildSim. The \textbf{room's occupants} raise the CO₂
 by being in the room; here they are simulated from a weekday schedule
-(Section 6). Neither is on the control path: the loop runs without anyone
+(Section~\ref{sec:simulation}). Neither is on the control path: the loop runs without anyone
 acting on it.
 
 \textbf{The scenario the demo shows.} For most of a weekday, three people
@@ -214,7 +215,7 @@ threshold. The occupancy sensor reports six, and the decision service
 raises the damper to the lowest level its room model predicts will hold
 six people under the threshold. When the meeting ends, the level drops
 back. Room time can run faster than the wall clock, so the demo shows the
-whole meeting in a few minutes. Section 11 reports whether the threshold
+whole meeting in a few minutes. Section~\ref{sec:evaluation} reports whether the threshold
 holds.
 
 \textbf{Why it matters.} The system's goals pull against each other. The
@@ -226,9 +227,9 @@ but lets CO₂ pass the threshold when the meeting fills the room. The level
 that meets both depends on how many people are in the room now and on how
 this particular room responds to people and to ventilation. That is what
 makes the decision worth automating: the system counts the people and
-learns the room's response from its own stored data (Section 7.1).
+learns the room's response from its own stored data (Section~\ref{sec:decision-logic}).
 
-\section{3. Requirements}
+\section{Requirements}\label{sec:requirements}
 
 % Required points (report guide, section 3.3; template, section 3):
 % - testable requirements, each with a unique ID
@@ -239,14 +240,14 @@ learns the room's response from its own stored data (Section 7.1).
 % - non-functional requirements quantified; they are what the design
 %   decisions in Section 4.4 are justified against
 
-Each requirement below has an ID that Sections 4.4, 10 and 11 refer to,
+Each requirement in Table~\ref{tab:requirements} has an ID that Sections~\ref{sec:decisions}, \ref{sec:testplan} and \ref{sec:evaluation} refer to,
 an acceptance criterion that a test can check, and the test that checks
 it. Functional requirements (FR) say what the system does,
 non-functional requirements (NFR) how well it does it, and the
 regulatory requirement (REG) comes from outside the project. Must marks
 what the system needs to work at all; Should and Could mark what it
 aims for beyond that. A \emph{room day} is one day of room time, which
-can run faster than the wall clock (Section 2).
+can run faster than the wall clock (Section~\ref{sec:usecase}).
 
 {\small
 \begin{longtable}[]{@{}
@@ -256,6 +257,12 @@ can run faster than the wall clock (Section 2).
   >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.09}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.26}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.23}}@{}}
+\caption{Requirements, each with the test that verifies it.}\label{tab:requirements}\\
+\toprule
+\textbf{ID} & \textbf{Type} & \textbf{Requirement} & \textbf{Priority}
+& \textbf{Acceptance criterion} & \textbf{Verified by} \\
+\midrule
+\endfirsthead
 \toprule
 \textbf{ID} & \textbf{Type} & \textbf{Requirement} & \textbf{Priority}
 & \textbf{Acceptance criterion} & \textbf{Verified by} \\
@@ -265,47 +272,58 @@ FR-1 & Functional & Every CO₂ reading reaches the decision service and
 the readings store & Must & A CO₂ value written to BuildSim is served by
 the storage service within 2 min & End-to-end test,
 \texttt{test/e2e/\allowbreak loop\_test.go} \\
+\midrule
 FR-2 & Functional & On every CO₂ reading the decision service picks a
 damper level; a changed level is applied to the damper in BuildSim & Must
-& After a reading above the 950 ppm target (Section 7.1), a command to
+& After a reading above the 950 ppm target (Section~\ref{sec:decision-logic}), a command to
 open the damper fully is stored and BuildSim holds the damper fully open,
 each within 2 min & End-to-end test \\
+\midrule
 FR-3 & Functional & A damper change shows in the CO₂ readings that follow
 & Must & After the damper opens, the third CO₂ reading is lower than the
 first & End-to-end test \\
+\midrule
 FR-4 & Functional & Every reading and command is stored for 90 room days
 and served by room and time & Must & A query returns exactly one room's
 rows from a given time on, oldest first; rows older than 90 room days are
 deleted once a room day & Unit tests, \texttt{internal/store}; the daily
 cleanup in the storage service's log \\
+\midrule
 FR-5 & Functional & The room-model service refits the room model at room
 midnight from the last 7 room days of stored data & Must & The fit
 recovers the rates of a simulated room; no room model is published when
-the history can't separate the rates (Section 7.1) & Unit tests,
+the history can't separate the rates (Section~\ref{sec:decision-logic}) & Unit tests,
 \texttt{internal/roommodel}; the refit in the room-model service's log \\
+\midrule
 FR-6 & Functional & Without a room model, the damper opens and closes on
 CO₂ alone & Must & With no room model, the damper opens fully at 950 ppm,
 closes below 800 ppm, and keeps its level in between & Unit tests,
 \texttt{internal/planner} \\
+\midrule
 FR-7 & Functional & The dashboard shows CO₂, head count and damper level
 & Should & All three are refreshed every 5 s of real time & Manual check,
-screenshot (Section 12) \\
+screenshot (Section~\ref{sec:dashboard}) \\
+\midrule
 \mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
 a full simulated weekday, meeting included, is under 1000 ppm & Peak CO₂
 over a room day, \texttt{eval/day\_summary.py} \\
+\midrule
 NFR-1 & Non-functional & A killed container recovers without help & Must
 & Docker restarts it, a sensor or the damper actuator registers its
 device with BuildSim again, and the damper answers a reading above the
 target within 2 min of the kill, at room-time speed 1 & Crash-and-restart
 test,
 \texttt{test/crash/crash.sh} \\
+\midrule
 NFR-2 & Non-functional & The ventilation runs as low as it can & Should &
 The time-weighted mean damper level over a room day is lower than under
-the CO₂-only switch of FR-6 & Decision-quality comparison (Section 11) \\
+the CO₂-only switch of FR-6 & Decision-quality comparison (Section~\ref{sec:evaluation}) \\
+\midrule
 NFR-3 & Non-functional & A faulty CO₂ sensor or a stopped broker does
 not let CO₂ through the threshold & Should & With the CO₂ sensor frozen
 at one value, or the message broker stopped, CO₂ stays under 1000 ppm &
 Fault tests \\
+\midrule
 NFR-4 & Non-functional & A command follows its reading in time to hold
 the threshold & Could & The time from a reading to its command stays
 under 2 min of room time & Delay measurement from stored data \\
@@ -317,10 +335,9 @@ under 2 min of room time & Delay measurement from stored data \\
 Public Health Agency of Sweden's general advice on ventilation
 (FoHMFS 2014:18)~\cite{fohmfs2014}, which treats CO₂ regularly above 1000 ppm in normal
 use as a sign of inadequate ventilation. It is advice rather than a
-binding rule, and is stated for schools and childcare premises; Section
-7.1 covers the choice of threshold. The 2 minutes in NFR-1 and NFR-4
+binding rule, and is stated for schools and childcare premises; Section~\ref{sec:decision-logic} covers the choice of threshold. The 2 minutes in NFR-1 and NFR-4
 are the project's own figure, not taken from a source: with the damper
-closed, a full room raises CO₂ by about 23 ppm a minute (Section 6), so
+closed, a full room raises CO₂ by about 23 ppm a minute (Section~\ref{sec:simulation}), so
 the 50 ppm between the 950 ppm target and the threshold lasts about two
 minutes. A restart or a delay longer than that can let CO₂ through the
 threshold before the damper opens.
@@ -330,9 +347,9 @@ pulls it down. The decision service meets both by choosing, on each
 reading, the lowest level that still holds CO₂ under the target; FR-6 is
 the safety net when it has no room model to choose with.
 
-\section{4. Architecture}
+\section{Architecture}\label{sec:architecture}
 
-\subsection{4.1 Context diagram (C4 Level 1)}
+\subsection{Context diagram (C4 Level 1)}\label{sec:context}
 
 \guidance{The system as a single box, with the people and external systems it
 interacts with (including BuildSim). One paragraph of narrative explaining the
@@ -342,7 +359,7 @@ boundaries and the main interactions.}
 
 \fillin{Narrative for the context diagram.}
 
-\subsection{4.2 Container diagram (C4 Level 2)}
+\subsection{Container diagram (C4 Level 2)}\label{sec:container}
 
 \guidance{Open the system into its separately-running parts (sensor services,
 autonomous service, actuators, storage, dashboard) and how they communicate. Explain
@@ -352,7 +369,7 @@ why the system is split this way.}
 
 \fillin{Narrative for the container diagram.}
 
-\subsection{4.3 Component diagram (C4 Level 3)}
+\subsection{Component diagram (C4 Level 3)}\label{sec:component}
 
 \guidance{Zoom into one container that is worth explaining (often the autonomous
 service) and show its internal components and their responsibilities.}
@@ -361,7 +378,7 @@ service) and show its internal components and their responsibilities.}
 
 \fillin{Narrative for the component diagram.}
 
-\subsection{4.4 Design decisions and alternatives}
+\subsection{Design decisions and alternatives}\label{sec:decisions}
 
 \guidance{The core of the architecture grade. For each significant decision, state
 the choice, the alternatives considered, and the evidence or reasoning for choosing
@@ -381,7 +398,7 @@ it over them. A decision with no rejected alternative is not yet justified.}
 \bottomrule
 \end{longtable}
 
-\section{5. Interfaces and data contracts}
+\section{Interfaces and data contracts}\label{sec:interfaces}
 
 \guidance{The contracts between components: API endpoints and/or message topics,
 with payload schemas and an example message. Precise enough that a component could be
@@ -390,7 +407,7 @@ re-implemented from this section alone.}
 \fillin{Define the interfaces and data contracts here (endpoints/topics, schemas,
 example payloads).}
 
-\section{6. Simulating the sensor values (the physical model)}
+\section{Simulating the sensor values (the physical model)}\label{sec:simulation}
 
 \guidance{How sensor values are produced. State the per-room physical model
 (temperature heat balance, CO₂ from occupancy and ventilation) and, critically, how
@@ -400,9 +417,9 @@ Give the governing equations.}
 
 \fillin{Describe the physical and occupancy models, with equations, here.}
 
-\section{7. Autonomous services and data pipeline}
+\section{Autonomous services and data pipeline}\label{sec:autonomy}
 
-\subsection{7.1 The autonomous service}
+\subsection{The autonomous service}\label{sec:decision-logic}
 
 \guidance{The decision logic: inputs, the algorithm or rules, and outputs. Rule-based
 control is fully acceptable if justified; if a learned model is used, explain training,
@@ -410,16 +427,16 @@ data, and the fallback when data is thin.}
 
 \fillin{Describe the autonomous service here.}
 
-\subsection{7.2 The data pipeline}
+\subsection{The data pipeline}\label{sec:pipeline}
 
 \guidance{How readings are collected, stored, and served to the autonomous service
 and the dashboard. State what is retained and for how long.}
 
 \fillin{Describe the data pipeline here.}
 
-\section{8. Behaviour}
+\section{Behaviour}\label{sec:behavior}
 
-\subsection{8.1 Key scenario (dynamic diagram)}
+\subsection{Key scenario (dynamic diagram)}\label{sec:dynamic}
 
 \guidance{Walk one important scenario end-to-end (for example, a room filling up) as
 a C4 dynamic / sequence diagram, with a short narrative of the message order.}
@@ -428,7 +445,7 @@ a C4 dynamic / sequence diagram, with a short narrative of the message order.}
 
 \fillin{Narrative for the key scenario.}
 
-\subsection{8.2 Process lifecycle (state diagram)}
+\subsection{Process lifecycle (state diagram)}\label{sec:state}
 
 \guidance{The lifecycle of a key process or zone (for example, setback $\rightarrow$
 active $\rightarrow$ fault), as a state diagram with the transitions.}
@@ -437,7 +454,7 @@ active $\rightarrow$ fault), as a state diagram with the transitions.}
 
 \fillin{Narrative for the state diagram.}
 
-\section{9. Deployment and component view}
+\section{Deployment and component view}\label{sec:deployment}
 
 \guidance{Where each process runs (edge nodes, a server, BuildSim) and how they are
 connected. Note where computation belongs and why.}
@@ -446,7 +463,7 @@ connected. Note where computation belongs and why.}
 
 \fillin{Narrative for the deployment view.}
 
-\section{10. Test plan}
+\section{Test plan}\label{sec:testplan}
 
 \guidance{The tests that verify the requirements, including stress and failure tests
 (a sensor that lies, a process that dies, a flood of readings). Each row should trace
@@ -467,7 +484,7 @@ T-3 (stress) & & & \\
 \bottomrule
 \end{longtable}
 
-\section{11. Evaluation and results}
+\section{Evaluation and results}\label{sec:evaluation}
 
 \guidance{The evidence that the system works, measured, not asserted. Charts and
 tables of results, compared against the requirements. Include an honest reading of
@@ -487,7 +504,7 @@ coordinates with real data.}
 
 \fillin{Present and interpret the results here.}
 
-\section{12. Dashboard}
+\section{Dashboard}\label{sec:dashboard}
 
 \guidance{What the dashboard shows and how it overlays state and decisions on the
 BuildSim 3D view. Include a screenshot.}
@@ -496,7 +513,7 @@ BuildSim 3D view. Include a screenshot.}
 
 \fillin{Describe the dashboard here.}
 
-\section{13. Risks and critical reflection}
+\section{Risks and critical reflection}\label{sec:risks}
 
 \guidance{An honest account of weaknesses, trade-offs, and what would be done with
 more time. Critical thinking is graded here: naming a real limitation scores better
@@ -514,7 +531,7 @@ ventilation}, FoHMFS 2014:18, 2014.
 
 \end{thebibliography}
 
-\section{Checklist before submission}
+\section*{Checklist before submission}
 
 \begin{itemize}
 \tightlist
