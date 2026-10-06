@@ -63,7 +63,7 @@ _(nothing yet)_
 
   | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
   |---|---|---|---|---|
-  | FR-1 | Functional | Must | Every CO2 reading is saved in the readings store | End-to-end test |
+  | FR-1 | Functional | Must | CO2 readings are saved in the readings store | End-to-end test |
   | FR-2 | Functional | Must | The decision service answers a CO2 reading by setting the damper in BuildSim in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
   | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first | Unit tests, `internal/store` |
