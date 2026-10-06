@@ -273,8 +273,8 @@ Must & A CO₂ value written to BuildSim is served by
 the storage service & End-to-end test,
 \texttt{test/e2e/\allowbreak loop\_test.go} \\
 \midrule
-FR-2 & Functional & The decision service answers a CO₂ reading by
-setting the damper in BuildSim in time to hold the threshold & Must
+FR-2 & Functional & The decision service sets the damper in BuildSim
+from the CO₂ readings, in time to hold the threshold & Must
 & After a reading above the 950 ppm target (Section~\ref{sec:decision-logic}), a command to
 open the damper fully is stored, and BuildSim holds the damper fully open
 within 2 min of room time of the reading & End-to-end test \\
@@ -309,8 +309,9 @@ over a room day, \texttt{eval/day\_summary.py} \\
 \midrule
 NFR-1 & Non-functional & A killed container recovers without help & Must
 & Docker restarts it, a sensor or the damper actuator registers its
-device with BuildSim again, and the damper answers a reading above the
-target within 2 min of the kill, at room-time speed 1 & Crash-and-restart
+device with BuildSim again, and after a reading above the target,
+BuildSim holds the damper fully open within 2 min of the kill, at
+room-time speed 1 & Crash-and-restart
 test,
 \texttt{test/crash/crash.sh} \\
 \midrule
