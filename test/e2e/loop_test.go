@@ -4,7 +4,7 @@
 // room's CO2 above the target in BuildSim and follows the loop's answer.
 //
 // It needs the whole stack running, so it is left out of a plain `go test ./...`.
-// Start the stack with ./start.sh, then run:
+// Start the stack at speed 1 with ./start.sh 1, so room time is real time, then run:
 //
 //	go test -tags e2e -v -count=1 ./test/e2e
 //
@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -34,24 +35,28 @@ const (
 	roomID      = "level0/A125"
 	co2SensorID = "A125-co2"
 	damperID    = "A125-damper"
+	runEnvPath  = "../../run.env" // written by ./start.sh; go test runs in this package's folder
 )
 
 const (
-	injectedPPM = 980 // above the plan's target, below the 1000 ppm threshold
-	targetPPM   = 950 // PLAN_TARGET_PPM in sim.env
-	fullyOpen   = 1.0
-	timeout     = 2 * time.Minute // real time, long enough for a session at speed 1
+	injectedPPM   = 980 // above the plan's target, below the 1000 ppm threshold
+	targetPPM     = 950 // PLAN_TARGET_PPM in sim.env
+	fullyOpen     = 1.0
+	timeout       = 2 * time.Minute // real time, long enough for a session at speed 1
+	responseLimit = 2 * time.Minute // FR-2: room time from the reading to the open damper
 )
 
 var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 // TestLoop injects a CO2 level above the target and checks, in order, that the
 // reading is stored (FR-1), that the decision service commands the damper
-// fully open and the actuator applies it in BuildSim (FR-1 and FR-2), and that
-// CO2 then falls (FR-3). The command is only stored once the actuator has
-// accepted it, so a stored command shows the decision service received the
-// reading. A failed subtest stops the ones after it.
+// fully open within responseLimit of the reading and the actuator applies it
+// in BuildSim (FR-2), and that CO2 then falls (FR-3). The command is only
+// stored once the actuator has accepted it, so a stored command shows the
+// decision service received the reading. A failed subtest stops the ones
+// after it. The test refuses to run unless the session runs at speed 1.
 func TestLoop(t *testing.T) {
+	requireSpeedOne(t)
 	ctx := context.Background()
 	client := buildsim.New(buildsimURL) // the test's link to BuildSim
 	since := latestStored(t)
@@ -68,16 +73,18 @@ func TestLoop(t *testing.T) {
 	}
 	t.Logf("damper at %.2f; wrote %d ppm to BuildSim", before, injectedPPM)
 
+	var reading message.CO2Reading         // the stored reading of the injected level
 	var command message.VentilationCommand // the command the injection triggered
 	steps := []struct {
 		name  string
 		check func(t *testing.T)
 	}{
 		{"FR-1 reading reaches storage", func(t *testing.T) {
-			readingStored(t, since)
+			reading = readingStored(t, since)
 		}},
 		{"FR-2 decision opens the damper", func(t *testing.T) {
 			command = openCommandStored(t, since)
+			answeredInTime(t, reading, command)
 		}},
 		{"FR-2 damper is open in BuildSim", func(t *testing.T) {
 			damperOpenInBuildSim(t, ctx, client)
@@ -93,17 +100,51 @@ func TestLoop(t *testing.T) {
 	}
 }
 
-// readingStored waits for a stored CO2 reading at or above the target.
-func readingStored(t *testing.T, since time.Time) {
+// requireSpeedOne stops the test unless run.env shows the session running at
+// speed 1, where room time and real time run on one clock.
+func requireSpeedOne(t *testing.T) {
+	env, err := os.ReadFile(runEnvPath)
+	if err != nil {
+		t.Fatalf("read %s: %v; start the stack with ./start.sh 1", runEnvPath, err)
+	}
+	for _, line := range strings.Split(string(env), "\n") {
+		speed, found := strings.CutPrefix(line, "SIM_SPEED=") // found is false on other lines
+		if !found {
+			continue
+		}
+		if speed != "1" {
+			t.Fatalf("the session runs at speed %s; start it at speed 1 (./start.sh 1)", speed)
+		}
+		return
+	}
+	t.Fatalf("no SIM_SPEED in %s", runEnvPath)
+}
+
+// readingStored waits for a stored CO2 reading at or above the target, and
+// returns it.
+func readingStored(t *testing.T, since time.Time) message.CO2Reading {
+	var found message.CO2Reading
 	waitFor(t, "stored reading at or above the target", func() bool {
 		for _, r := range co2Since(t, since) {
 			if r.PPM >= targetPPM {
-				t.Logf("stored %.0f ppm at %s", r.PPM, r.Ts.Format(time.RFC3339))
+				found = r
 				return true
 			}
 		}
 		return false
 	})
+	t.Logf("stored %.0f ppm at %s", found.PPM, found.Ts.Format(time.RFC3339))
+	return found
+}
+
+// answeredInTime checks, from the stored room timestamps, that the command
+// came within responseLimit of the reading.
+func answeredInTime(t *testing.T, reading message.CO2Reading, command message.VentilationCommand) {
+	delay := command.Ts.Sub(reading.Ts)
+	t.Logf("command %v of room time after the reading", delay)
+	if delay > responseLimit {
+		t.Fatalf("command came %v after the reading, want at most %v", delay, responseLimit)
+	}
 }
 
 // openCommandStored waits for a stored command, newer than since, that opens

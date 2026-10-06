@@ -1,0 +1,157 @@
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/actuator	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/co2-sensor	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/dashboard	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/decision	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/occupancy	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/occupancy-sensor	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/physical-model	[no test files]
+?   	github.com/OscarEngelmark/smart-ventilation/cmd/room-model	[no test files]
+=== RUN   TestRoomMatchesTopic
+--- PASS: TestRoomMatchesTopic (0.00s)
+=== RUN   TestReadingOnAnotherRoomsTopicIsNotSaved
+2026/10/06 17:07:17 reading: room "level0/B200" doesn't match topic co2/A125/reading
+--- PASS: TestReadingOnAnotherRoomsTopicIsNotSaved (0.12s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/cmd/storage-service	0.129s
+?   	github.com/OscarEngelmark/smart-ventilation/internal/buildsim	[no test files]
+=== RUN   TestFullRoomFullyOpenSettlesBelowThreshold
+--- PASS: TestFullRoomFullyOpenSettlesBelowThreshold (0.00s)
+=== RUN   TestFullRoomDamperShutSettlesFarAbove
+--- PASS: TestFullRoomDamperShutSettlesFarAbove (0.00s)
+=== RUN   TestOnePersonDamperShutSettlesNearThreshold
+--- PASS: TestOnePersonDamperShutSettlesNearThreshold (0.00s)
+=== RUN   TestEmptyRoomReturnsToOutdoor
+--- PASS: TestEmptyRoomReturnsToOutdoor (0.00s)
+=== RUN   TestRoomAtItsSteadyLevelStaysThere
+--- PASS: TestRoomAtItsSteadyLevelStaysThere (0.00s)
+=== RUN   TestOneLongStepMatchesManyShortOnes
+--- PASS: TestOneLongStepMatchesManyShortOnes (0.00s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/co2	0.002s
+?   	github.com/OscarEngelmark/smart-ventilation/internal/env	[no test files]
+=== RUN   TestEveryMessageMatchesItsSchema
+--- PASS: TestEveryMessageMatchesItsSchema (0.00s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/message	0.005s
+?   	github.com/OscarEngelmark/smart-ventilation/internal/mqttclient	[no test files]
+=== RUN   TestPeopleAtKnownTimes
+=== RUN   TestPeopleAtKnownTimes/night
+=== RUN   TestPeopleAtKnownTimes/before_the_first_arrival
+=== RUN   TestPeopleAtKnownTimes/mid-morning,_regulars_in
+=== RUN   TestPeopleAtKnownTimes/lunch,_room_empty
+=== RUN   TestPeopleAtKnownTimes/meeting,_room_full
+=== RUN   TestPeopleAtKnownTimes/afternoon,_visitors_gone
+=== RUN   TestPeopleAtKnownTimes/evening,_everyone_left
+--- PASS: TestPeopleAtKnownTimes (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/night (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/before_the_first_arrival (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/mid-morning,_regulars_in (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/lunch,_room_empty (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/meeting,_room_full (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/afternoon,_visitors_gone (0.00s)
+    --- PASS: TestPeopleAtKnownTimes/evening,_everyone_left (0.00s)
+=== RUN   TestWeekendIsEmpty
+--- PASS: TestWeekendIsEmpty (0.00s)
+=== RUN   TestDayStaysWithinCapacityAndFillsOnce
+--- PASS: TestDayStaysWithinCapacityAndFillsOnce (0.00s)
+=== RUN   TestRoomEmptiesAtLunch
+--- PASS: TestRoomEmptiesAtLunch (0.00s)
+=== RUN   TestJitterDependsOnDateOnly
+--- PASS: TestJitterDependsOnDateOnly (0.00s)
+=== RUN   TestZeroCapacityIsEmpty
+--- PASS: TestZeroCapacityIsEmpty (0.00s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/occupancy	0.002s
+=== RUN   TestEmptyRoomStaysClosed
+--- PASS: TestEmptyRoomStaysClosed (0.00s)
+=== RUN   TestChosenLevelIsTheLowestThatHoldsTheCountedPeople
+--- PASS: TestChosenLevelIsTheLowestThatHoldsTheCountedPeople (0.00s)
+=== RUN   TestAlreadyOverTheTargetOpensFully
+--- PASS: TestAlreadyOverTheTargetOpensFully (0.00s)
+=== RUN   TestMorePeopleRaiseTheLevel
+--- PASS: TestMorePeopleRaiseTheLevel (0.00s)
+=== RUN   TestLevelStillEnoughIsKeptWhenTheNextOneDownOnlyJustPasses
+--- PASS: TestLevelStillEnoughIsKeptWhenTheNextOneDownOnlyJustPasses (0.00s)
+=== RUN   TestFullRoomAtTheTargetSettlesAfterOpeningFully
+--- PASS: TestFullRoomAtTheTargetSettlesAfterOpeningFully (0.00s)
+=== RUN   TestSwitchOpensAtTheTargetAndClosesBelowTheLowerLevel
+--- PASS: TestSwitchOpensAtTheTargetAndClosesBelowTheLowerLevel (0.00s)
+=== RUN   TestSwitchKeepsTheLevelInBetween
+--- PASS: TestSwitchKeepsTheLevelInBetween (0.00s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	0.002s
+?   	github.com/OscarEngelmark/smart-ventilation/internal/room	[no test files]
+=== RUN   TestFitRecoversTheRoom
+--- PASS: TestFitRecoversTheRoom (0.00s)
+=== RUN   TestDamperThatNeverMovedGivesNoModel
+--- PASS: TestDamperThatNeverMovedGivesNoModel (0.00s)
+=== RUN   TestEmptyRoomGivesNoModel
+--- PASS: TestEmptyRoomGivesNoModel (0.00s)
+=== RUN   TestTooLongStepIsLeftOut
+--- PASS: TestTooLongStepIsLeftOut (0.00s)
+=== RUN   TestStepAcrossAHeadCountChangeIsLeftOut
+--- PASS: TestStepAcrossAHeadCountChangeIsLeftOut (0.00s)
+=== RUN   TestStepAcrossADamperChangeIsLeftOut
+--- PASS: TestStepAcrossADamperChangeIsLeftOut (0.00s)
+=== RUN   TestStepBeforeTheFirstHeadCountIsLeftOut
+--- PASS: TestStepBeforeTheFirstHeadCountIsLeftOut (0.00s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/roommodel	0.004s
+=== RUN   TestAtSessionStartRoomTimeIsRoomStart
+--- PASS: TestAtSessionStartRoomTimeIsRoomStart (0.00s)
+=== RUN   TestRoomTimeRunsSpeedTimesFaster
+--- PASS: TestRoomTimeRunsSpeedTimesFaster (0.00s)
+=== RUN   TestAtSpeedOneRoomTimeKeepsItsDistanceToTheWallClock
+--- PASS: TestAtSpeedOneRoomTimeKeepsItsDistanceToTheWallClock (0.00s)
+=== RUN   TestWallIsRoomDurationDividedBySpeed
+--- PASS: TestWallIsRoomDurationDividedBySpeed (0.00s)
+=== RUN   TestWithoutSettingsRoomTimeIsTheWallClock
+--- PASS: TestWithoutSettingsRoomTimeIsTheWallClock (0.00s)
+=== RUN   TestFromEnvReadsTheSession
+--- PASS: TestFromEnvReadsTheSession (0.00s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/roomtime	0.002s
+?   	github.com/OscarEngelmark/smart-ventilation/internal/shutdown	[no test files]
+=== RUN   TestReadingExactlyAtSinceIsIncluded
+--- PASS: TestReadingExactlyAtSinceIsIncluded (0.12s)
+=== RUN   TestReadingBeforeSinceIsLeftOut
+--- PASS: TestReadingBeforeSinceIsLeftOut (0.08s)
+=== RUN   TestReadingsComeBackOldestFirst
+--- PASS: TestReadingsComeBackOldestFirst (0.07s)
+=== RUN   TestOtherRoomsAreLeftOut
+--- PASS: TestOtherRoomsAreLeftOut (0.07s)
+=== RUN   TestNoReadingsIsNotAnError
+--- PASS: TestNoReadingsIsNotAnError (0.06s)
+=== RUN   TestSinceInAnotherZoneSelectsTheSameReadings
+--- PASS: TestSinceInAnotherZoneSelectsTheSameReadings (0.07s)
+=== RUN   TestReadingComesBackAsItWasSaved
+--- PASS: TestReadingComesBackAsItWasSaved (0.06s)
+=== RUN   TestOccupancySinceSelectsRoomAndTimeInOrder
+--- PASS: TestOccupancySinceSelectsRoomAndTimeInOrder (0.08s)
+=== RUN   TestOccupancyComesBackAsItWasSaved
+--- PASS: TestOccupancyComesBackAsItWasSaved (0.06s)
+=== RUN   TestCommandsSinceAreLedByTheLastOneBefore
+--- PASS: TestCommandsSinceAreLedByTheLastOneBefore (0.08s)
+=== RUN   TestCommandLongBeforeSinceIsStillInForce
+--- PASS: TestCommandLongBeforeSinceIsStillInForce (0.06s)
+=== RUN   TestNoCommandsBeforeSinceGivesOnlyThoseAfter
+--- PASS: TestNoCommandsBeforeSinceGivesOnlyThoseAfter (0.07s)
+=== RUN   TestLatestIsNewestAcrossTables
+--- PASS: TestLatestIsNewestAcrossTables (0.07s)
+=== RUN   TestLatestHandlesTimestampsSentInAnotherZone
+--- PASS: TestLatestHandlesTimestampsSentInAnotherZone (0.07s)
+=== RUN   TestLatestOnEmptyStoreIsNotFound
+--- PASS: TestLatestOnEmptyStoreIsNotFound (0.06s)
+=== RUN   TestDeleteBeforeKeepsOnlyRowsFromTheCutoffOn
+--- PASS: TestDeleteBeforeKeepsOnlyRowsFromTheCutoffOn (0.09s)
+=== RUN   TestDeleteBeforeKeepsEachRoomsCommandInForce
+--- PASS: TestDeleteBeforeKeepsEachRoomsCommandInForce (0.08s)
+=== RUN   TestSameReadingSavedTwiceIsStoredOnce
+--- PASS: TestSameReadingSavedTwiceIsStoredOnce (0.06s)
+=== RUN   TestOpenedFileIsInWALMode
+--- PASS: TestOpenedFileIsInWALMode (0.06s)
+=== RUN   TestSavesAndReadsAtTheSameTimeAllSucceed
+--- PASS: TestSavesAndReadsAtTheSameTimeAllSucceed (2.10s)
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/store	3.457s
+?   	github.com/OscarEngelmark/smart-ventilation/schemas	[no test files]

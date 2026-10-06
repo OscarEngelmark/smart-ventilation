@@ -1426,10 +1426,11 @@ _(nothing yet)_
   - Useful for: §10, §11.
 
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
-  loop's answer: the reading stored, a fully open command stored, the damper
-  open in BuildSim, and CO2 falling.** `test/e2e/loop_test.go` verifies
-  FR-1 to FR-3 (§3) against the running stack, run with
-  `go test -tags e2e -v -count=1 ./test/e2e`. The physical model continues from the
+  loop's answer: the reading stored, a fully open command stored within 2
+  minutes of it, the damper open in BuildSim, and CO2 falling.**
+  `test/e2e/loop_test.go` verifies FR-1 to FR-3 (§3) against the running
+  stack, run with `go test -tags e2e -v -count=1 ./test/e2e`, and refuses to
+  run unless the session runs at speed 1. The physical model continues from the
   CO2 that BuildSim holds, so the injected value runs the whole loop like a
   room that has just filled. 980 ppm is above the 950 ppm target, which
   opens the damper fully with or without a room model, and below the
@@ -1440,13 +1441,25 @@ _(nothing yet)_
   (covered by the unit tests in `internal/planner`); and the injected jump
   enters the stored history the next room-model fit uses, an effect not
   measured. Decided and implemented 2026-10-05.
-  - Result, 2026-10-05, at speed 10 with the room empty and the damper
-    closed: passed in 4.0 real seconds. CO2 went from 454 ppm to 979 ppm at
-    the injection; a 1.00 command was stamped in the same room second; CO2
-    then fell about 5 ppm per reading, 979 → 953 ppm over five readings.
-    Evidence in `test/results/`: the test's output
-    (`e2e_2026-10-05.txt`) and the stored CO2 readings, commands and head
-    counts of the run's window (`e2e_2026-10-05_*.json`).
+  - FR-2's 2 minutes are checked from the stored timestamps of the reading
+    and the command. Two limits: the decision service stamps the command
+    just before the actuator writes it to BuildSim, so the write itself is
+    not timed; and the readings store keeps whole seconds, so the gap is
+    known to 1 s. Added 2026-10-06.
+  - Result, 2026-10-06, at speed 1 with the room at 856 ppm and the damper
+    closed: passed in 38 real seconds. CO2 went to 979 ppm at the
+    injection; a 1.00 command was stored in the same room second as that
+    reading; CO2 then fell about 5 ppm per reading, 974 → 963 ppm over
+    three readings. It replaces a pass on 2026-10-05 at speed 10. Evidence
+    in `test/results/`: the test's output (`e2e_2026-10-06.txt`) and the
+    stored CO2 readings, commands and head counts of the run's window
+    (`e2e_2026-10-06_*.json`).
+  - Useful for: §10, §11.
+
+- **All unit tests passed on 2026-10-06**, among them those that verify
+  FR-4 (`internal/store`), FR-5 (`internal/roommodel`) and FR-6
+  (`internal/planner`), §3. Evidence: `test/results/unit_2026-10-06.txt`,
+  the output of `go test -v -count=1 ./...`.
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
