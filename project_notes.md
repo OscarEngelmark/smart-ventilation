@@ -1411,19 +1411,18 @@ _(nothing yet)_
 
 ## 10. Test plan
 
-- **Decided: tests run at speed 1; the day-long evaluation runs at speed
-  10.** A test checks how fast something happens (the end-to-end test, the
-  crash test, the fault tests, the delay measurement), and its limits are
-  in room time, so room time and real time must run on one clock. The
-  evaluation runs (REG-1's peak CO2, NFR-2's damper comparison) only read
-  the CO2 and damper levels stamped in room time, which the physical model
-  computes exactly at any speed (§6); speed 10 only stretches millisecond
-  processing delays tenfold in room time, and a room day takes 2.4 real
-  hours instead of 24. Each test refuses to run at
-  any speed but 1. Rejected: speed 1 for everything, which costs
-  about three of the days left before submission on three room days; and
-  choosing the speed per test, which left results run at different speeds
-  side by side. Decided 2026-10-06.
+- **Decided: tests run at speed 1; the day-long evaluation runs at any
+  faster speed.** A test checks how fast something happens (the end-to-end
+  test, the crash test, the fault tests, the delay measurement), and its
+  limits are in room time, so room time and real time must run on one
+  clock. The evaluation runs (REG-1's peak CO2, NFR-2's damper comparison)
+  only read the CO2 and damper levels stamped in room time, which the
+  physical model computes exactly at any speed (§6); a faster speed only
+  stretches millisecond processing delays in room time, and a room day
+  takes 2.4 real hours at speed 10 and 24 minutes at speed 60. Each test
+  refuses to run at any speed but 1. Rejected: speed 1 for everything,
+  which costs about three of the days left before submission on three room
+  days. Decided 2026-10-06.
   - Useful for: §10, §11.
 
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
@@ -1487,6 +1486,16 @@ _(nothing yet)_
     stored CO2 readings, commands, head counts and the two services' logs
     of each run (`crash_2026-10-06_*` and `crash_2026-10-06_run1_*`).
   - Useful for: §8.2, §10, §11.
+
+- **REG-1 held on Thursday 2026-10-22: the peak CO2 was 937 ppm, at 13:48
+  during the meeting.** The day ran at speed 60 on the current code, the
+  first full weekday of that session; Wednesday 2026-10-21 was left out
+  because its peak, 980 ppm at 04:13, was written into BuildSim by a test.
+  The mean damper level was 0.132 over the day and 0.772 in the meeting
+  hour. Evidence in `test/results/`: `reg1_2026-10-22.txt` (the output of
+  `eval/day_summary.py`) and the day's stored CO2 readings, commands and
+  head counts (`reg1_2026-10-22_*.json`). Measured 2026-10-06.
+  - Useful for: §10, §11.
 
 - **Decided: failure testing covers a sensor giving bad readings, a component
   going down, and delayed or dropped communication.** These are the failure
