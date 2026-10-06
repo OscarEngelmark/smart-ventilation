@@ -63,7 +63,7 @@ _(nothing yet)_
 
   | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
   |---|---|---|---|---|
-  | FR-1 | Functional | Must | CO2 readings are saved in the readings store | End-to-end test |
+  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the readings store; a full simulated weekday has a stored head count for every room minute | End-to-end test; stored head counts over a room day |
   | FR-2 | Functional | Must | The decision service sets the damper in BuildSim from the CO2 readings, in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
   | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first | Unit tests, `internal/store` |
@@ -1428,11 +1428,11 @@ _(nothing yet)_
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
   loop's answer: the reading stored, a fully open command stored within 2
   minutes of it, the damper open in BuildSim, and CO2 falling.**
-  `test/e2e/loop_test.go` verifies FR-1 to FR-3 (§3) against the running
-  stack, run with `go test -tags e2e -v -count=1 ./test/e2e`, and refuses to
-  run unless the session runs at speed 1. The physical model continues from the
-  CO2 that BuildSim holds, so the injected value runs the whole loop like a
-  room that has just filled. 980 ppm is above the 950 ppm target, which
+  `test/e2e/loop_test.go` verifies FR-1's CO2 half, FR-2 and FR-3 (§3)
+  against the running stack, run with `go test -tags e2e -v -count=1
+  ./test/e2e`, and refuses to run unless the session runs at speed 1. The
+  physical model continues from the CO2 that BuildSim holds, so the
+  injected value runs the whole loop like a room that has just filled. 980 ppm is above the 950 ppm target, which
   opens the damper fully with or without a room model, and below the
   threshold. Rejected: waiting for the occupancy schedule to change the
   damper — it only works in occupied room hours, and a normal level change
@@ -1508,6 +1508,11 @@ _(nothing yet)_
   hour. Evidence in `test/results/`: `reg1_2026-10-22.txt` (the output of
   `eval/day_summary.py`) and the day's stored CO2 readings, commands and
   head counts (`reg1_2026-10-22_*.json`). Measured 2026-10-06.
+  - The same day verifies FR-1's head-count half: 1440 head counts are
+    stored, one for every room minute (`reg1_2026-10-22_occupancy.json`).
+    Rejected: a head-count step in the end-to-end test, which at speed 1
+    waits up to a minute for the occupancy sensor's next count and checks
+    nothing the stored day doesn't already show. Decided 2026-10-06.
   - Useful for: §10, §11.
 
 - **Decided: failure testing covers a sensor giving bad readings, a component
