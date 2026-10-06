@@ -11,8 +11,8 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
 | 20 | REG-1 evidence, before report §10: a current room day through `eval/day_summary.py`, its output and that day's stored data saved in `test/results/` | which room day | 1 |
-| 21 | End-to-end test at speed 1: refuse other speeds; FR-2 checks the damper is open within 2 min of room time of the reading, from stored timestamps; its comments match the narrowed FR-1; rerun and save the evidence | none | 1 |
-| 15 | Report §2–13, then §1, which summarizes the rest; one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step | small ones per section | ~20 |
+| 21 | End-to-end test at speed 1: refuse other speeds; FR-2 checks the damper is open within 2 min of room time of the reading, from stored timestamps; its comments match the narrowed FR-1; rerun and save the evidence; also save a run of the unit tests (`go test ./...`) in `test/results/` | none | 1 |
+| 15 | Report §2–13, then §1, which summarizes the rest; one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step, and the dashboard screenshot (FR-7) is saved in §12's | small ones per section | ~20 |
 
 ## Phase 2: higher grade (2026-10-11, and any time left)
 
