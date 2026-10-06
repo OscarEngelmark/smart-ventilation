@@ -63,13 +63,13 @@ _(nothing yet)_
 
   | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
   |---|---|---|---|---|
-  | FR-1 | Functional | Must | Every CO2 reading reaches the decision service and storage | End-to-end test |
-  | FR-2 | Functional | Must | On every CO2 reading the decision service picks a level; a changed level is applied to the damper in BuildSim | End-to-end test |
+  | FR-1 | Functional | Must | Every CO2 reading is saved in the readings store | End-to-end test |
+  | FR-2 | Functional | Must | The decision service answers a CO2 reading by setting the damper in BuildSim in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
-  | FR-4 | Functional | Must | Every reading and command is stored for 90 room days and served by room and time | Unit tests, `internal/store`; the daily cleanup in the storage-service log |
-  | FR-5 | Functional | Must | The room model is refit at room midnight from the last 7 days; nothing is published when the history can't separate the rates | Unit tests, `internal/roommodel`; the refit in the room-model log |
+  | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first | Unit tests, `internal/store` |
+  | FR-5 | Functional | Must | The room-model service fits the room model to the stored history; the fit gives no room model when the history can't separate the rates | Unit tests, `internal/roommodel` |
   | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
-  | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level, refreshed every 5 s | Manual check, screenshot |
+  | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
   | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Peak CO2 over a room day, `eval/day_summary.py` |
   | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash-and-restart test, at speed 1 |
   | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Decision-quality comparison |
@@ -78,10 +78,10 @@ _(nothing yet)_
 
   - REG-1's threshold is general advice (FoHMFS 2014:18), not a binding
     rule; see *Threshold `C_threshold` = 1000 ppm*, §7.
-  - NFR-1's and NFR-4's 2 minutes is derived, not from a source: with the
-    damper closed, a full room raises CO2 about 23 ppm/min (§7, *Decided:
-    the system pursues three goals…*), so the 50 ppm between the 950 ppm
-    target and the threshold lasts about 2 minutes.
+  - FR-2's, NFR-1's and NFR-4's 2 minutes is derived, not from a source:
+    with the damper closed, a full room raises CO2 about 23 ppm/min (§7,
+    *Decided: the system pursues three goals…*), so the 50 ppm between the
+    950 ppm target and the threshold lasts about 2 minutes.
   - **Decided: NFR-4's limit comes from that margin, not from a
     measurement.** Rejected: measuring the delay first and setting the
     limit from it, a test that can't fail and so verifies nothing.
@@ -1411,6 +1411,21 @@ _(nothing yet)_
 
 ## 10. Test plan
 
+- **Decided: tests run at speed 1; the day-long evaluation runs at speed
+  10.** A test checks how fast something happens (the end-to-end test, the
+  crash test, the fault tests, the delay measurement), and its limits are
+  in room time, so room time and real time must run on one clock. The
+  evaluation runs (REG-1's peak CO2, NFR-2's damper comparison) only read
+  the CO2 and damper levels stamped in room time, which the physical model
+  computes exactly at any speed (§6); speed 10 only stretches millisecond
+  processing delays tenfold in room time, and a room day takes 2.4 real
+  hours instead of 24. Each test refuses to run at
+  any speed but 1. Rejected: speed 1 for everything, which costs
+  about three of the days left before submission on three room days; and
+  choosing the speed per test, which left results run at different speeds
+  side by side. Decided 2026-10-06.
+  - Useful for: §10, §11.
+
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
   loop's answer: the reading stored, a fully open command stored, the damper
   open in BuildSim, and CO2 falling.** `test/e2e/loop_test.go` verifies
@@ -1541,6 +1556,18 @@ was caught. Kept for the report's reflection and the oral exam.
   FoHMFS 2014:18 (see the threshold in *Decided: the system pursues three
   goals…*, §7). Caught because the value was checked against the source
   before it was logged. Noted 2026-09-18.
+  - Useful for: §13.
+
+- **Every course rule was treated as needing its own row in the
+  requirements table.** The assistant proposed adding rows for separate
+  processes and for planning with the room model, so that each pass
+  requirement of the course appeared in §3. The course's grade-5 example
+  has eight rows, all about what its use case must achieve, and shows the
+  course rules in their own sections (container diagram, decision logic,
+  dashboard). Caught when the table kept growing and was compared with the
+  example. Correct: a row states what the system must do or achieve, with a
+  criterion its test checks; course rules are shown where the report
+  describes them. Noted 2026-10-06.
   - Useful for: §13.
 
 - **The assistant proposed changing the simulation so the forecast would

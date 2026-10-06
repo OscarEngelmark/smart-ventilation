@@ -268,32 +268,31 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 & \textbf{Acceptance criterion} & \textbf{Verified by} \\
 \midrule
 \endhead
-FR-1 & Functional & Every CO₂ reading reaches the decision service and
-the readings store & Must & A CO₂ value written to BuildSim is served by
-the storage service within 2 min & End-to-end test,
+FR-1 & Functional & Every CO₂ reading is saved in the readings store &
+Must & A CO₂ value written to BuildSim is served by
+the storage service & End-to-end test,
 \texttt{test/e2e/\allowbreak loop\_test.go} \\
 \midrule
-FR-2 & Functional & On every CO₂ reading the decision service picks a
-damper level; a changed level is applied to the damper in BuildSim & Must
+FR-2 & Functional & The decision service answers a CO₂ reading by
+setting the damper in BuildSim in time to hold the threshold & Must
 & After a reading above the 950 ppm target (Section~\ref{sec:decision-logic}), a command to
-open the damper fully is stored and BuildSim holds the damper fully open,
-each within 2 min & End-to-end test \\
+open the damper fully is stored, and BuildSim holds the damper fully open
+within 2 min of room time of the reading & End-to-end test \\
 \midrule
 FR-3 & Functional & A damper change shows in the CO₂ readings that follow
 & Must & After the damper opens, the third CO₂ reading is lower than the
 first & End-to-end test \\
 \midrule
-FR-4 & Functional & Every reading and command is stored for 90 room days
-and served by room and time & Must & A query returns exactly one room's
-rows from a given time on, oldest first; rows older than 90 room days are
-deleted once a room day & Unit tests, \texttt{internal/store}; the daily
-cleanup in the storage service's log \\
+FR-4 & Functional & Other components can fetch a room's stored
+readings and commands from a given time on & Must & A request for one
+room from a given time returns exactly that room's rows from that time
+on, oldest first & Unit tests, \texttt{internal/store} \\
 \midrule
-FR-5 & Functional & The room-model service refits the room model at room
-midnight from the last 7 room days of stored data & Must & The fit
-recovers the rates of a simulated room; no room model is published when
-the history can't separate the rates (Section~\ref{sec:decision-logic}) & Unit tests,
-\texttt{internal/roommodel}; the refit in the room-model service's log \\
+FR-5 & Functional & The room-model service fits the room model to the
+stored history & Must & The fit recovers the rates of a simulated room,
+and gives no room model when the history can't separate the rates
+(Section~\ref{sec:decision-logic}) & Unit tests,
+\texttt{internal/roommodel} \\
 \midrule
 FR-6 & Functional & Without a room model, the damper opens and closes on
 CO₂ alone & Must & With no room model, the damper opens fully at 950 ppm,
@@ -301,8 +300,8 @@ closes below 800 ppm, and keeps its level in between & Unit tests,
 \texttt{internal/planner} \\
 \midrule
 FR-7 & Functional & The dashboard shows CO₂, head count and damper level
-& Should & All three are refreshed every 5 s of real time & Manual check,
-screenshot (Section~\ref{sec:dashboard}) \\
+& Should & All three are shown over recent room time & Screenshot
+(Section~\ref{sec:dashboard}) \\
 \midrule
 \mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
 a full simulated weekday, meeting included, is under 1000 ppm & Peak CO₂
@@ -335,8 +334,8 @@ under 2 min of room time & Delay measurement from stored data \\
 Public Health Agency of Sweden's general advice on ventilation
 (FoHMFS 2014:18)~\cite{fohmfs2014}, which treats CO₂ regularly above 1000 ppm in normal
 use as a sign of inadequate ventilation. It is advice rather than a
-binding rule, and is stated for schools and childcare premises; Section~\ref{sec:decision-logic} covers the choice of threshold. The 2 minutes in NFR-1 and NFR-4
-are the project's own figure, not taken from a source: with the damper
+binding rule, and is stated for schools and childcare premises; Section~\ref{sec:decision-logic} covers the choice of threshold. The 2 minutes in FR-2, NFR-1 and
+NFR-4 are the project's own figure, not taken from a source: with the damper
 closed, a full room raises CO₂ by about 23 ppm a minute (Section~\ref{sec:simulation}), so
 the 50 ppm between the 950 ppm target and the threshold lasts about two
 minutes. A restart or a delay longer than that can let CO₂ through the
