@@ -155,48 +155,49 @@ acts through one device: a ventilation damper whose level runs from 0
 (closed) to 1 (fully open).
 
 \textbf{The building and BuildSim.} The room is A125, on level 0 of the
-building modelled in BuildSim, with a floor area of 29.8 m² and room for
-six people. BuildSim holds the shared state of the building in memory:
+LTU A-building as modelled in BuildSim, with a floor area of 29.8 m² and
+room for six people. BuildSim holds the shared state of the building in memory:
 its rooms and their floor areas, the devices registered in each room with
 their current values, and who is in which room. Processes read and write
 that state through its REST API, and a 3D view shows the building in a
 browser. BuildSim is the course's own program, built from the course
 repository at a fixed version and never modified. The project only adds
-its own devices to it through the API: a CO₂ sensor, a people counter,
-and the damper in A125.
+its own devices to it through the API: a CO₂ sensor, an occupancy sensor,
+and a damper in A125.
 
 \textbf{How the processes use BuildSim.} Five of the project's processes
-talk to BuildSim. The decision service, the storage, the room-model
-service, and the dashboard never do.
+talk to BuildSim. The decision service, the storage service, the room
+model, and the dashboard never do.
 
 \begin{itemize}
 \tightlist
 \item
-  \textbf{The occupancy process and the physical model} stand in for the
-  physical world (Section 6). The occupancy process writes who is in each
+  \textbf{The occupancy simulator and the physical model} stand in for the
+  physical world (Section 6). The occupancy simulator writes who is in each
   room (\texttt{PUT /api/occupancy}). The physical model reads the people
   in the room, the damper's state, and the current CO₂, steps the CO₂
   forward, and writes the result as the CO₂ sensor's value
   (\texttt{PUT /api/sensors/\{id\}/value}). It is the only process that
   changes the CO₂, and its reading of the damper is what closes the loop.
 \item
-  \textbf{The CO₂ sensor process} reads its sensor's value
+  \textbf{The CO₂ sensor} reads its sensor's value
   (\texttt{GET /api/sensors/\{id\}}) and publishes it to the MQTT message
   broker. Like a real sensor, it reports the room's CO₂ but does not
   produce it.
 \item
-  \textbf{The people counter} reads who is in the room
+  \textbf{The occupancy sensor} reads who is in the room
   (\texttt{GET /api/occupancy}), writes the head count as its own device's
   value, and publishes it to the broker.
 \item
-  \textbf{The actuator process} receives the decision service's commands
+  \textbf{The damper actuator} receives the decision service's commands
   over REST and writes each new level to the damper
   (\texttt{PUT /api/actuators/\{id\}/state}). BuildSim is the one place
   the damper's position is kept.
 \end{itemize}
 
-BuildSim starts with no devices, so each device process registers its own
-device when it starts (\texttt{POST /api/equipment/bulk}).
+BuildSim starts with no devices, so the CO₂ sensor, the occupancy sensor,
+and the damper actuator each register their own device when they start
+(\texttt{POST /api/equipment/bulk}).
 
 \textbf{Actors.} The \textbf{operator} watches the room's CO₂, head count,
 and damper level on the dashboard (Section 12), which reads the stored
@@ -209,7 +210,7 @@ acting on it.
 work in A125. At 13:00 a meeting fills the room to its six-person maximum
 for an hour. This is the case where CO₂ climbs fast enough to cross
 1000 ppm, so it is the one the decision service has to hold under the
-threshold. The people counter reports six, and the decision service
+threshold. The occupancy sensor reports six, and the decision service
 raises the damper to the lowest level its room model predicts will hold
 six people under the threshold. When the meeting ends, the level drops
 back. Room time can run faster than the wall clock, so the demo shows the

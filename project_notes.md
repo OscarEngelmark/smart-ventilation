@@ -36,7 +36,7 @@ _(nothing yet)_
   - Useful for: §2, §4.4, §13.
 
 - **Decided: the target room for the first end-to-end loop is A125**
-  (BuildSim id 155, level0, 29.8 m²) — office-sized, and confirmed as a
+  (BuildSim id 155, level0, 29.8 m², in the LTU A-building) — office-sized, and confirmed as a
   real, current LTU room via LTU's own room locator (map.ltu.se). Decided
   2026-09-15.
   - Useful for: §2, §6.
