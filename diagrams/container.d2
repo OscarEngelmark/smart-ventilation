@@ -26,7 +26,7 @@ sys: "Smart Ventilation  [System]" {
     style.stroke-width: 0
     style.fill: transparent
   }
-  roommodel: "Room model\n[Container: Go]\nLearns how CO2 responds to\npeople and to the damper"
+  roommodel: "Room-model service\n[Container: Go]\nLearns how CO2 responds to\npeople and to the damper"
 
   decision: "Decision service\n[Container: Go, one per room]\nChooses the damper level that\nkeeps CO2 under 1000 ppm\nwith the fan as low as possible"
   broker: "Message broker\n[Container: Mosquitto, MQTT]\nPasses each message to its\nsubscribers; keeps the last\nretained one per topic" {

@@ -166,8 +166,8 @@ its own devices to it through the API: a CO₂ sensor, an occupancy sensor,
 and a damper in A125.
 
 \textbf{How the processes use BuildSim.} Five of the project's processes
-talk to BuildSim. The decision service, the storage service, the room
-model, and the dashboard never do.
+talk to BuildSim. The decision service, the storage service, the
+room-model service, and the dashboard never do.
 
 \begin{itemize}
 \tightlist
@@ -230,24 +230,105 @@ learns the room's response from its own stored data (Section 7.1).
 
 \section{3. Requirements}
 
-\guidance{List functional and non-functional requirements with stable IDs, so each
-can be traced to a test in the test plan and to results in the evaluation. Keep them
-verifiable (avoid ``fast'' or ``reliable'' without a number).}
+% Required points (report guide, section 3.3; template, section 3):
+% - testable requirements, each with a unique ID
+% - a type: functional, non-functional or regulatory
+% - a priority: Must, Should or Could
+% - a measurable acceptance criterion
+% - the test that verifies it
+% - non-functional requirements quantified; they are what the design
+%   decisions in Section 4.4 are justified against
 
+Each requirement below has an ID that Sections 4.4, 10 and 11 refer to,
+an acceptance criterion that a test can check, and the test that checks
+it. Functional requirements (FR) say what the system does,
+non-functional requirements (NFR) how well it does it, and the
+regulatory requirement (REG) comes from outside the project. Must marks
+what the system needs to work at all; Should and Could mark what it
+aims for beyond that. A \emph{room day} is one day of room time, which
+can run faster than the wall clock (Section 2).
+
+{\small
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.12}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.58}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.30}}@{}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.08}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.12}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.22}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.09}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.26}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.23}}@{}}
 \toprule
-\textbf{ID} & \textbf{Requirement} & \textbf{How it is verified} \\
+\textbf{ID} & \textbf{Type} & \textbf{Requirement} & \textbf{Priority}
+& \textbf{Acceptance criterion} & \textbf{Verified by} \\
 \midrule
 \endhead
-FR-1 & & \\
-FR-2 & & \\
-NFR-1 & & \\
-NFR-2 & & \\
+FR-1 & Functional & Every CO₂ reading reaches the decision service and
+the readings store & Must & A CO₂ value written to BuildSim is served by
+the storage service within 2 min & End-to-end test,
+\texttt{test/e2e/\allowbreak loop\_test.go} \\
+FR-2 & Functional & On every CO₂ reading the decision service picks a
+damper level; a changed level is applied to the damper in BuildSim & Must
+& After a reading above the 950 ppm target (Section 7.1), a command to
+open the damper fully is stored and BuildSim holds the damper fully open,
+each within 2 min & End-to-end test \\
+FR-3 & Functional & A damper change shows in the CO₂ readings that follow
+& Must & After the damper opens, the third CO₂ reading is lower than the
+first & End-to-end test \\
+FR-4 & Functional & Every reading and command is stored for 90 room days
+and served by room and time & Must & A query returns exactly one room's
+rows from a given time on, oldest first; rows older than 90 room days are
+deleted once a room day & Unit tests, \texttt{internal/store}; the daily
+cleanup in the storage service's log \\
+FR-5 & Functional & The room-model service refits the room model at room
+midnight from the last 7 room days of stored data & Must & The fit
+recovers the rates of a simulated room; no room model is published when
+the history can't separate the rates (Section 7.1) & Unit tests,
+\texttt{internal/roommodel}; the refit in the room-model service's log \\
+FR-6 & Functional & Without a room model, the damper opens and closes on
+CO₂ alone & Must & With no room model, the damper opens fully at 950 ppm,
+closes below 800 ppm, and keeps its level in between & Unit tests,
+\texttt{internal/planner} \\
+FR-7 & Functional & The dashboard shows CO₂, head count and damper level
+& Should & All three are refreshed every 5 s of real time & Manual check,
+screenshot (Section 12) \\
+\mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
+a full simulated weekday, meeting included, is under 1000 ppm & Peak CO₂
+over a room day, \texttt{eval/day\_summary.py} \\
+NFR-1 & Non-functional & A killed container recovers without help & Must
+& Docker restarts it, a sensor or the damper actuator registers its
+device with BuildSim again, and the damper answers a reading above the
+target within 2 min of the kill, at room-time speed 1 & Crash-and-restart
+test,
+\texttt{test/crash/crash.sh} \\
+NFR-2 & Non-functional & The ventilation runs as low as it can & Should &
+The time-weighted mean damper level over a room day is lower than under
+the CO₂-only switch of FR-6 & Decision-quality comparison (Section 11) \\
+NFR-3 & Non-functional & A faulty CO₂ sensor or a stopped broker does
+not let CO₂ through the threshold & Should & With the CO₂ sensor frozen
+at one value, or the message broker stopped, CO₂ stays under 1000 ppm &
+Fault tests \\
+NFR-4 & Non-functional & A command follows its reading in time to hold
+the threshold & Could & The time from a reading to its command stays
+under 2 min of room time & Delay measurement from stored data \\
 \bottomrule
 \end{longtable}
+}
+
+\textbf{Where the numbers come from.} REG-1's threshold follows the
+Public Health Agency of Sweden's general advice on ventilation
+(FoHMFS 2014:18)~\cite{fohmfs2014}, which treats CO₂ regularly above 1000 ppm in normal
+use as a sign of inadequate ventilation. It is advice rather than a
+binding rule, and is stated for schools and childcare premises; Section
+7.1 covers the choice of threshold. The 2 minutes in NFR-1 and NFR-4
+are the project's own figure, not taken from a source: with the damper
+closed, a full room raises CO₂ by about 23 ppm a minute (Section 6), so
+the 50 ppm between the 950 ppm target and the threshold lasts about two
+minutes. A restart or a delay longer than that can let CO₂ through the
+threshold before the damper opens.
+
+\textbf{The tension between them.} REG-1 pulls the damper up and NFR-2
+pulls it down. The decision service meets both by choosing, on each
+reading, the lowest level that still holds CO₂ under the target; FR-6 is
+the safety net when it has no room model to choose with.
 
 \section{4. Architecture}
 
@@ -423,6 +504,15 @@ than claiming there are none.}
 
 \fillin{Reflect critically on the design here: limitations, trade-offs, and next
 steps.}
+
+\begin{thebibliography}{9}
+
+\bibitem{fohmfs2014}
+Folkhälsomyndigheten, \emph{Folkhälsomyndighetens allmänna råd om
+ventilation}, FoHMFS 2014:18, 2014.
+\url{https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf}
+
+\end{thebibliography}
 
 \section{Checklist before submission}
 

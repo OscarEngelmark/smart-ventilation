@@ -22,7 +22,7 @@ Each result also updates report §10 and §11.
 | 16 | Fault tests: a frozen CO2 sensor; the broker down | what counts as recovered | 2 |
 | 17 | Stress test to a breaking point | what to scale up, and what counts as broken | 1–2 |
 | 18 | Pipeline delay, measured from stored data | whether to store each message's receive time | 1 |
-| 19 | Decision quality: the learned-model plan against the CO2-only fallback | which metric | 1 |
+| 19 | Decision quality: the learned-model plan against the CO2-only fallback | none | 1 |
 
 ## 2026-10-12
 
