@@ -59,7 +59,7 @@ _(nothing yet)_
   | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level, refreshed every 5 s | Manual check, screenshot |
   | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Peak CO2 over a room day, `eval/day_summary.py` |
-  | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 room minutes | Crash-and-restart test |
+  | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash-and-restart test, at speed 1 |
   | NFR-2 | Non-functional | Should | The damper runs lower on average than under the CO2-only fallback | Decision-quality comparison |
   | NFR-3 | Non-functional | Should | A frozen CO2 sensor or a downed broker doesn't push CO2 over 1000 ppm | Fault tests |
   | NFR-4 | Non-functional | Could | Time from a reading to its command stays under a limit set once it is measured | Delay measurement |
@@ -1392,6 +1392,44 @@ _(nothing yet)_
     counts of the run's window (`e2e_2026-10-05_*.json`).
   - Useful for: §10, §11.
 
+- **Decided: the crash test kills the CO2 sensor and the decision service
+  together, writes 980 ppm into BuildSim while both are down, and measures
+  the real time until BuildSim holds the damper fully open.**
+  `test/crash/crash.sh` verifies NFR-1 (§3) against the running stack, and
+  refuses to run unless the session runs at speed 1. A restart takes real
+  time whatever the speed, while the 2-minute limit comes from how fast a
+  real room fills; only at speed 1 do both run on the same clock, including
+  the sensor's 10 s reading interval. The test fails unless Docker restarted
+  each process exactly once, and prints the first stored reading after the
+  kill to show the injection took effect. The decision service is the
+  one whose absence the 2-minute limit is about; the CO2 sensor is a device
+  process, so the damper can only open once it has registered with BuildSim
+  again and published a reading. One run thus covers both halves of NFR-1.
+  Each process is killed from the host with `sudo kill -9`, since Docker
+  doesn't restart a container it was told to stop (see *Decided: every
+  service restarts by itself after a crash…*, §6). Rejected: killing the CO2
+  sensor alone — its outage is easy to see, but it says nothing about the decision
+  service; killing the decision service alone — it doesn't register with
+  BuildSim. The other containers aren't killed: every one restarts through
+  the same `restart: on-failure`, and every device process registers through
+  the same `buildsim.Client.Register`. Decided and implemented 2026-10-06.
+  - Result, 2026-10-06, at speed 1 with the room empty and the damper
+    closed: passed in 10.8 real seconds, with Docker restarting each
+    container once. The restarted sensor published 980 ppm within a second
+    of the kill, but the restarted decision service subscribed 14 ms after
+    that reading, missed it, and opened the damper on the next one, 10 s
+    later. In an earlier run the decision service subscribed 15 ms before
+    the sensor's first reading, and the damper opened 0.5 s after the kill;
+    that run's printed output was cut short by a bug in the script, but its
+    logs and stored data are saved. Recovery is thus the restart time plus
+    up to one reading interval, depending on which process comes back
+    first: the decision service connects without a persistent session, so
+    the broker keeps no readings for it while it is down. Evidence in
+    `test/results/`: `crash_2026-10-06.txt` (the script's output), and the
+    stored CO2 readings, commands, head counts and the two services' logs
+    of each run (`crash_2026-10-06_*` and `crash_2026-10-06_run1_*`).
+  - Useful for: §8.2, §10, §11.
+
 - **Decided: failure testing covers a sensor giving bad readings, a component
   going down, and delayed or dropped communication.** These are the failure
   modes named in proposal sections 6 and 7. No concrete tests designed yet.
@@ -1575,4 +1613,14 @@ was caught. Kept for the report's reflection and the oral exam.
   the stack could show a pass that never happened. Caught by the assistant
   while explaining the command's flags; the flag is now in the command in
   `test/e2e/loop_test.go`. Noted 2026-10-05.
+  - Useful for: §10, §13.
+
+- **The assistant planned the crash test to measure recovery in room time at
+  speed 10, against NFR-1's 2 room minutes.** Restarting a container takes
+  real time whatever the speed, so at speed 10 each real second counted as
+  10 room seconds and the result depended on the speed. Caught by the user
+  before the test was run. Correct: run the test at speed 1, where room time
+  is real time, and measure real seconds (see *Decided: the crash test kills
+  the CO2 sensor and the decision service together…*, §10). Noted
+  2026-10-06.
   - Useful for: §10, §13.
