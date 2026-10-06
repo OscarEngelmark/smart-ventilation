@@ -63,7 +63,7 @@ _(nothing yet)_
 
   | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
   |---|---|---|---|---|
-  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the readings store; a full simulated weekday has a stored head count for every room minute | End-to-end test; stored head counts over a room day |
+  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the readings store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Stored data of a room day |
   | FR-2 | Functional | Must | The decision service sets the damper in BuildSim from the CO2 readings, in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
   | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first | Unit tests, `internal/store` |
@@ -1411,6 +1411,19 @@ _(nothing yet)_
 
 ## 10. Test plan
 
+- **Decided: each requirement has one piece of evidence, of the kind that
+  fits what the requirement is about.** The loop's answer to one reading:
+  the end-to-end test (FR-2, FR-3). What the system does over a whole day:
+  the stored data of a room day (FR-1, REG-1, NFR-2, NFR-4). One piece of
+  logic on its own: unit tests (FR-4 to FR-6). Behavior when something
+  breaks: fault tests (NFR-1, NFR-3). What the dashboard shows: a
+  screenshot (FR-7). The report's requirements table names each
+  requirement's evidence, and the test-plan table lists the requirements
+  each check covers. Rejected: splitting one requirement across two
+  checks, as FR-1 was between the end-to-end test and a stored day, which
+  leaves two places to keep in step for one claim. Decided 2026-10-06.
+  - Useful for: §3, §10.
+
 - **Decided: tests run at speed 1; the day-long evaluation runs at any
   faster speed.** A test checks how fast something happens (the end-to-end
   test, the crash test, the fault tests, the delay measurement), and its
@@ -1428,13 +1441,13 @@ _(nothing yet)_
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
   loop's answer: the reading stored, a fully open command stored within 2
   minutes of it, the damper open in BuildSim, and CO2 falling.**
-  `test/e2e/loop_test.go` verifies FR-1's CO2 half, FR-2 and FR-3 (§3)
-  against the running stack, run with `go test -tags e2e -v -count=1
-  ./test/e2e`, and refuses to run unless the session runs at speed 1. The
-  physical model continues from the CO2 that BuildSim holds, so the
-  injected value runs the whole loop like a room that has just filled. 980 ppm is above the 950 ppm target, which
-  opens the damper fully with or without a room model, and below the
-  threshold. Rejected: waiting for the occupancy schedule to change the
+  `test/e2e/loop_test.go` verifies FR-2 and FR-3 (§3) against the running
+  stack, run with `go test -tags e2e -v -count=1 ./test/e2e`, and refuses
+  to run unless the session runs at speed 1. The physical model continues
+  from the CO2 that BuildSim holds, so the injected value runs the whole
+  loop like a room that has just filled. 980 ppm is above the 950 ppm
+  target, which opens the damper fully with or without a room model, and
+  below the threshold. Rejected: waiting for the occupancy schedule to change the
   damper — it only works in occupied room hours, and a normal level change
   moves CO2 by under 1 ppm per reading, too little to check. Trade-offs: the
   test covers the full opening, not the plan choosing a level in between
@@ -1446,8 +1459,8 @@ _(nothing yet)_
     just before the actuator writes it to BuildSim, so the write itself is
     not timed; and the readings store keeps whole seconds, so the gap is
     known to 1 s. Added 2026-10-06.
-  - Result, 2026-10-06, at speed 1 with the room at 856 ppm and the damper
-    closed: passed in 38 real seconds. CO2 went to 979 ppm at the
+  - Result, 2026-10-06, at speed 1 with the room at 804 ppm and the damper
+    closed: passed in 37 real seconds. CO2 went to 979 ppm at the
     injection; a 1.00 command was stored in the same room second as that
     reading; CO2 then fell about 5 ppm per reading, 974 → 963 ppm over
     three readings. It replaces a pass on 2026-10-05 at speed 10. Evidence
@@ -1508,11 +1521,12 @@ _(nothing yet)_
   hour. Evidence in `test/results/`: `reg1_2026-10-22.txt` (the output of
   `eval/day_summary.py`) and the day's stored CO2 readings, commands and
   head counts (`reg1_2026-10-22_*.json`). Measured 2026-10-06.
-  - The same day verifies FR-1's head-count half: 1440 head counts are
-    stored, one for every room minute (`reg1_2026-10-22_occupancy.json`).
-    Rejected: a head-count step in the end-to-end test, which at speed 1
-    waits up to a minute for the occupancy sensor's next count and checks
-    nothing the stored day doesn't already show. Decided 2026-10-06.
+  - The same day verifies FR-1: 8640 CO2 readings are stored, one for
+    every 10 s, and 1440 head counts, one for every room minute
+    (`reg1_2026-10-22_co2.json`, `reg1_2026-10-22_occupancy.json`).
+    Rejected: the end-to-end test, which shows one reading stored where
+    the day shows all of them, and would wait up to a minute at speed 1
+    for the occupancy sensor's next count. Decided 2026-10-06.
   - Useful for: §10, §11.
 
 - **Decided: failure testing covers a sensor giving bad readings, a component

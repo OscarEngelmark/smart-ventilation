@@ -269,11 +269,9 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 \midrule
 \endhead
 FR-1 & Functional & CO₂ readings and head counts are saved in the
-readings store & Must & A CO₂ value written to BuildSim is served by
-the storage service, and a full simulated weekday has a stored head
-count for every room minute & End-to-end test,
-\texttt{test/e2e/\allowbreak loop\_test.go}; stored head counts over a
-room day \\
+readings store & Must & A full simulated weekday has a stored CO₂
+reading for every 10~s and a head count for every room minute & Stored
+data of a room day \\
 \midrule
 FR-2 & Functional & The decision service sets the damper in BuildSim
 from the CO₂ readings, in time to hold the threshold & Must

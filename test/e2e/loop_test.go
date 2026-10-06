@@ -10,7 +10,7 @@
 //
 // -count=1 makes Go run the test every time instead of reusing a cached pass.
 //
-// The requirements it verifies (FR-1 to FR-3) are in project_notes.md §3.
+// The requirements it verifies (FR-2 and FR-3) are in project_notes.md §3.
 package e2e
 
 import (
@@ -49,12 +49,12 @@ const (
 var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 // TestLoop injects a CO2 level above the target and checks, in order, that the
-// reading is stored (FR-1), that the decision service commands the damper
-// fully open within responseLimit of the reading and the actuator applies it
-// in BuildSim (FR-2), and that CO2 then falls (FR-3). The command is only
-// stored once the actuator has accepted it, so a stored command shows the
-// decision service received the reading. A failed subtest stops the ones
-// after it. The test refuses to run unless the session runs at speed 1.
+// reading is stored, that the decision service commands the damper fully open
+// within responseLimit of the reading and the actuator applies it in BuildSim
+// (FR-2), and that CO2 then falls (FR-3). The command is only stored once the
+// actuator has accepted it, so a stored command shows the decision service
+// received the reading. A failed subtest stops the ones after it. The test
+// refuses to run unless the session runs at speed 1.
 func TestLoop(t *testing.T) {
 	requireSpeedOne(t)
 	ctx := context.Background()
@@ -79,7 +79,7 @@ func TestLoop(t *testing.T) {
 		name  string
 		check func(t *testing.T)
 	}{
-		{"FR-1 reading reaches storage", func(t *testing.T) {
+		{"reading reaches storage", func(t *testing.T) {
 			reading = readingStored(t, since)
 		}},
 		{"FR-2 decision opens the damper", func(t *testing.T) {
