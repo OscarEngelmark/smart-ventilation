@@ -48,3 +48,24 @@ func TestReadingOnAnotherRoomsTopicIsNotSaved(t *testing.T) {
 		}
 	}
 }
+
+func TestReadingFailingItsSchemaIsNotSaved(t *testing.T) {
+	db, err := store.OpenSQLite(filepath.Join(t.TempDir(), "readings.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	sch := payloadSchemas{reading: mustLoadSchema("co2_reading.schema.json")}
+	save := storeHandlers(db, sch)["co2/+/reading"]
+
+	save("co2/A125/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))
+	save("co2/A125/reading", []byte(`{"room_id": "level0/A125", "ppm": -5, "ts": "2026-10-09T12:00:10Z"}`))
+
+	readings, err := db.CO2ReadingsSince(context.Background(), "level0/A125", time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(readings) != 1 || readings[0].PPM != 500 {
+		t.Errorf("stored %+v, want only the 500 ppm reading", readings)
+	}
+}

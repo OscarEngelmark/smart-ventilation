@@ -55,7 +55,7 @@ _(nothing yet)_
 
 ## 3. Requirements
 
-- **Decided: twelve requirements, each traced to a test that exists or is
+- **Decided: fifteen requirements, each traced to a test that exists or is
   planned.** Rejected: a requirement per container — more rows than tests,
   so the extra rows would be untested gaps. Requirements whose test is
   planned but not yet run stay in the table and are reported as unverified
@@ -70,6 +70,9 @@ _(nothing yet)_
   | FR-5 | Functional | Must | The room-model service fits the room model to the stored history; the fit gives no room model when the history can't separate the rates | Unit tests, `internal/roommodel` |
   | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
+  | FR-8 | Functional | Must | The storage service keeps bad messages out of the readings store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
+  | FR-9 | Functional | Must | The occupancy simulator fills the room on a weekday schedule; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
+  | FR-10 | Functional | Must | The physical model's CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 710 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
   | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Peak CO2 over a room day, `eval/day_summary.py` |
   | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash-and-restart test, at speed 1 |
   | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Decision-quality comparison |
@@ -86,6 +89,13 @@ _(nothing yet)_
     measurement.** Rejected: measuring the delay first and setting the
     limit from it, a test that can't fail and so verifies nothing.
     Decided 2026-10-06.
+  - Grown from twelve requirements with FR-8 to FR-10, so that the
+    pipeline's handling of bad data and the simulated room each have a
+    requirement; all three are verified by existing unit tests, plus one
+    added for a message that fails its schema. Rejected: also covering the
+    damper actuator's refusal of a malformed command, which has no unit
+    test. Storage retention (90 room days) has no requirement. Decided
+    2026-10-06.
   - Useful for: §3, §10, §11.
 
 ## 4. Architecture
@@ -1415,7 +1425,7 @@ _(nothing yet)_
   fits what the requirement is about.** The loop's answer to one reading:
   the end-to-end test (FR-2, FR-3). What the system does over a whole day:
   the stored data of a room day (FR-1, REG-1, NFR-2, NFR-4). One piece of
-  logic on its own: unit tests (FR-4 to FR-6). Behavior when something
+  logic on its own: unit tests (FR-4 to FR-6, FR-8 to FR-10). Behavior when something
   breaks: fault tests (NFR-1, NFR-3). What the dashboard shows: a
   screenshot (FR-7). The report's requirements table names each
   requirement's evidence, and the test-plan table lists the requirements
@@ -1469,10 +1479,12 @@ _(nothing yet)_
     (`e2e_2026-10-06_*.json`).
   - Useful for: §10, §11.
 
-- **All unit tests passed on 2026-10-06**, among them those that verify
-  FR-4 (`internal/store`), FR-5 (`internal/roommodel`) and FR-6
-  (`internal/planner`), §3. Evidence: `test/results/unit_2026-10-06.txt`,
-  the output of `go test -v -count=1 ./...`.
+- **All 64 unit tests and subtests passed on 2026-10-06**, among them
+  those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
+  FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
+  `internal/store`), FR-9 (`internal/occupancy`) and FR-10
+  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-06.txt`, the
+  output of `go test -v -count=1 ./...`.
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service

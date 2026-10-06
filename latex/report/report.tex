@@ -303,6 +303,23 @@ FR-7 & Functional & The dashboard shows CO₂, head count and damper level
 & Should & All three are shown over recent room time & Screenshot
 (Section~\ref{sec:dashboard}) \\
 \midrule
+FR-8 & Functional & The storage service keeps bad messages out of the
+readings store & Must & A message that fails its schema, a reading for
+another room than its topic names, and a second copy of a stored reading
+are not stored & Unit tests, \texttt{cmd/\allowbreak storage-service}
+and \texttt{internal/store} \\
+\midrule
+FR-9 & Functional & The occupancy simulator fills the room on a weekday
+schedule & Must & Nobody at night or at weekends, 3 people mid-morning
+and mid-afternoon, empty at 12:00, full (6) at 13:30, never over
+capacity & Unit tests, \texttt{internal/\allowbreak occupancy} \\
+\midrule
+FR-10 & Functional & The physical model's CO₂ follows the people and
+the damper & Must & With the damper closed, a full room settles at about
+3640 ppm and one person at about 957 ppm; fully open, a full room
+settles at about 710 ppm; an empty room returns to the outdoor 420 ppm
+& Unit tests, \texttt{internal/co2} \\
+\midrule
 \mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
 a full simulated weekday, meeting included, is under 1000 ppm & Peak CO₂
 over a room day, \texttt{eval/day\_summary.py} \\
