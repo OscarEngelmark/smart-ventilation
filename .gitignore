@@ -27,6 +27,7 @@ venv/
 
 # Rendered diagrams (regenerated from the .d2 sources)
 diagrams/*.svg
+latex/report/figures/
 
 # OS / editor
 .DS_Store

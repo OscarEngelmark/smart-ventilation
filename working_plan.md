@@ -10,7 +10,6 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 14 | Report setup: `latex/report/` from the course template | none | 1 |
 | 15 | Report §1–13, one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step | small ones per section | ~20 |
 
 ## Phase 2: higher grade (2026-10-11, and any time left)
