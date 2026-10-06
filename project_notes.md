@@ -1331,6 +1331,24 @@ _(nothing yet)_
     it if it was saved after all. Decided 2026-09-27.
   - Useful for: §5, §7.2, §9, §10.
 
+- **Decided: the decision service connects to the broker with a clean
+  session, so after a restart it starts from the next reading instead of
+  the ones it missed.** It decides on each reading as it arrives, so a
+  backlog handed over after a longer outage would make it decide, and
+  possibly command the damper, on CO2 from minutes before. With a reading
+  every 10 s, the next fresh one is never far off. Rejected: a persistent
+  session, as the storage-service has (see *Decided: the storage-service
+  connects with a persistent session…*, above), which needs every reading,
+  while the decision service needs only the latest. Trade-off: up to one
+  reading interval of extra delay after a restart. The crash test measured
+  it: 10.8 s against 0.5 s, depending on whether the decision service
+  subscribed before the restarted sensor's first reading, both within
+  NFR-1's 2 minutes (see *Decided: the crash test kills the CO2 sensor and
+  the decision service together…*, §10). The clean session was the MQTT
+  library's default until the crash test showed its cost. Decided
+  2026-10-06; no code change.
+  - Useful for: §4.4, §7.1, §8.2, §11.
+
 ## 8. Behaviour
 
 - **One CO2 reading traced through the full loop: a damper command it
