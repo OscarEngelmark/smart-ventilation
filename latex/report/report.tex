@@ -21,6 +21,7 @@
 \makeatother
 \usepackage{xcolor}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{}
+\usepackage{float} % before hyperref, or [H] figures get duplicate link targets
 \IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
 \hypersetup{
   pdftitle={Final Report, Indoor Air Quality (CO2) Management},
@@ -375,7 +376,11 @@ the safety net when it has no room model to choose with.
 % - every arrow directed, labelled with its purpose and protocol
 % - the system boundary: what is built here and what is outside it
 
-\begin{figure}[htbp]
+Figure~\ref{fig:context} fixes the system boundary: the box holds
+everything this project builds that a real building would install, and
+Section~\ref{sec:container} opens it up.
+
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/context.png}
 \caption{C4 Context diagram. Smart Ventilation is the system built here;
@@ -383,10 +388,6 @@ BuildSim, the Operator and the Room occupants are outside it. Each arrow
 points from the side that starts the interaction.}
 \label{fig:context}
 \end{figure}
-
-Figure~\ref{fig:context} fixes the system boundary: the box holds
-everything this project builds that a real building would install, and
-Section~\ref{sec:container} opens it up.
 
 \begin{itemize}
 \tightlist
@@ -414,14 +415,6 @@ Section~\ref{sec:container} opens it up.
 % - a 1:1 match with docker-compose.yml and the repository folders
 % - why the system is split this way: justified in Section 4.4
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[height=0.8\textheight]{figures/container.png}
-\caption{C4 Container diagram. REST arrows point from the caller to the
-service it calls; MQTT arrows point the way messages travel.}
-\label{fig:container}
-\end{figure}
-
 Figure~\ref{fig:container} opens the Smart Ventilation box. Each box is
 one service in \texttt{docker-compose.yml}, except the Readings store,
 which is the Storage service's database file. The Physical model writes
@@ -433,6 +426,14 @@ Damper actuator, which sets it in BuildSim; the Physical model reads it
 there on its next step. The Storage service stores the readings and
 commands; the Room-model service learns the room model from them, and
 the Dashboard plots them.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{figures/container.png}
+\caption{C4 Container diagram. REST arrows point from the caller to the
+service it calls; MQTT arrows point the way messages travel.}
+\label{fig:container}
+\end{figure}
 
 \subsection{Component diagram (C4 Level 3)}\label{sec:component}
 

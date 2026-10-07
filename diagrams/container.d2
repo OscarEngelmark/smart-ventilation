@@ -1,45 +1,50 @@
 # C4 Container diagram. Rationale for each choice: project_notes.md, section 4.
 # Dashed outlines are boundaries. REST arrows point from the caller to the
 # service it calls; the response data flows back. MQTT arrows point the way
-# messages travel. Grids with grid-rows are
-# filled row by row; empty cells keep arrows clear of boxes.
+# messages travel. Grids with grid-rows set first are filled row by row.
+# The system's boxes are spaced by empty columns, since a grid pads its sides
+# by as much as its gap; an empty cell places BuildSim under the CO2 sensor.
 grid-rows: 2
-vertical-gap: 200
+vertical-gap: 160
+
+classes: {
+  column: {
+    label: ""
+    width: 140
+    height: 10
+    style.stroke-width: 0
+    style.fill: transparent
+  }
+}
 
 sys: "Smart Ventilation  [System]" {
   style.stroke-dash: 4
   style.fill: transparent
-  grid-rows: 4
-  horizontal-gap: 220
+  grid-rows: 3
+  grid-columns: 5
+  horizontal-gap: 40
   vertical-gap: 110
 
   dash: "Dashboard\n[Container: Go, web page]\nShows CO2, head count and\ndamper level over recent\nroom time"
+  col1.class: column
   storage: "Storage service\n[Container: Go]\nStores readings and\ncommands; serves\ntheir history"
+  col2.class: column
   db: "Readings store\n[SQLite]\nAccessed only via\nstore.Store" {
     shape: cylinder
   }
 
-  gap3: "" {
-    style.stroke-width: 0
-    style.fill: transparent
-  }
-  gap: "" {
-    style.stroke-width: 0
-    style.fill: transparent
-  }
-  roommodel: "Room-model service\n[Container: Go]\nLearns how CO2 responds to\npeople and to the damper"
-
   decision: "Decision service\n[Container: Go, one per room]\nChooses the damper level that\nkeeps CO2 under 1000 ppm\nwith the ventilation\nas low as possible"
+  col5.class: column
   broker: "Message broker\n[Container: Mosquitto, MQTT]\nPasses each message to its\nsubscribers; keeps the last\nretained one per topic" {
     shape: queue
   }
-  gap2: "" {
-    style.stroke-width: 0
-    style.fill: transparent
-  }
+  col6.class: column
+  roommodel: "Room-model service\n[Container: Go]\nLearns how CO2 responds to\npeople and to the damper"
 
   actuator: "Damper actuator\n[Container: Go]\nApplies commands\nto the damper"
+  col7.class: column
   co2sensor: "CO2 sensor\n[Container: Go]\nReads the room's CO2,\npublishes it"
+  col8.class: column
   occsensor: "Occupancy sensor\n[Container: Go]\nCounts the people in the\nroom, publishes the count"
 }
 
@@ -48,11 +53,12 @@ below: "" {
   style.fill: transparent
   grid-columns: 2
   horizontal-gap: 0
+  vertical-gap: 0
 
   spacer: "" {
     style.stroke-width: 0
     style.fill: transparent
-    width: 420
+    width: 328
   }
 
   room: "" {
@@ -77,7 +83,7 @@ below.room.world.occ -> below.room.bs: "sets the people\nin the room [REST]"
 below.room.world.model -> below.room.bs: "reads people, damper, CO2;\nwrites the next CO2 [REST]"
 
 sys.co2sensor -> below.room.bs: "reads the sensor's\nvalue [REST]"
-sys.occsensor -> below.room.bs: "reads the people;\nwrites the counter's\nvalue [REST]"
+sys.occsensor -> below.room.bs: "reads the people; writes\nthe counter's value [REST]"
 sys.actuator -> below.room.bs: "sets the damper\nposition [REST]"
 
 sys.co2sensor -> sys.broker: "co2/<room>/reading\n[MQTT]"
