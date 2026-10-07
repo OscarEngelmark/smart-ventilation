@@ -180,10 +180,14 @@ _(nothing yet)_
     (`diagrams/container.d2`, `diagrams/context.d2`).
     - Replaces *Revisit: where the physical model sits in the C4
       diagrams*.
-    - Arrows point from the side that starts the interaction, so the
-      context diagram's link to BuildSim is one-way: every BuildSim call
-      starts in the system, and nothing uses BuildSim's WebSocket.
-      Drawn 2026-10-07.
+    - REST arrows point from the caller to the service it calls, so every
+      link to BuildSim is one-way: nothing uses BuildSim's WebSocket. MQTT
+      arrows point the way messages travel, two-headed where they travel
+      both ways. Rejected: drawing MQTT arrows from the side that opens
+      the connection, as for REST. Subscribers open their own connection
+      to the broker too, so every MQTT arrow would point at the broker and
+      the diagram would no longer show who receives which messages.
+      Decided and drawn 2026-10-07.
   - Useful for: §4.1, §4.4, §6.
 
 - **Decided: the container that fits the room model is the "Room-model

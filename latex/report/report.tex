@@ -408,13 +408,31 @@ Section~\ref{sec:container} opens it up.
 
 \subsection{Container diagram (C4 Level 2)}\label{sec:container}
 
-\guidance{Open the system into its separately-running parts (sensor services,
-autonomous service, actuators, storage, dashboard) and how they communicate. Explain
-why the system is split this way.}
+% Required points (report guide, sections 2.2 and 3.4; template, section 4.2):
+% - every deployable unit and how they communicate
+% - the protocol on every arrow
+% - a 1:1 match with docker-compose.yml and the repository folders
+% - why the system is split this way: justified in Section 4.4
 
-\diagramslot{Container diagram (C4 Level 2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.8\textheight]{figures/container.png}
+\caption{C4 Container diagram. REST arrows point from the caller to the
+service it calls; MQTT arrows point the way messages travel.}
+\label{fig:container}
+\end{figure}
 
-\fillin{Narrative for the container diagram.}
+Figure~\ref{fig:container} opens the Smart Ventilation box. Each box is
+one service in \texttt{docker-compose.yml}, except the Readings store,
+which is the Storage service's database file. The Physical model writes
+the room's CO₂ to BuildSim. The CO₂ sensor reads it and publishes it to
+the Message broker, as the Occupancy sensor does with the head count.
+The Decision service uses both, with the room model from the Room-model
+service, to choose a damper level, and sends each new level to the
+Damper actuator, which sets it in BuildSim; the Physical model reads it
+there on its next step. The Storage service stores the readings and
+commands; the Room-model service learns the room model from them, and
+the Dashboard plots them.
 
 \subsection{Component diagram (C4 Level 3)}\label{sec:component}
 

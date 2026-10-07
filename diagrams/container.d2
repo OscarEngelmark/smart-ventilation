@@ -1,9 +1,10 @@
 # C4 Container diagram. Rationale for each choice: project_notes.md, section 4.
 # Dashed outlines are boundaries. REST arrows point from the caller to the
-# service it calls; the response data flows back. Grids with grid-rows are
+# service it calls; the response data flows back. MQTT arrows point the way
+# messages travel. Grids with grid-rows are
 # filled row by row; empty cells keep arrows clear of boxes.
 grid-rows: 2
-vertical-gap: 40
+vertical-gap: 200
 
 sys: "Smart Ventilation  [System]" {
   style.stroke-dash: 4
@@ -28,7 +29,7 @@ sys: "Smart Ventilation  [System]" {
   }
   roommodel: "Room-model service\n[Container: Go]\nLearns how CO2 responds to\npeople and to the damper"
 
-  decision: "Decision service\n[Container: Go, one per room]\nChooses the damper level that\nkeeps CO2 under 1000 ppm\nwith the fan as low as possible"
+  decision: "Decision service\n[Container: Go, one per room]\nChooses the damper level that\nkeeps CO2 under 1000 ppm\nwith the ventilation\nas low as possible"
   broker: "Message broker\n[Container: Mosquitto, MQTT]\nPasses each message to its\nsubscribers; keeps the last\nretained one per topic" {
     shape: queue
   }
@@ -73,19 +74,19 @@ below: "" {
 }
 
 below.room.world.occ -> below.room.bs: "sets the people\nin the room [REST]"
-below.room.world.model <-> below.room.bs: "reads people, damper, CO2;\nwrites the next CO2 [REST]"
+below.room.world.model -> below.room.bs: "reads people, damper, CO2;\nwrites the next CO2 [REST]"
 
 sys.co2sensor -> below.room.bs: "reads the sensor's\nvalue [REST]"
-sys.occsensor <-> below.room.bs: "reads the people;\nwrites the counter's\nvalue [REST]"
+sys.occsensor -> below.room.bs: "reads the people;\nwrites the counter's\nvalue [REST]"
 sys.actuator -> below.room.bs: "sets the damper\nposition [REST]"
 
 sys.co2sensor -> sys.broker: "co2/<room>/reading\n[MQTT]"
 sys.occsensor -> sys.broker: "occupancy/<room>/reading\n[MQTT]"
-sys.broker <-> sys.decision: "to decision: readings,\nroom model;\nto broker: ventilation/<room>/\ncommand, copy once accepted\n[MQTT]"
+sys.broker <-> sys.decision: "to decision: readings,\nroom model\nto broker: commands\n[MQTT]"
 sys.decision -> sys.actuator: "POST /command\n[REST]"
 sys.roommodel -> sys.broker: "room/<room>/model,\nretained [MQTT]"
 
 sys.broker -> sys.storage: "readings and\ncommands [MQTT]"
 sys.roommodel -> sys.storage: "GET /co2, /occupancy,\n/commands [REST]"
-sys.storage <-> sys.db: "save / read\n[store.Store]"
+sys.storage -> sys.db: "save / read\n[store.Store]"
 sys.dash -> sys.storage: "GET /latest, /co2,\n/occupancy, /commands\n[REST]"
