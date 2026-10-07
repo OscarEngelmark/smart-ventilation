@@ -511,23 +511,81 @@ container \\
 
 \subsection{Design decisions and alternatives}\label{sec:decisions}
 
-\guidance{The core of the architecture grade. For each significant decision, state
-the choice, the alternatives considered, and the evidence or reasoning for choosing
-it over them. A decision with no rejected alternative is not yet justified.}
+% Required points (report guide, sections 2.6 and 3.4; template, section 4.4):
+% - each significant choice: the option chosen and the alternatives considered
+% - the requirement it serves and the trade-off accepted
+% - a decision with no rejected alternative is not yet justified
 
+Table~\ref{tab:decisions} lists the decisions that shape the system as a
+whole, each with the alternative it was chosen over, the reason for the
+choice and the trade-off it accepts. A reason names a requirement
+(Table~\ref{tab:requirements}) where that requirement favors the chosen
+option over the alternative. Why
+each container runs as a process of its own is in
+Table~\ref{tab:responsibilities}.
+
+{\small
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.25}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.35}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.40}}@{}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.14}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.17}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.26}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.23}}@{}}
+\caption{Design decisions, each with its alternatives, its reason and
+the trade-off it accepts.}\label{tab:decisions}\\
 \toprule
-\textbf{Decision} & \textbf{Alternatives considered} & \textbf{Why this one} \\
+\textbf{Decision} & \textbf{Chosen} & \textbf{Alternatives}
+& \textbf{Justification (requirement)} & \textbf{Trade-off} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Decision} & \textbf{Chosen} & \textbf{Alternatives}
+& \textbf{Justification (requirement)} & \textbf{Trade-off} \\
 \midrule
 \endhead
- & & \\
- & & \\
- & & \\
+Splitting the system & One container per component & One single
+program & A crash in one container leaves the others running; in one
+program, any crash stops every part & More containers to build and run, and messages between them \\
+\midrule
+Decision services & One per room & One for all rooms & A crash stops the
+decisions of one room only, where one service for all rooms would stop
+every room's & Containers grow with the number of
+rooms, about 12 MB of memory each \\
+\midrule
+Moving readings & MQTT through the Message broker & REST from each
+sensor to each reader; Kafka; Redis & A new reader subscribes without
+any change to the sensors; the broker keeps readings for the Storage
+service while it restarts, so the stored history has no gap (FR-1) & A broker to run; while it is stopped no reading
+reaches anyone, which NFR-3 tests \\
+\midrule
+Moving commands & REST from the Decision service to the Damper
+actuator, plus a copy over MQTT for the Storage service & Commands over
+MQTT alone & The actuator answers only once BuildSim holds the new
+damper position, so a lost command is known and sent again on the next
+reading (FR-2) & The Decision service must know the actuator's address
+\\
+\midrule
+History store & SQLite behind the storage interface & InfluxDB &
+Simplicity: enough for one room's history, and it runs inside the
+Storage service, so there is no extra container to run
+& Less suited to many rooms; moving to InfluxDB means one new
+implementation of the interface \\
+\midrule
+Choosing the damper level & The lowest level the learned room model
+predicts will hold the people counted now under the target & Opening
+fully at the threshold; planning a level for every minute ahead &
+Keeps CO₂ under 1000 ppm with the damper as low as it can go (REG-1,
+NFR-2); simpler to test and explain than planning every minute & Assumes
+the people counted now stay the next hour; if the count or the room
+model is wrong, only the full opening at the target is left \\
+\midrule
+Where physical state lives & Only in BuildSim; the Physical model keeps
+nothing between steps & The Physical model keeping the true CO₂ itself
+& A restarted Physical model loses nothing, so it needs no restart
+logic & Small: one extra read from BuildSim per step \\
 \bottomrule
 \end{longtable}
+}
 
 \section{Interfaces and data contracts}\label{sec:interfaces}
 

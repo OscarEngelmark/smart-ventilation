@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15b | §4.4 design decisions: the table justifies one container per component against a single program (a crash restarts one while the rest run, NFR-1) and the broker against REST throughout (one reading reaches both the Decision service and the Storage service); each container's own reason stays in §4.3's table | | 1 |
 | 15c | §5 interfaces and data contracts | | 1–2 |
 | 15d | §6 simulating the sensor values | | 1 |
 | 15e | §7.1 the autonomous service | | 1 |
@@ -38,6 +37,7 @@ Each result also updates report §10 and §11.
 | 16 | Fault tests: a frozen CO2 sensor; the broker down | what counts as recovered | 2 |
 | 17 | Stress test to a breaking point | what to scale up, and what counts as broken | 1–2 |
 | 18 | Pipeline delay, measured from stored data; the history store keeps whole seconds (`internal/store/sqlite.go`), too coarse for sub-second delays | whether to store each message's receive time | 1 |
+| 19 | A requirement that a crash in one container leaves the others running, checked against the crash test's saved output, then cited in §4.4's Splitting and Decision-services rows | whether to add it | 1 |
 
 ## 2026-10-12
 
