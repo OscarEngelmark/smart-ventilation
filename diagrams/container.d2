@@ -89,7 +89,7 @@ sys.actuator -> below.room.bs: "sets the damper\nposition [REST]"
 sys.co2sensor -> sys.broker: "<room_id>/co2/reading\n[MQTT]"
 sys.occsensor -> sys.broker: "<room_id>/occupancy/reading\n[MQTT]"
 sys.broker <-> sys.decision: "to decision: readings,\nroom model\nto broker: commands\n[MQTT]"
-sys.decision -> sys.actuator: "POST /command\n[REST]"
+sys.decision -> sys.actuator: "PUT /command\n[REST]"
 sys.roommodel -> sys.broker: "<room_id>/model,\nretained [MQTT]"
 
 sys.broker -> sys.storage: "readings and\ncommands [MQTT]"

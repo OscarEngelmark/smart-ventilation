@@ -163,21 +163,26 @@ func (c *commander) send(level float64) error {
 	if err != nil {
 		return err
 	}
-	if err := c.post(payload); err != nil {
+	if err := c.put(payload); err != nil {
 		return err
 	}
 	c.publishCopy(cmd)
 	return nil
 }
 
-// post sends a ventilation_command payload to the actuator and returns an
+// put sends a ventilation_command payload to the actuator and returns an
 // error unless the actuator answers 200 OK, its sign of a stored command.
-func (c *commander) post(payload []byte) error {
-	resp, err := c.http.Post(c.actuatorURL+"/command", "application/json", bytes.NewReader(payload))
+func (c *commander) put(payload []byte) error {
+	req, err := http.NewRequest(http.MethodPut, c.actuatorURL+"/command", bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close() // run when post returns
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req) // send the request and wait for the answer
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close() // run when put returns
 	if resp.StatusCode != http.StatusOK {
 		reason, _ := io.ReadAll(io.LimitReader(resp.Body, 512)) // the actuator's plain-text reason
 		return fmt.Errorf("actuator refused the command: %s: %s", resp.Status, bytes.TrimSpace(reason))

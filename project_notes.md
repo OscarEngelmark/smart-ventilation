@@ -536,7 +536,7 @@ _(nothing yet)_
     wildcard, and missed giving the floor and the room a level each.
   - Useful for: §5, §7.2.
 
-- **Decided: the actuator serves one endpoint, `POST /command` on port 8080,
+- **Decided: the actuator serves one endpoint, `PUT /command` on port 8080,
   taking a `ventilation_command` and answering 200 OK once it is applied.**
   The answer is sent only after BuildSim has stored the new damper position,
   so a caller that gets any other status knows the command did not land and can send it again — the retry the REST
@@ -552,6 +552,11 @@ _(nothing yet)_
     whose `accepted` field was true exactly when the status was 200, and
     whose timestamp nothing read. Rejected: keeping it, which documents the
     answer as a schema but states the outcome twice.
+  - Replaces, 2026-10-07, `POST /command`, which was never weighed against
+    PUT. A command sets the damper's level rather than creating something,
+    and HTTP defines PUT as the method that is safe to repeat, as a resent
+    command is. Nothing behaves differently; the method only tells a reader
+    of the contract what to expect.
   - Useful for: §5, §8.1, §10.
 
 - **Decided: the BuildSim client keeps BuildSim's nested
@@ -1450,7 +1455,7 @@ _(nothing yet)_
   triggered reached the physical model within one step.** Traced on the
   running stack for A125 on 2026-10-01, room time (UTC), from the stored
   readings and commands (`GET /co2`, `GET /commands`) and each container's
-  log, with the topics as they were named then:
+  log, with the topics and the command's HTTP method as they were then:
   1. `physical-model`, with 2 people and the damper at 0.80, steps CO2 to
      555.6 ppm and writes it to BuildSim as the sensor's value.
   2. `co2-sensor` reads it from BuildSim and publishes it on

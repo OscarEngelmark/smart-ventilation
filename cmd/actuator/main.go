@@ -62,7 +62,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /command", c.serve)
+	mux.HandleFunc("PUT /command", c.serve)
 	log.Printf("serving commands for %s on %s, writing %s", c.roomID, addr, damperID)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

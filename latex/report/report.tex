@@ -730,7 +730,7 @@ answered with the reason as plain text.
 \textbf{Endpoint} & \textbf{Caller} & \textbf{Request} & \textbf{Answer} \\
 \midrule
 \endhead
-\texttt{POST /command}, Damper actuator, port 8080 & Decision service & A
+\texttt{PUT /command}, Damper actuator, port 8080 & Decision service & A
 ventilation command (Table~\ref{tab:fields}) as JSON & 200 once BuildSim
 holds the new level; 400 if the body is not a valid ventilation command;
 404 if it is for another room; 502 if writing to BuildSim failed \\
