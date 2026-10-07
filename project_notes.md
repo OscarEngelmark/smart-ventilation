@@ -1850,3 +1850,14 @@ was caught. Kept for the report's reflection and the oral exam.
   switch when the component fails is graceful degradation, a separate
   property and a strength. Caught by the user. Noted 2026-10-07.
   - Useful for: §4.3, §13.
+
+- **The assistant held the design-decisions table to a stricter rule than
+  the course: that a decision may cite only a requirement the rejected
+  alternative would not meet.** It stripped requirement links from four
+  rows and proposed new requirements to restore them. Caught by the user,
+  who questioned whether requirements were being made up to fit decisions;
+  the course's example report links its one-container-per-role row to a
+  crash-recovery requirement a restarted single program could also meet.
+  Correct: a row cites the requirement its decision helps the system meet.
+  Noted 2026-10-07.
+  - Useful for: §4.4.

@@ -37,7 +37,6 @@ Each result also updates report §10 and §11.
 | 16 | Fault tests: a frozen CO2 sensor; the broker down | what counts as recovered | 2 |
 | 17 | Stress test to a breaking point | what to scale up, and what counts as broken | 1–2 |
 | 18 | Pipeline delay, measured from stored data; the history store keeps whole seconds (`internal/store/sqlite.go`), too coarse for sub-second delays | whether to store each message's receive time | 1 |
-| 19 | A requirement that a crash in one container leaves the others running, checked against the crash test's saved output, then cited in §4.4's Splitting and Decision-services rows | whether to add it | 1 |
 
 ## 2026-10-12
 

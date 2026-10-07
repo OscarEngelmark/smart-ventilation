@@ -518,9 +518,10 @@ container \\
 
 Table~\ref{tab:decisions} lists the decisions that shape the system as a
 whole, each with the alternative it was chosen over, the reason for the
-choice and the trade-off it accepts. A reason names a requirement
-(Table~\ref{tab:requirements}) where that requirement favors the chosen
-option over the alternative. Why
+choice and the trade-off it accepts. A requirement in brackets
+(Table~\ref{tab:requirements}) is the one the decision helps the system
+meet. A row without one serves no single requirement and rests on its
+reason alone. Why
 each container runs as a process of its own is in
 Table~\ref{tab:responsibilities}.
 
@@ -545,11 +546,11 @@ the trade-off it accepts.}\label{tab:decisions}\\
 \endhead
 Splitting the system & One container per component & One single
 program & A crash in one container leaves the others running; in one
-program, any crash stops every part & More containers to build and run, and messages between them \\
+program, any crash stops every part (NFR-1) & More containers to build and run, and messages between them \\
 \midrule
 Decision services & One per room & One for all rooms & A crash stops the
 decisions of one room only, where one service for all rooms would stop
-every room's & Containers grow with the number of
+every room's (NFR-1) & Containers grow with the number of
 rooms, about 12 MB of memory each \\
 \midrule
 Moving readings & MQTT through the Message broker & REST from each
