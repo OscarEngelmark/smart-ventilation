@@ -561,6 +561,12 @@ one laptop, unlike Kafka; holds readings for the Storage service while
 it restarts, unlike Redis (FR-1) & Holds only a limited number of
 readings, and none across a broker restart \\
 \midrule
+Message delivery & QoS~1: each message delivered at least once & QoS~0:
+at most once; QoS~2: exactly once & Messages for the Storage service are
+kept while it restarts, unlike QoS~0; QoS~2's exactly-once is lost when
+the receiver restarts (FR-1) & A message can arrive twice, so the
+History store refuses a second copy \\
+\midrule
 Moving commands & REST from the Decision service to the Damper
 actuator & Commands over MQTT & The Decision service is told
 whether each command was applied, which every REST call provides and
@@ -591,12 +597,124 @@ logic (NFR-1) & Small: one extra read from BuildSim per step \\
 
 \section{Interfaces and data contracts}\label{sec:interfaces}
 
-\guidance{The contracts between components: API endpoints and/or message topics,
-with payload schemas and an example message. Precise enough that a component could be
-re-implemented from this section alone.}
+% Required points (report guide, sections 2.4 and 3.5; template, section 5):
+% - precise enough that another team could implement the system from it
+% - the communication pattern on each link and why
+% - the message schema for every boundary crossing: field names, types, units
+% - each endpoint or topic with its payload and semantics (status codes,
+%   QoS, rate)
+% - an example message
 
-\fillin{Define the interfaces and data contracts here (endpoints/topics, schemas,
-example payloads).}
+Readings, commands and the room model are published over MQTT through
+the Message broker, so every service that needs them subscribes. The
+Decision service commands the Damper actuator over REST, so it is told
+whether each command was applied (Table~\ref{tab:decisions}). The
+Storage service and BuildSim answer REST requests.
+
+\textbf{MQTT topics.} Table~\ref{tab:topics} lists the four topics.
+\texttt{<room>} is the room's name alone, such as \texttt{A125}: MQTT
+splits a topic at each slash, and a subscription to
+\texttt{co2/+/reading} matches any one room only while the room's part
+holds no slash of its own. Every message is published at QoS~1
+(Table~\ref{tab:decisions}), so a receiver can get the same message
+twice. Only the room model is \emph{retained}: the broker keeps
+the last one and hands it to every service that subscribes later.
+
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.15}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.16}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.18}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.26}}@{}}
+\caption{MQTT topics, each with its message, publisher, subscribers and
+rate.}\label{tab:topics}\\
+\toprule
+\textbf{Topic} & \textbf{Message} & \textbf{Publisher}
+& \textbf{Subscribers} & \textbf{Rate} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Topic} & \textbf{Message} & \textbf{Publisher}
+& \textbf{Subscribers} & \textbf{Rate} \\
+\midrule
+\endhead
+\texttt{co2/<room>/\allowbreak reading} & CO₂ reading & CO₂ sensor
+& Decision service, Storage service & Every 10~s of room time \\
+\midrule
+\texttt{occupancy/<room>/\allowbreak reading} & Occupancy reading
+& Occupancy sensor & Decision service, Storage service & Every minute of
+room time \\
+\midrule
+\texttt{ventilation/<room>/\allowbreak command} & Ventilation command
+& Decision service & Storage service & Each time the Damper actuator has
+applied a new level \\
+\midrule
+\texttt{room/<room>/\allowbreak model} & Room model
+& Room-model service & Decision service & At start and at each room-time
+midnight, retained; none when the fit fails \\
+\bottomrule
+\end{longtable}
+}
+
+\textbf{Messages.} Each message is a JSON object with exactly the fields
+in Table~\ref{tab:fields} and no others. Its JSON Schema in the
+repository's \texttt{schemas/} folder is the full contract. Every
+message carries \texttt{room\_id}, BuildSim's key for the room, which
+adds the floor to the room's name (\texttt{level0/A125}).
+
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.22}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.13}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.20}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.45}}@{}}
+\caption{Fields of each message.}\label{tab:fields}\\
+\toprule
+\textbf{Message} & \textbf{Field} & \textbf{Type} & \textbf{Meaning and
+unit} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Message} & \textbf{Field} & \textbf{Type} & \textbf{Meaning and
+unit} \\
+\midrule
+\endhead
+All & \texttt{room\_id} & string & BuildSim's room key \\
+\midrule
+CO₂ reading & \texttt{ppm} & number, $\geq 0$ & CO₂ level, in ppm \\
+ & \texttt{ts} & date-time & Room time the reading was taken, UTC
+(RFC~3339) \\
+\midrule
+Occupancy reading & \texttt{count} & integer, $\geq 0$ & People in the
+room \\
+ & \texttt{ts} & date-time & Room time the count was taken, UTC \\
+\midrule
+Ventilation command & \texttt{level} & number, 0--1 & Damper opening,
+0 closed, 1 fully open \\
+ & \texttt{ts} & date-time & Room time the level was chosen, UTC \\
+\midrule
+Room model & \texttt{date} & date & Room-time date of the fit
+(YYYY-MM-DD) \\
+ & \texttt{a} & number & CO₂ rise per person, in ppm per minute \\
+ & \texttt{b0} & number & Share of the gap to outdoor CO₂ cleared per
+minute with the damper closed \\
+ & \texttt{b1} & number & Share of the gap cleared per minute added by
+a fully open damper \\
+\bottomrule
+\end{longtable}
+}
+
+A CO₂ reading stored during a simulated weekday:
+
+\begin{verbatim}
+{"room_id": "level0/A125", "ppm": 836.2, "ts": "2026-10-22T06:20:02Z"}
+\end{verbatim}
+
+\textbf{REST endpoints.}
+
+\fillin{The Damper actuator's endpoint, the Storage service's endpoints,
+and the calls to BuildSim.}
 
 \section{Simulating the sensor values (the physical model)}\label{sec:simulation}
 
