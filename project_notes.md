@@ -63,14 +63,14 @@ _(nothing yet)_
 
   | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
   |---|---|---|---|---|
-  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the readings store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Stored data of a room day |
+  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the history store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Stored data of a room day |
   | FR-2 | Functional | Must | The decision service sets the damper in BuildSim from the CO2 readings, in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
   | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first | Unit tests, `internal/store` |
   | FR-5 | Functional | Must | The room-model service fits the room model to the stored history; the fit gives no room model when the history can't separate the rates | Unit tests, `internal/roommodel` |
   | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
-  | FR-8 | Functional | Must | The storage service keeps bad messages out of the readings store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
+  | FR-8 | Functional | Must | The storage service keeps bad messages out of the history store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
   | FR-9 | Functional | Must | The occupancy simulator fills the room on a weekday schedule; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
   | FR-10 | Functional | Must | The physical model's CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 710 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
   | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Peak CO2 over a room day, `eval/day_summary.py` |
@@ -1240,6 +1240,12 @@ _(nothing yet)_
     proposal left the data pipeline out entirely; the feedback on accepting
     it (2026-09-15) was "Do not forget the data pipeline and how sensor data
     is transmitted", so the report must cover it explicitly.
+  - **Decided: the diagrams and report call the SQLite file the History
+    store.** It holds the readings and damper commands over time, which the
+    Room-model service and the Dashboard read back as history. Replaces
+    "Readings store", which left out the commands. Rejected: "Database",
+    which repeats the box's `[SQLite]` tag and says nothing about what is
+    stored. Decided 2026-10-07.
   - Useful for: §4.4, §5, §7.2.
 
 - **Deferred, not yet decided: issues and implicit choices found reviewing
@@ -1475,7 +1481,7 @@ _(nothing yet)_
   - FR-2's 2 minutes are checked from the stored timestamps of the reading
     and the command. Two limits: the decision service stamps the command
     just before the actuator writes it to BuildSim, so the write itself is
-    not timed; and the readings store keeps whole seconds, so the gap is
+    not timed; and the history store keeps whole seconds, so the gap is
     known to 1 s. Added 2026-10-06.
   - Result, 2026-10-06, at speed 1 with the room at 804 ppm and the damper
     closed: passed in 37 real seconds. CO2 went to 979 ppm at the

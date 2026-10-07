@@ -270,7 +270,7 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 \midrule
 \endhead
 FR-1 & Functional & CO₂ readings and head counts are saved in the
-readings store & Must & A full simulated weekday has a stored CO₂
+history store & Must & A full simulated weekday has a stored CO₂
 reading for every 10~s and a head count for every room minute & Stored
 data of a room day \\
 \midrule
@@ -305,7 +305,7 @@ FR-7 & Functional & The dashboard shows CO₂, head count and damper level
 (Section~\ref{sec:dashboard}) \\
 \midrule
 FR-8 & Functional & The storage service keeps bad messages out of the
-readings store & Must & A message that fails its schema, a reading for
+history store & Must & A message that fails its schema, a reading for
 another room than its topic names, and a second copy of a stored reading
 are not stored & Unit tests, \texttt{cmd/\allowbreak storage-service}
 and \texttt{internal/store} \\
@@ -416,7 +416,7 @@ points from the side that starts the interaction.}
 % - why the system is split this way: justified in Section 4.4
 
 Figure~\ref{fig:container} opens the Smart Ventilation box. Each box is
-one service in \texttt{docker-compose.yml}, except the Readings store,
+one service in \texttt{docker-compose.yml}, except the History store,
 which is the Storage service's database file. The Physical model writes
 the room's CO₂ to BuildSim. The CO₂ sensor reads it and publishes it to
 the Message broker, as the Occupancy sensor does with the head count.
