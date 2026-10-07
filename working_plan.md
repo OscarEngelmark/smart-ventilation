@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15a | Report build: render the D2 diagrams on save as well, so a diagram edit shows in the preview without `make diagrams`; worth it before §8.1, §8.2 and §9 add three diagrams | what runs `d2` on save | 1 |
 | 15b | §4.4 design decisions: the table justifies one container per component against a single program (a crash restarts one while the rest run, NFR-1) and the broker against REST throughout (one reading reaches both the Decision service and the Storage service); each container's own reason stays in §4.3's table | | 1 |
 | 15c | §5 interfaces and data contracts | | 1–2 |
 | 15d | §6 simulating the sensor values | | 1 |
