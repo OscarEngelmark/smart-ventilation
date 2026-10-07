@@ -763,11 +763,7 @@ BuildSim keeps each sensor value and actuator state as text, so a
 number is written as text, such as \texttt{"836.2"} for the CO₂ or
 \texttt{"0.85"} for the damper. A device record holds one sensor or one
 actuator, with the fields in \texttt{internal/buildsim/client.go}. A call
-fails when BuildSim answers outside 2xx, or not within 5 real seconds. A
-process whose call fails at start exits, and Docker starts it again; a
-failed call in a process's loop skips that cycle, and the next cycle
-tries again. A failed damper write makes the Damper actuator answer 502
-instead.
+fails when BuildSim answers outside 2xx, or not within 5 real seconds.
 
 {\small
 \begin{longtable}[]{@{}
