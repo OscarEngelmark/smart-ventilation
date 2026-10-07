@@ -520,8 +520,7 @@ Table~\ref{tab:decisions} lists the decisions that shape the system as a
 whole, each with the alternative it was chosen over, the reason for the
 choice and the trade-off it accepts. A requirement in brackets
 (Table~\ref{tab:requirements}) is the one the decision helps the system
-meet. A row without one serves no single requirement and rests on its
-reason alone. Why
+meet. Why
 each container runs as a process of its own is in
 Table~\ref{tab:responsibilities}.
 
@@ -568,7 +567,7 @@ reading (FR-2) & The Decision service must know the actuator's address
 \midrule
 History store & SQLite behind the storage interface & InfluxDB &
 Simplicity: enough for one room's history, and it runs inside the
-Storage service, so there is no extra container to run
+Storage service, so there is no extra container to run (FR-1, FR-4)
 & Less suited to many rooms; moving to InfluxDB means one new
 implementation of the interface \\
 \midrule
@@ -583,7 +582,7 @@ model is wrong, only the full opening at the target is left \\
 Where physical state lives & Only in BuildSim; the Physical model keeps
 nothing between steps & The Physical model keeping the true CO₂ itself
 & A restarted Physical model loses nothing, so it needs no restart
-logic & Small: one extra read from BuildSim per step \\
+logic (NFR-1) & Small: one extra read from BuildSim per step \\
 \bottomrule
 \end{longtable}
 }
