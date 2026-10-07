@@ -4,7 +4,7 @@ vars: {
     layout-engine: elk
   }
 }
-direction: down
+direction: right
 
 operator: "Operator\n[Person]\nWatches CO2, the head\ncount, and damper decisions" {
   shape: person
@@ -13,10 +13,10 @@ occupants: "Room occupants\n[Person, simulated]\nRaise CO2 by being in the room"
   shape: person
 }
 
-sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith the fan as low as possible"
+sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith the ventilation\nas low as possible"
 
 bs: "BuildSim\n[Software System, external]\nShared building state: people\nin each room, sensor values,\nactuator state"
 
-occupants -> bs: "are in the room, raising its CO2\n(simulated from a weekday schedule)"
-operator -> sys: "monitors [dashboard web page, HTTP]"
-sys <-> bs: "reads/writes room and actuator state [REST]"
+occupants -> bs: "are in the room,\nraising its CO2\n(simulated from a\nweekday schedule)"
+operator -> sys: "monitors\n[dashboard web page,\nHTTP]"
+sys -> bs: "reads and writes\nroom and device\nstate [REST]"

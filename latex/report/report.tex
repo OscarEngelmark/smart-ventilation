@@ -368,13 +368,43 @@ the safety net when it has no room model to choose with.
 
 \subsection{Context diagram (C4 Level 1)}\label{sec:context}
 
-\guidance{The system as a single box, with the people and external systems it
-interacts with (including BuildSim). One paragraph of narrative explaining the
-boundaries and the main interactions.}
+% Required points (report guide, sections 2.2 and 3.4; template, section 4.1):
+% - the system as one box, with the people and external systems it touches
+% - nothing internal
+% - each external actor described in a sentence
+% - every arrow directed, labelled with its purpose and protocol
+% - the system boundary: what is built here and what is outside it
 
-\diagramslot{Context diagram (C4 Level 1)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/context.png}
+\caption{C4 Context diagram. Smart Ventilation is the system built here;
+BuildSim, the Operator and the Room occupants are outside it. Each arrow
+points from the side that starts the interaction.}
+\label{fig:context}
+\end{figure}
 
-\fillin{Narrative for the context diagram.}
+Figure~\ref{fig:context} fixes the system boundary: the box holds
+everything this project builds that a real building would install, and
+Section~\ref{sec:container} opens it up.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{BuildSim} holds the shared state of the building and is never
+  modified; the system reads and writes that state only through
+  BuildSim's REST API (Section~\ref{sec:usecase}).
+\item
+  The \textbf{Operator} watches the room's CO₂, head count and damper
+  level on the dashboard, served over HTTP, but takes no part in the
+  decisions.
+\item
+  The \textbf{Room occupants} raise the room's CO₂, and the system learns
+  about them only from what BuildSim holds; here they are simulated by
+  the Occupancy simulator and the Physical model, which a real building
+  replaces with real people and physics, so both sit
+  outside the boundary (Section~\ref{sec:container}).
+\end{itemize}
 
 \subsection{Container diagram (C4 Level 2)}\label{sec:container}
 
