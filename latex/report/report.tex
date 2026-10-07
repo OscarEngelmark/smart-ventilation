@@ -656,9 +656,11 @@ model (Section~\ref{sec:decision-logic}) \\
 \end{longtable}
 }
 
-\textbf{Messages.} Each message is a JSON object with exactly the fields
-in Table~\ref{tab:fields} and no others. Its JSON Schema in the
-repository's \texttt{schemas/} folder is the full contract.
+\textbf{Messages.} Each message is a JSON object holding
+\texttt{room\_id} and its own fields in Table~\ref{tab:fields}, and no
+others. Each message has its own JSON Schema in the repository's
+\texttt{schemas/} folder, such as \texttt{co2\_reading.schema.json},
+which is the full contract.
 
 {\small
 \begin{longtable}[]{@{}
