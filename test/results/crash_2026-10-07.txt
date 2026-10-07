@@ -1,7 +1,7 @@
-speed 1; damper at 0.00; newest stored room time 2026-10-21T02:15:48Z
+speed 1; damper at 0.20; newest stored room time 2026-11-19T06:30:39Z
 killed co2-sensor and decision; wrote 980 ppm to BuildSim
 damper fully open in BuildSim 10.8 real s after the kill
-first stored reading after the kill: 980 ppm at 2026-10-21T02:15:50Z
+first stored reading after the kill: 980 ppm at 2026-11-19T06:30:49Z
 co2-sensor restarted by Docker: 1 -> 2
 decision restarted by Docker: 1 -> 2
 PASS: the loop resumed in 10.8 real s, within 120

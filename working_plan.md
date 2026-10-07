@@ -14,13 +14,12 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15b | Rerun the saved tests whose results show the old topic or room names (unit, end-to-end, crash), saving the new results in `test/results/` beside the old ones | which runs the report cites | 1 |
 | 15c | §5 interfaces and data contracts, second half: the REST endpoints (the Damper actuator, the Storage service, the calls to BuildSim) | | 1 |
 | 15d | §6 simulating the sensor values | | 1 |
 | 15e | §7.1 the autonomous service | | 1 |
 | 15f | §7.2 the data pipeline | | 1 |
 | 15g | `project_notes.md`: cut the two largest entries (*Decided: the system pursues three goals…* and *Deferred, not yet decided: issues and implicit choices found reviewing…*) down to what the oral exam needs | | 1 |
-| 15h | §8.1 dynamic diagram, walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-06*`) | | 1 |
+| 15h | §8.1 dynamic diagram, walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-07*`) | | 1 |
 | 15i | §8.2 state diagram | | 1 |
 | 15j | §9 deployment diagram and component view | | 1 |
 | 15k | §10 test plan | | 1 |

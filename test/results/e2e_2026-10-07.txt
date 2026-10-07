@@ -1,17 +1,17 @@
 === RUN   TestLoop
     loop_test.go:74: damper at 0.00; wrote 980 ppm to BuildSim
 === RUN   TestLoop/reading_reaches_storage
-    loop_test.go:136: stored 979 ppm at 2026-10-26T16:53:30Z
+    loop_test.go:136: stored 980 ppm at 2026-11-19T06:25:33Z
 === RUN   TestLoop/FR-2_decision_opens_the_damper
-    loop_test.go:163: stored command 1.00 at 2026-10-26T16:53:30Z
+    loop_test.go:163: stored command 1.00 at 2026-11-19T06:25:33Z
     loop_test.go:144: command 0s of room time after the reading
 === RUN   TestLoop/FR-2_damper_is_open_in_BuildSim
 === RUN   TestLoop/FR-3_CO2_falls_afterwards
-    loop_test.go:193: CO2 973.8 -> 963.1 ppm over the readings after the command
---- PASS: TestLoop (37.12s)
-    --- PASS: TestLoop/reading_reaches_storage (7.02s)
+    loop_test.go:193: CO2 975.4 -> 966.3 ppm over the readings after the command
+--- PASS: TestLoop (30.63s)
+    --- PASS: TestLoop/reading_reaches_storage (0.50s)
     --- PASS: TestLoop/FR-2_decision_opens_the_damper (0.00s)
     --- PASS: TestLoop/FR-2_damper_is_open_in_BuildSim (0.00s)
     --- PASS: TestLoop/FR-3_CO2_falls_afterwards (30.07s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/test/e2e	37.126s
+ok  	github.com/OscarEngelmark/smart-ventilation/test/e2e	30.633s

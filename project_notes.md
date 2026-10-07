@@ -1434,9 +1434,8 @@ _(nothing yet)_
   connects with a persistent session…*, above), which needs every reading,
   while the decision service needs only the latest. Trade-off: up to one
   reading interval of extra delay after a restart. The crash test measured
-  it: 10.8 s against 0.5 s, depending on whether the decision service
-  subscribed before the restarted sensor's first reading, both within
-  NFR-1's 2 minutes (see *Decided: the crash test kills the CO2 sensor and
+  10.8 s twice, the decision service having subscribed just after the
+  restarted sensor's first reading, within NFR-1's 2 minutes (see *Decided: the crash test kills the CO2 sensor and
   the decision service together…*, §10). The clean session was the MQTT
   library's default until the crash test showed its cost. Decided
   2026-10-06; no code change.
@@ -1527,21 +1526,22 @@ _(nothing yet)_
     just before the actuator writes it to BuildSim, so the write itself is
     not timed; and the history store keeps whole seconds, so the gap is
     known to 1 s. Added 2026-10-06.
-  - Result, 2026-10-06, at speed 1 with the room at 804 ppm and the damper
-    closed: passed in 37 real seconds. CO2 went to 979 ppm at the
-    injection; a 1.00 command was stored in the same room second as that
-    reading; CO2 then fell about 5 ppm per reading, 974 → 963 ppm over
-    three readings. It replaces a pass on 2026-10-05 at speed 10. Evidence
-    in `test/results/`: the test's output (`e2e_2026-10-06.txt`) and the
-    stored CO2 readings, commands and head counts of the run's window
-    (`e2e_2026-10-06_*.json`).
+  - Result, 2026-10-07, at speed 1 with the room at 900 ppm, one person
+    and the damper closed: passed in 31 real seconds. CO2 went to 980 ppm
+    at the injection; a 1.00 command was stored in the same room second as
+    that reading; CO2 then fell about 4.6 ppm per reading, 975 → 966 ppm
+    over three readings. It replaces a pass on 2026-10-06 with the same
+    outcome, rerun after the topics and room settings were renamed.
+    Evidence in `test/results/`: the test's output (`e2e_2026-10-07.txt`)
+    and the stored CO2 readings, commands and head counts of the run's
+    window (`e2e_2026-10-07_*.json`).
   - Useful for: §10, §11.
 
-- **All 64 unit tests and subtests passed on 2026-10-06**, among them
+- **All 64 unit tests and subtests passed on 2026-10-07**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
-  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-06.txt`, the
+  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-07.txt`, the
   output of `go test -v -count=1 ./...`.
   - Useful for: §10, §11.
 
@@ -1566,21 +1566,20 @@ _(nothing yet)_
   BuildSim. The other containers aren't killed: every one restarts through
   the same `restart: on-failure`, and every device process registers through
   the same `buildsim.Client.Register`. Decided and implemented 2026-10-06.
-  - Result, 2026-10-06, at speed 1 with the room empty and the damper
-    closed: passed in 10.8 real seconds, with Docker restarting each
-    container once. The restarted sensor published 980 ppm within a second
-    of the kill, but the restarted decision service subscribed 14 ms after
-    that reading, missed it, and opened the damper on the next one, 10 s
-    later. In an earlier run the decision service subscribed 15 ms before
-    the sensor's first reading, and the damper opened 0.5 s after the kill;
-    that run's printed output was cut short by a bug in the script, but its
-    logs and stored data are saved. Recovery is thus the restart time plus
-    up to one reading interval, depending on which process comes back
-    first: the decision service connects without a persistent session, so
-    the broker keeps no readings for it while it is down. Evidence in
-    `test/results/`: `crash_2026-10-06.txt` (the script's output), and the
-    stored CO2 readings, commands, head counts and the two services' logs
-    of each run (`crash_2026-10-06_*` and `crash_2026-10-06_run1_*`).
+  - Result, 2026-10-07, at speed 1: two runs, each passed in 10.8 real
+    seconds, with Docker restarting each container once per run. In both,
+    the restarted sensor published 980 ppm within a second of the kill,
+    13–17 ms before the restarted decision service subscribed, so the
+    decision service missed that reading and opened the damper on the next
+    one, 10 s later. Recovery is thus the restart time plus up to one
+    reading interval: the decision service connects without a persistent
+    session, so the broker keeps no readings for it while it is down; had
+    it subscribed first, it would have acted on the first reading. Replaces
+    two runs on 2026-10-06, rerun after the topics and room settings were
+    renamed. Evidence in `test/results/`: each run's output
+    (`crash_2026-10-07_run1.txt`, `crash_2026-10-07.txt`), and its stored
+    CO2 readings, commands, head counts and the two services' logs
+    (`crash_2026-10-07_run1_*`, `crash_2026-10-07_*`).
   - Useful for: §8.2, §10, §11.
 
 - **REG-1 held on Thursday 2026-10-22: the peak CO2 was 937 ppm, at 13:48
