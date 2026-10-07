@@ -34,8 +34,11 @@ func main() {
 	shutdown.ExitZeroOnStop()
 
 	baseURL := env.String("BUILDSIM_URL")
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
+	roomID := env.String("ROOM_ID")
+	level, roomName, err := buildsim.SplitRoomID(roomID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	damperID := env.String("DAMPER_ID")
 	addr := ":8080" // the port this program listens on inside its container
 
@@ -55,7 +58,7 @@ func main() {
 		client:   client,
 		schema:   schema,
 		damperID: damperID,
-		roomID:   buildsim.RoomKey(level, roomName),
+		roomID:   roomID,
 	}
 
 	mux := http.NewServeMux()

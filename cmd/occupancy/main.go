@@ -24,8 +24,7 @@ func main() {
 	shutdown.ExitZeroOnStop()
 
 	baseURL := env.String("BUILDSIM_URL")
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
+	roomID := env.String("ROOM_ID")
 	areaPerPerson := env.Float("AREA_PER_PERSON_M2")
 	interval := env.Duration("OCCUPANCY_INTERVAL")
 
@@ -34,20 +33,20 @@ func main() {
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
 	// Read the room's area from BuildSim; it sets how many people fit.
-	area, err := client.RoomArea(ctx, level, roomName)
+	area, err := client.RoomArea(ctx, roomID)
 	if err != nil {
-		log.Fatalf("read area of %s: %v", buildsim.RoomKey(level, roomName), err)
+		log.Fatalf("read area of %s: %v", roomID, err)
 	}
 	capacity := room.Capacity(area, areaPerPerson)
 	log.Printf("room %s is %.1f m², holding up to %d people",
-		buildsim.RoomKey(level, roomName), area, capacity)
+		roomID, area, capacity)
 
-	people := namePeople(roomName, capacity)
+	people := namePeople(roomID, capacity)
 
 	ticker := clock.NewTicker(interval)
 	for {
 		present := occupancy.PeopleAt(clock.Now(), capacity)
-		if err := publish(ctx, client, level, roomName, people[:present]); err != nil {
+		if err := publish(ctx, client, roomID, people[:present]); err != nil {
 			// Skip this cycle; BuildSim keeps the occupancy it already has.
 			log.Printf("write occupancy: %v", err)
 		}
@@ -60,7 +59,7 @@ func main() {
 func publish(
 	ctx context.Context,
 	client *buildsim.Client,
-	level, roomName string,
+	roomID string,
 	present []buildsim.Person,
 ) error {
 	occupants := buildsim.RoomOccupancy{
@@ -68,18 +67,18 @@ func publish(
 		Aliens:  []buildsim.Alien{},
 	}
 	building := map[string]buildsim.RoomOccupancy{
-		buildsim.RoomKey(level, roomName): occupants,
+		roomID: occupants,
 	}
 	return client.SetOccupancy(ctx, building)
 }
 
 // namePeople builds the room's full set of occupants once, so a person keeps
 // the same identity as the count changes.
-func namePeople(roomName string, capacity int) []buildsim.Person {
+func namePeople(roomID string, capacity int) []buildsim.Person {
 	people := make([]buildsim.Person, capacity)
 	for i := range people {
 		people[i] = buildsim.Person{
-			ID:   fmt.Sprintf("%s-person-%d", roomName, i+1),
+			ID:   fmt.Sprintf("%s/person-%d", roomID, i+1),
 			Name: fmt.Sprintf("Person %d", i+1),
 		}
 	}

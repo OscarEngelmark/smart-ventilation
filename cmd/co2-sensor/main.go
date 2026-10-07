@@ -34,8 +34,11 @@ func main() {
 
 	baseURL := env.String("BUILDSIM_URL")
 	brokerURL := env.String("MQTT_BROKER_URL")
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
+	roomID := env.String("ROOM_ID")
+	level, roomName, err := buildsim.SplitRoomID(roomID)
+	if err != nil {
+		log.Fatal(err)
+	}
 	sensorID := env.String("CO2_SENSOR_ID")
 	interval := env.Duration("SENSOR_INTERVAL")
 
@@ -47,13 +50,12 @@ func main() {
 		log.Fatalf("register %s: %v", sensorID, err)
 	}
 
-	broker, err := mqttclient.Connect(brokerURL, "co2-sensor-"+roomName, nil)
+	broker, err := mqttclient.Connect(brokerURL, roomID+"/co2-sensor", nil)
 	if err != nil {
 		log.Fatalf("connect to broker: %v", err)
 	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
-	roomID := buildsim.RoomKey(level, roomName)
 	p := &publisher{
 		client:   client,
 		broker:   broker,

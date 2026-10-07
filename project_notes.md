@@ -387,10 +387,10 @@ _(nothing yet)_
   and covers them all, while the sensors and actuators get one process per
   room.** The physical model stands in for the physical world, which is one
   thing, and `GET /api/building/floors/{level}` already lists every room with
-  its area, so a second room needs no configuration and `ROOM_NAME` leaves
+  its area, so a second room needs no configuration and `ROOM_ID` leaves
   `sim.env`. The sensors and actuators are inside the system, where each
   device is to be independently restartable, so each gets its own service
-  block in `docker-compose.yml` with `ROOM_NAME` in that block's
+  block in `docker-compose.yml` with `ROOM_ID` in that block's
   `environment:`, overriding the shared `sim.env`. Rejected: one process per
   room for the physical model too — a stopped room would then affect only
   itself, but every room has to be listed in compose, duplicating what
@@ -522,6 +522,14 @@ _(nothing yet)_
   alone (`A125/co2/reading`), which leaves two names for one room. Decided
   and implemented 2026-10-07 (each service in `cmd/`; the storage-service
   checks that a topic starts with its message's `room_id`).
+  - The room ID is one setting, `ROOM_ID=level0/A125` in `sim.env`, which
+    every service reads. Only the `internal/buildsim` client splits it into
+    floor and room, since BuildSim's device records and floor data keep the
+    two apart. Each service's MQTT client ID is `<room_id>/<service>`, e.g.
+    `level0/A125/decision`, unique per room. Rejected: separate floor and
+    room settings joined by each service, which made services that never
+    call BuildSim import its client to join them. Decided and implemented
+    2026-10-07.
   - Replaces `co2/<room>/reading` with the room's name alone in the middle
     level (2026-09-22). That choice weighed only the room's name against the
     full key squeezed into one level, where its slash would break the `+`

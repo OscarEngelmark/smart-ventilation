@@ -19,7 +19,6 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
@@ -48,19 +47,17 @@ func main() {
 
 	storageURL := env.String("STORAGE_URL")
 	brokerURL := env.String("MQTT_BROKER_URL")
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
+	roomID := env.String("ROOM_ID")
 	days := int(env.Float("FIT_DAYS"))
 	Cout := env.Float("OUTDOOR_CO2_PPM")
 
 	clock := roomtime.FromEnv()
-	broker, err := mqttclient.Connect(brokerURL, "room-model-"+roomName, nil)
+	broker, err := mqttclient.Connect(brokerURL, roomID+"/room-model", nil)
 	if err != nil {
 		log.Fatalf("connect to broker: %v", err)
 	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
-	roomID := buildsim.RoomKey(level, roomName)
 	l := &learner{
 		storageURL: storageURL,
 		http:       &http.Client{Timeout: 30 * time.Second},

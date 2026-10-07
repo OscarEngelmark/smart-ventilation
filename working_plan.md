@@ -14,6 +14,7 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
+| 15b | Rerun the saved tests whose results show the old topic or room names (unit, end-to-end, crash), saving the new results in `test/results/` beside the old ones | which runs the report cites | 1 |
 | 15c | §5 interfaces and data contracts, second half: the REST endpoints (the Damper actuator, the Storage service, the calls to BuildSim) | | 1 |
 | 15d | §6 simulating the sensor values | | 1 |
 | 15e | §7.1 the autonomous service | | 1 |

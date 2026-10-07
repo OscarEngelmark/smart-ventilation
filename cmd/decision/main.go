@@ -20,7 +20,6 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/message"
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
@@ -67,9 +66,7 @@ func main() {
 
 	brokerURL := env.String("MQTT_BROKER_URL")
 	actuatorURL := env.String("ACTUATOR_URL")
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
-	roomID := buildsim.RoomKey(level, roomName)
+	roomID := env.String("ROOM_ID")
 	settings := planSettings()
 	ignoreModel := env.Bool("IGNORE_ROOM_MODEL") // true runs the CO2-only switch all the time
 
@@ -82,7 +79,7 @@ func main() {
 		log.Printf("connected to broker, subscribing")
 		subscribeAll(client, roomID, ignoreModel, state, readings)
 	}
-	broker, err := mqttclient.Connect(brokerURL, "decision-"+roomName, onConnect)
+	broker, err := mqttclient.Connect(brokerURL, roomID+"/decision", onConnect)
 	if err != nil {
 		log.Fatalf("connect to broker: %v", err)
 	}

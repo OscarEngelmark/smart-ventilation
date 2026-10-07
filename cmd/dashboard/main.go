@@ -13,7 +13,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/OscarEngelmark/smart-ventilation/internal/buildsim"
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
@@ -36,10 +35,8 @@ func main() {
 
 	storageURL := env.String("STORAGE_URL")
 	addr := ":8082" // the port this program listens on inside its container
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
 	config := pageConfig{
-		Room:          buildsim.RoomKey(level, roomName),
+		Room:          env.String("ROOM_ID"),
 		Speed:         roomtime.FromEnv().Speed(),
 		WindowSeconds: env.Duration("DASHBOARD_WINDOW").Seconds(),
 		TargetPPM:     env.Float("PLAN_TARGET_PPM"),

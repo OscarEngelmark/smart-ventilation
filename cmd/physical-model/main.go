@@ -24,7 +24,7 @@ import (
 // state is read from and written to.
 type model struct {
 	client   *buildsim.Client
-	roomKey  string
+	roomID   string
 	sensorID string
 	damperID string
 	V        float64 // air volume, m³
@@ -39,14 +39,13 @@ func main() {
 	shutdown.ExitZeroOnStop()
 
 	baseURL := env.String("BUILDSIM_URL")
-	level := env.String("ROOM_LEVEL")
-	roomName := env.String("ROOM_NAME")
+	roomID := env.String("ROOM_ID")
 
 	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
 	ctx := context.Background()     // empty context, no cancellation or timeout
 
-	m, err := newModel(ctx, client, level, roomName)
+	m, err := newModel(ctx, client, roomID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,7 +63,7 @@ func main() {
 
 // newModel builds the room's model from its settings and from its floor area,
 // which it reads from BuildSim.
-func newModel(ctx context.Context, client *buildsim.Client, level, roomName string) (*model, error) {
+func newModel(ctx context.Context, client *buildsim.Client, roomID string) (*model, error) {
 	areaPerPerson := env.Float("AREA_PER_PERSON_M2")
 	ceilingHeight := env.Float("CEILING_HEIGHT_M")
 	G := env.Float("CO2_PER_PERSON_LPS")
@@ -72,16 +71,15 @@ func newModel(ctx context.Context, client *buildsim.Client, level, roomName stri
 	Cthres := env.Float("CO2_THRESHOLD_PPM")
 	minPerArea := env.Float("MIN_AIRFLOW_LPS_PER_M2")
 	factor := env.Float("MAX_AIRFLOW_FACTOR")
-	roomKey := buildsim.RoomKey(level, roomName)
 
 	// Read the room's area from BuildSim; every parameter below follows from it.
-	area, err := client.RoomArea(ctx, level, roomName)
+	area, err := client.RoomArea(ctx, roomID)
 	if err != nil {
-		return nil, fmt.Errorf("read area of %s: %w", roomKey, err)
+		return nil, fmt.Errorf("read area of %s: %w", roomID, err)
 	}
 	m := &model{
 		client:   client,
-		roomKey:  roomKey,
+		roomID:   roomID,
 		sensorID: env.String("CO2_SENSOR_ID"),
 		damperID: env.String("DAMPER_ID"),
 		V:        room.Volume(area, ceilingHeight),
@@ -92,7 +90,7 @@ func newModel(ctx context.Context, client *buildsim.Client, level, roomName stri
 		dt:       env.Duration("SIM_STEP"),
 	}
 	log.Printf("room %s is %.1f m², holding %.1f m³ of air, ventilated at %.1f to %.1f L/s",
-		roomKey, area, m.V, m.Qmin, m.Qmax)
+		roomID, area, m.V, m.Qmin, m.Qmax)
 	return m, nil
 }
 
@@ -103,7 +101,7 @@ func (m *model) step(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	N := len(building[m.roomKey].Persons) // a room BuildSim omits is empty
+	N := len(building[m.roomID].Persons) // a room BuildSim omits is empty
 
 	damper, err := m.client.ActuatorState(ctx, m.damperID)
 	if errors.Is(err, buildsim.ErrNoValue) {

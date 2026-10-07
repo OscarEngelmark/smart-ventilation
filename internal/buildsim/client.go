@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -50,10 +51,14 @@ func New(baseURL string) *Client {
 	}
 }
 
-// RoomKey names a room the way BuildSim does, e.g. "level0/A125". Room names
-// repeat between floors, so the level is always included.
-func RoomKey(level, room string) string {
-	return level + "/" + room
+// SplitRoomID splits a room ID such as "level0/A125" into its floor and its
+// room name, which BuildSim keeps apart in device records and floor data.
+func SplitRoomID(roomID string) (string, string, error) {
+	level, room, found := strings.Cut(roomID, "/")
+	if !found || level == "" || room == "" {
+		return "", "", fmt.Errorf("room ID %q is not <floor>/<room>", roomID)
+	}
+	return level, room, nil
 }
 
 type floorData struct {
@@ -63,8 +68,12 @@ type floorData struct {
 	} `json:"rooms"`
 }
 
-// RoomArea returns a room's floor area in m².
-func (c *Client) RoomArea(ctx context.Context, level, room string) (float64, error) {
+// RoomArea returns the floor area in m² of the room roomID ("level0/A125").
+func (c *Client) RoomArea(ctx context.Context, roomID string) (float64, error) {
+	level, room, err := SplitRoomID(roomID)
+	if err != nil {
+		return 0, err
+	}
 	var floor floorData
 	url := fmt.Sprintf("%s/api/building/floors/%s", c.baseURL, level)
 	if err := c.do(ctx, http.MethodGet, url, nil, &floor); err != nil {
@@ -84,7 +93,7 @@ func (c *Client) SetOccupancy(ctx context.Context, occ map[string]RoomOccupancy)
 	return c.do(ctx, http.MethodPut, c.baseURL+"/api/occupancy", occ, nil)
 }
 
-// Occupancy returns every room's occupancy, keyed as RoomKey builds it.
+// Occupancy returns every room's occupancy, keyed by room ID ("level0/A125").
 func (c *Client) Occupancy(ctx context.Context) (map[string]RoomOccupancy, error) {
 	var occ map[string]RoomOccupancy
 	if err := c.do(ctx, http.MethodGet, c.baseURL+"/api/occupancy", nil, &occ); err != nil {
