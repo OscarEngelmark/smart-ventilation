@@ -435,14 +435,79 @@ service it calls; MQTT arrows point the way messages travel.}
 \label{fig:container}
 \end{figure}
 
-\subsection{Component diagram (C4 Level 3)}\label{sec:component}
+\subsection{Component responsibilities}\label{sec:responsibilities}
 
-\guidance{Zoom into one container that is worth explaining (often the autonomous
-service) and show its internal components and their responsibilities.}
+% Required points (report guide, sections 2.2 and 3.4; template, section 4.3):
+% - every container with the single job it owns
+% - why each exists as a separate process rather than merged into another
+% - the C4 Level 3 component diagram is optional and left out
 
-\diagramslot{Component diagram (C4 Level 3)}
+Each container in Figure~\ref{fig:container} has one job, listed in
+Table~\ref{tab:responsibilities}. The \emph{Reason for separation} column
+gives what the system gains from running that job in a process of its
+own instead of inside another container. The last two containers stand
+in for the real room and sit outside the system boundary.
 
-\fillin{Narrative for the component diagram.}
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.17}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.26}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.20}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.37}}@{}}
+\caption{Each container's one job and why it runs as its own
+process.}\label{tab:responsibilities}\\
+\toprule
+\textbf{Container} & \textbf{Job} & \textbf{Compose service}
+& \textbf{Reason for separation} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Container} & \textbf{Job} & \textbf{Compose service}
+& \textbf{Reason for separation} \\
+\midrule
+\endhead
+CO₂ sensor & Read the room's CO₂ and publish it & \texttt{co2-sensor}
+& The only part a real sensor replaces; a crash leaves the head count
+flowing \\
+\midrule
+Occupancy sensor & Count the people in the room and publish the count
+& \texttt{occupancy-sensor} & The only part a real people counter
+replaces; a crash leaves the CO₂ flowing \\
+\midrule
+Message broker & Pass each message to its subscribers & \texttt{mosquitto}
+& A sensor need not know who reads it; one reading reaches both the
+Decision service and the Storage service \\
+\midrule
+Decision service & Choose the damper level & \texttt{decision}
+& A crash leaves the sensors publishing and the damper at its last
+level \\
+\midrule
+Damper actuator & Apply commands to the damper & \texttt{actuator}
+& The interface to the damper, simulated or real; a real damper changes
+this container alone \\
+\midrule
+Storage service & Store readings and commands; serve their history
+& \texttt{storage-service} & A storage outage does not stop decisions,
+and a decision outage does not stop storage \\
+\midrule
+Room-model service & Learn how CO₂ responds to people and to the damper
+& \texttt{room-model} & A slow or failing fit cannot delay a damper
+command; the Decision service keeps the last room model \\
+\midrule
+Dashboard & Show CO₂, head count and damper level
+& \texttt{dashboard} & Showing data is a separate job from storing it;
+a crashed Dashboard loses nothing \\
+\midrule
+Occupancy simulator & Move people in and out of the room on a weekday
+schedule & \texttt{occupancy} & Stands in for the real occupants; a new
+occupancy source leaves the Physical model untouched \\
+\midrule
+Physical model & Step the room's CO₂ mass balance & \texttt{physical-model}
+& Stands in for the real room's air; a real building has no such
+container \\
+\bottomrule
+\end{longtable}
+}
 
 \subsection{Design decisions and alternatives}\label{sec:decisions}
 

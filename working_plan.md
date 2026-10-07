@@ -10,7 +10,7 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15 | Report §2–13, then §1, which summarizes the rest; one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step, with §8.1 walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-06*`), and the dashboard screenshot (FR-7) is saved in §12's; §4.4's table justifies the split that §4.2 leaves out: each component its own container (a crash restarts one while the rest run, NFR-1) and the broker (one reading reaches both the Decision service and the Storage service); the report's Makefile runs a fixed two LaTeX passes, but the cross-references now need a third to settle | small ones per section | ~20 |
+| 15 | Report §2–13, then §1, which summarizes the rest; one subsection per step; the dynamic (§8.1), state (§8.2) and deployment (§9) diagrams are drawn in their section's step, with §8.1 walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-06*`), and the dashboard screenshot (FR-7) is saved in §12's; §4.4's table justifies one container per component against a single program (a crash restarts one while the rest run, NFR-1) and the broker against REST throughout (one reading reaches both the Decision service and the Storage service), leaving each container's own reason to §4.3's table; the report's Makefile runs a fixed two LaTeX passes, but the cross-references now need a third to settle | small ones per section | ~20 |
 
 ## Phase 2: higher grade (2026-10-11, and any time left)
 

@@ -399,6 +399,37 @@ _(nothing yet)_
   implemented, the system runs one room.
   - Useful for: §4.2, §4.4, §9, §13.
 
+- **Decided: report §4.3 is a table of every container's one job and its
+  reason for separation, not a C4 Level 3 component diagram.** The course's
+  report guide requires that list (section 3.4) and calls a Level 3
+  diagram optional (section 2.2); the course's example report puts the
+  table in §4.3. Rejected: a Level 3 diagram of the Decision service, whose
+  internals §7.1 covers anyway. Decided 2026-10-07.
+  - The CO2 sensor is separate from the Physical model because it is the
+    only part a real sensor replaces, so moving to real hardware changes
+    one container; and separate from the Occupancy sensor so that a crash
+    of either leaves the other's readings flowing. Decided 2026-10-07.
+  - The Damper actuator is the interface between the Decision service and
+    the damper, simulated or real: the Decision service only sends it a
+    level and never calls BuildSim, so a real damper changes the actuator
+    alone. Decided 2026-10-07.
+  - The Dashboard is separate from the Storage service because showing data
+    is a different job from storing it: it reads history through the
+    Storage service's REST endpoints, so a crashed Dashboard loses nothing.
+    Rejected: the Storage service serving the page, one container fewer.
+    Decided 2026-10-07.
+  - The Decision service is separate from the sensors and the Damper
+    actuator so that a crash in the decision logic leaves the sensors
+    publishing and the damper at its last level; after a restart it
+    decides again from the next CO2 reading, with the retained room model.
+    Decided 2026-10-07.
+  - The Room-model service's row gives the reason in *Decided: the fitting
+    runs in its own service*, §7: a slow or failing fit cannot delay a
+    damper command. Rejected for the row: that it is not needed for basic
+    operation, which says why its failure is cheap but not why it runs
+    apart from the Decision service. Decided 2026-10-07.
+  - Useful for: §4.3.
+
 ## 5. Interfaces and data contracts
 
 - **Decided: data contracts are written as JSON Schema documents, one per
@@ -1808,3 +1839,12 @@ was caught. Kept for the report's reflection and the oral exam.
   the CO2 sensor and the decision service together…*, §10). Noted
   2026-10-06.
   - Useful for: §10, §13.
+
+- **The assistant advised against describing the room model as not needed
+  for basic operation, saying it would undercut the course's requirement
+  for a data-driven component.** The requirement asks that the system has
+  and uses one, which it does: in normal operation every damper level comes
+  from the room model's plan. That the system keeps running on the CO2-only
+  switch when the component fails is graceful degradation, a separate
+  property and a strength. Caught by the user. Noted 2026-10-07.
+  - Useful for: §4.3, §13.
