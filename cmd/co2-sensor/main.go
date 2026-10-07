@@ -53,13 +53,14 @@ func main() {
 	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
+	roomID := buildsim.RoomKey(level, roomName)
 	p := &publisher{
 		client:   client,
 		broker:   broker,
 		clock:    clock,
 		sensorID: sensorID,
-		roomID:   buildsim.RoomKey(level, roomName),
-		topic:    "co2/" + roomName + "/reading",
+		roomID:   roomID,
+		topic:    roomID + "/co2/reading",
 	}
 	log.Printf("reading %s every %s, publishing to %s", sensorID, interval, p.topic)
 

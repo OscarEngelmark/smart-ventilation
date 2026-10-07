@@ -60,12 +60,13 @@ func main() {
 	}
 	defer broker.Disconnect(250) // run at exit, giving queued messages 250 ms
 
+	roomID := buildsim.RoomKey(level, roomName)
 	l := &learner{
 		storageURL: storageURL,
 		http:       &http.Client{Timeout: 30 * time.Second},
 		broker:     broker,
-		roomID:     buildsim.RoomKey(level, roomName),
-		topic:      "room/" + roomName + "/model",
+		roomID:     roomID,
+		topic:      roomID + "/model",
 		days:       days,
 		Cout:       Cout,
 	}

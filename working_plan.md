@@ -14,7 +14,7 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15c | §5 interfaces and data contracts, second half: the REST endpoints (the Damper actuator, the Storage service, the calls to BuildSim); also correct two stale schema descriptions, `level` "not yet finalized" in `schemas/ventilation_command.schema.json` and the Storage service named as the only reader in `schemas/co2_reading.schema.json` | | 1 |
+| 15c | §5 interfaces and data contracts, second half: the REST endpoints (the Damper actuator, the Storage service, the calls to BuildSim) | | 1 |
 | 15d | §6 simulating the sensor values | | 1 |
 | 15e | §7.1 the autonomous service | | 1 |
 | 15f | §7.2 the data pipeline | | 1 |

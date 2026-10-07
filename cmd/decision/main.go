@@ -69,6 +69,7 @@ func main() {
 	actuatorURL := env.String("ACTUATOR_URL")
 	level := env.String("ROOM_LEVEL")
 	roomName := env.String("ROOM_NAME")
+	roomID := buildsim.RoomKey(level, roomName)
 	settings := planSettings()
 	ignoreModel := env.Bool("IGNORE_ROOM_MODEL") // true runs the CO2-only switch all the time
 
@@ -79,7 +80,7 @@ func main() {
 	// Runs on every connect, since the broker forgets subscriptions on disconnect.
 	onConnect := func(client mqtt.Client) {
 		log.Printf("connected to broker, subscribing")
-		subscribeAll(client, roomName, ignoreModel, state, readings)
+		subscribeAll(client, roomID, ignoreModel, state, readings)
 	}
 	broker, err := mqttclient.Connect(brokerURL, "decision-"+roomName, onConnect)
 	if err != nil {
@@ -92,8 +93,8 @@ func main() {
 		http:        &http.Client{Timeout: 5 * time.Second},
 		broker:      broker,
 		clock:       clock,
-		roomID:      buildsim.RoomKey(level, roomName),
-		topic:       "ventilation/" + roomName + "/command",
+		roomID:      roomID,
+		topic:       roomID + "/ventilation/command",
 	}
 	log.Printf("deciding for %s, commanding %s, keeping CO2 under %.0f ppm over the next %v",
 		c.roomID, c.actuatorURL, settings.Target, settings.Horizon)
@@ -199,17 +200,17 @@ func (c *commander) publishCopy(cmd message.VentilationCommand) {
 // model when ignoreModel is true. Each message is stored as the latest of its
 // kind; a CO2 reading is also queued for a decision.
 func subscribeAll(
-	client mqtt.Client, roomName string, ignoreModel bool,
+	client mqtt.Client, roomID string, ignoreModel bool,
 	state *latest, readings chan<- message.CO2Reading,
 ) {
-	subscribe(client, "co2/"+roomName+"/reading", func(payload []byte) {
+	subscribe(client, roomID+"/co2/reading", func(payload []byte) {
 		if r, ok := state.keepCO2(payload); ok {
 			readings <- r
 		}
 	})
-	subscribe(client, "occupancy/"+roomName+"/reading", state.keepHeadCount)
+	subscribe(client, roomID+"/occupancy/reading", state.keepHeadCount)
 	if !ignoreModel {
-		subscribe(client, "room/"+roomName+"/model", state.keepModel)
+		subscribe(client, roomID+"/model", state.keepModel)
 	}
 }
 

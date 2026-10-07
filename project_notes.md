@@ -194,7 +194,7 @@ _(nothing yet)_
 
 - **Decided: the container that fits the room model is the "Room-model
   service".** "Room model" means only the learned rates it publishes on
-  `room/<room>/model`, as in the code (`internal/roommodel`), and the box
+  `<room_id>/model`, as in the code (`internal/roommodel`), and the box
   name matches "Storage service" and "Decision service". Rejected: keeping
   the box "Room model" and naming the rates something new, a term nothing
   else in the project uses. Decided and drawn 2026-10-06
@@ -371,7 +371,8 @@ _(nothing yet)_
   rooms at five per-room services is about 5000 containers and 65 GB
   (derived) — possible on a server, but too many to configure by hand in
   `docker-compose.yml`. The path to that scale is grouping rooms, e.g. one decision process per floor
-  subscribing to `co2/+/reading`, which fails per floor instead of per room.
+  subscribing to `level0/+/co2/reading`, which fails per floor instead of
+  per room.
   Decided and implemented 2026-09-26 (`cmd/decision`, choosing a level on
   every CO2 reading and commanding the actuator only when it changes; the
   decision logic itself is not yet written).
@@ -509,20 +510,22 @@ _(nothing yet)_
   before the sensor and actuator processes exist. Decided 2026-09-17.
   - Useful for: §5, §6.
 
-- **Decided: a reading's MQTT topic is `co2/<room>/reading`, holding the room
-  name alone, while the payload's `room_id` holds BuildSim's full room key
-  (`level0/A125`).** MQTT splits a topic into levels on `/`, and the `+`
-  wildcard matches exactly one level, so a subscriber's `co2/+/reading` stops
-  matching as soon as the middle segment contains a slash of its own.
-  Rejected: the room key in the topic, which reads the same but silently
-  breaks every wildcard subscription; consumers that need the level read it
-  from the payload, as the storage-service already does. Decided and
-  implemented 2026-09-22.
-  - The people counter follows the same form: `occupancy/<room>/reading`,
-    carrying `room_id`, `count` (a whole number of people) and `ts`, once a
-    minute (see *Decided: the occupancy sensor counts once a minute of room
-    time*, §7). Copied from the CO2 reading as a low-stakes default.
-    Implemented 2026-09-24.
+- **Decided: every MQTT topic starts with the room as BuildSim names it,
+  floor included, then the kind of message: `<room_id>/co2/reading`,
+  `<room_id>/occupancy/reading`, `<room_id>/ventilation/command` and
+  `<room_id>/model`, e.g. `level0/A125/co2/reading`.** The floor and the room
+  are two topic levels, so the start of every topic is exactly the message's
+  `room_id`, and the room has one name throughout the system. Location
+  first, broadest to narrowest, also gives the useful wildcards:
+  `+/+/co2/reading` for every room's CO2 readings, `level0/+/co2/reading`
+  for one floor's, `level0/A125/#` for everything about one room. Rejected: the room's name
+  alone (`A125/co2/reading`), which leaves two names for one room. Decided
+  and implemented 2026-10-07 (each service in `cmd/`; the storage-service
+  checks that a topic starts with its message's `room_id`).
+  - Replaces `co2/<room>/reading` with the room's name alone in the middle
+    level (2026-09-22). That choice weighed only the room's name against the
+    full key squeezed into one level, where its slash would break the `+`
+    wildcard, and missed giving the floor and the room a level each.
   - Useful for: §5, §7.2.
 
 - **Decided: the actuator serves one endpoint, `POST /command` on port 8080,
@@ -937,7 +940,7 @@ _(nothing yet)_
       the decision service — one container fewer to build, test and draw,
       but it mixes a slow batch job with the per-minute loop. Trade-off: one
       more container and message format, and the decision service must
-      handle a missing or outdated model. The rates are published on `room/<room>/model`
+      handle a missing or outdated model. The rates are published on `<room_id>/model`
       (`schemas/room_model.schema.json`). When the history can't separate
       them, nothing is published and the last model stays retained. Decided
       2026-09-25; implemented 2026-09-26 (`cmd/room-model`). Verified against
@@ -1295,7 +1298,7 @@ _(nothing yet)_
     missing `ppm`, a negative `ppm`, an invalid `ts`, and a `level` of 7
     were each rejected with a clear log line.
   - **Decided: a message whose `room_id` names another room than its topic
-    is dropped** — `level0/B200` arriving on `co2/A125/reading` is logged
+    is dropped** — `level0/B200` arriving on `level0/A125/co2/reading` is logged
     and not saved. Before, only `room_id` was used, so a publisher bug would
     have filed readings under the wrong room without any sign. Today the two
     can't disagree, since each publisher builds both from the same level and
@@ -1437,7 +1440,7 @@ _(nothing yet)_
   triggered reached the physical model within one step.** Traced on the
   running stack for A125 on 2026-10-01, room time (UTC), from the stored
   readings and commands (`GET /co2`, `GET /commands`) and each container's
-  log:
+  log, with the topics as they were named then:
   1. `physical-model`, with 2 people and the damper at 0.80, steps CO2 to
      555.6 ppm and writes it to BuildSim as the sensor's value.
   2. `co2-sensor` reads it from BuildSim and publishes it on
@@ -1861,3 +1864,14 @@ was caught. Kept for the report's reflection and the oral exam.
   Correct: a row cites the requirement its decision helps the system meet.
   Noted 2026-10-07.
   - Useful for: §4.4.
+
+- **The assistant framed the MQTT topic as a choice between the room's name
+  alone and BuildSim's full room key in one topic level.** The full key
+  (`level0/A125`) contains a slash, so in one level it would break the `+`
+  wildcard; the room's name alone was chosen, leaving the room with two
+  names, one in the topic and one in the payload. Caught by the user, who
+  asked why the floor wasn't simply a topic level of its own. Correct: the
+  floor and the room as two levels, `level0/A125/co2/reading` (see
+  *Decided: every MQTT topic starts with the room as BuildSim names it…*,
+  §5). Noted 2026-10-07.
+  - Useful for: §5, §13.

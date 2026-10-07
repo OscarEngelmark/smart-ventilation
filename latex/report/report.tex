@@ -563,8 +563,8 @@ readings, and none across a broker restart \\
 \midrule
 Message delivery & QoS~1: each message delivered at least once & QoS~0:
 at most once; QoS~2: exactly once & Messages for the Storage service are
-kept while it restarts, unlike QoS~0; QoS~2's exactly-once is lost when
-the receiver restarts (FR-1) & A message can arrive twice, so the
+kept while it restarts, unlike QoS~0; QoS~2 would still need a duplicate
+check, since a restart can repeat a message (FR-1) & A message can arrive twice, so the
 History store refuses a second copy \\
 \midrule
 Moving commands & REST from the Decision service to the Damper
@@ -606,18 +606,16 @@ logic (NFR-1) & Small: one extra read from BuildSim per step \\
 % - an example message
 
 Readings, commands and the room model are published over MQTT through
-the Message broker, so every service that needs them subscribes. The
-Decision service commands the Damper actuator over REST, so it is told
-whether each command was applied (Table~\ref{tab:decisions}). The
-Storage service and BuildSim answer REST requests.
+the Message broker. The Decision service commands the Damper actuator
+over REST, and the Storage service and BuildSim answer REST requests.
+Table~\ref{tab:decisions} gives the reason for each pattern.
 
 \textbf{MQTT topics.} Table~\ref{tab:topics} lists the four topics.
-\texttt{<room>} is the room's name alone, such as \texttt{A125}: MQTT
-splits a topic at each slash, and a subscription to
-\texttt{co2/+/reading} matches any one room only while the room's part
-holds no slash of its own. Every message is published at QoS~1
-(Table~\ref{tab:decisions}), so a receiver can get the same message
-twice. Only the room model is \emph{retained}: the broker keeps
+Each topic starts with \texttt{<room\_id>}, the room as BuildSim names
+it, floor included, such as \texttt{level0/A125}. Every
+message is published at QoS~1
+(Table~\ref{tab:decisions}), so every receiver must handle getting the
+same message twice. Only the room model is \emph{retained}: the broker keeps
 the last one and hands it to every service that subscribes later.
 
 {\small
@@ -639,29 +637,28 @@ rate.}\label{tab:topics}\\
 & \textbf{Subscribers} & \textbf{Rate} \\
 \midrule
 \endhead
-\texttt{co2/<room>/\allowbreak reading} & CO₂ reading & CO₂ sensor
+\texttt{<room\_id>/\allowbreak co2/\allowbreak reading} & CO₂ reading & CO₂ sensor
 & Decision service, Storage service & Every 10~s of room time \\
 \midrule
-\texttt{occupancy/<room>/\allowbreak reading} & Occupancy reading
+\texttt{<room\_id>/\allowbreak occupancy/\allowbreak reading} & Occupancy reading
 & Occupancy sensor & Decision service, Storage service & Every minute of
 room time \\
 \midrule
-\texttt{ventilation/<room>/\allowbreak command} & Ventilation command
+\texttt{<room\_id>/\allowbreak ventilation/\allowbreak command} & Ventilation command
 & Decision service & Storage service & Each time the Damper actuator has
 applied a new level \\
 \midrule
-\texttt{room/<room>/\allowbreak model} & Room model
+\texttt{<room\_id>/\allowbreak model} & Room model
 & Room-model service & Decision service & At start and at each room-time
-midnight, retained; none when the fit fails \\
+midnight, retained; skipped when the stored history can't give a room
+model (Section~\ref{sec:decision-logic}) \\
 \bottomrule
 \end{longtable}
 }
 
 \textbf{Messages.} Each message is a JSON object with exactly the fields
 in Table~\ref{tab:fields} and no others. Its JSON Schema in the
-repository's \texttt{schemas/} folder is the full contract. Every
-message carries \texttt{room\_id}, BuildSim's key for the room, which
-adds the floor to the room's name (\texttt{level0/A125}).
+repository's \texttt{schemas/} folder is the full contract.
 
 {\small
 \begin{longtable}[]{@{}
@@ -680,7 +677,8 @@ unit} \\
 unit} \\
 \midrule
 \endhead
-All & \texttt{room\_id} & string & BuildSim's room key \\
+All & \texttt{room\_id} & string & The room, as at the start of the
+topic \\
 \midrule
 CO₂ reading & \texttt{ppm} & number, $\geq 0$ & CO₂ level, in ppm \\
  & \texttt{ts} & date-time & Room time the reading was taken, UTC

@@ -14,10 +14,10 @@ func TestRoomMatchesTopic(t *testing.T) {
 		roomID, topic string
 		want          bool
 	}{
-		{"level0/A125", "co2/A125/reading", true},
-		{"level0/B200", "co2/A125/reading", false},
-		{"level0/A125", "co2/A1255/reading", false},
-		{"level0/A125", "co2/reading", false},
+		{"level0/A125", "level0/A125/co2/reading", true},
+		{"level0/B200", "level0/A125/co2/reading", false},
+		{"level0/A125", "level0/A1255/co2/reading", false},
+		{"level1/A125", "level0/A125/co2/reading", false},
 	}
 	for _, c := range cases {
 		if got := roomMatchesTopic(c.roomID, c.topic); got != c.want {
@@ -33,10 +33,10 @@ func TestReadingOnAnotherRoomsTopicIsNotSaved(t *testing.T) {
 	}
 	defer db.Close()
 	sch := payloadSchemas{reading: mustLoadSchema("co2_reading.schema.json")}
-	save := storeHandlers(db, sch)["co2/+/reading"]
+	save := storeHandlers(db, sch)["+/+/co2/reading"]
 
-	save("co2/A125/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))
-	save("co2/A125/reading", []byte(`{"room_id": "level0/B200", "ppm": 600, "ts": "2026-10-09T12:00:00Z"}`))
+	save("level0/A125/co2/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))
+	save("level0/A125/co2/reading", []byte(`{"room_id": "level0/B200", "ppm": 600, "ts": "2026-10-09T12:00:00Z"}`))
 
 	for room, want := range map[string]int{"level0/A125": 1, "level0/B200": 0} {
 		readings, err := db.CO2ReadingsSince(context.Background(), room, time.Time{})
@@ -56,10 +56,10 @@ func TestReadingFailingItsSchemaIsNotSaved(t *testing.T) {
 	}
 	defer db.Close()
 	sch := payloadSchemas{reading: mustLoadSchema("co2_reading.schema.json")}
-	save := storeHandlers(db, sch)["co2/+/reading"]
+	save := storeHandlers(db, sch)["+/+/co2/reading"]
 
-	save("co2/A125/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))
-	save("co2/A125/reading", []byte(`{"room_id": "level0/A125", "ppm": -5, "ts": "2026-10-09T12:00:10Z"}`))
+	save("level0/A125/co2/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))
+	save("level0/A125/co2/reading", []byte(`{"room_id": "level0/A125", "ppm": -5, "ts": "2026-10-09T12:00:10Z"}`))
 
 	readings, err := db.CO2ReadingsSince(context.Background(), "level0/A125", time.Time{})
 	if err != nil {

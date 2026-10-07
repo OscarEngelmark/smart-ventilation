@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path"
 	"strings"
 	"time"
 
@@ -259,19 +258,19 @@ func fail(w http.ResponseWriter, status int, format string, args ...any) {
 // room_id names another room than its topic is dropped too.
 func storeHandlers(db store.Store, sch payloadSchemas) map[string]func(topic string, payload []byte) {
 	handlers := make(map[string]func(topic string, payload []byte))
-	handlers["co2/+/reading"] = func(topic string, payload []byte) {
+	handlers["+/+/co2/reading"] = func(topic string, payload []byte) {
 		saveCO2Reading(db, sch.reading, topic, payload)
 	}
-	handlers["occupancy/+/reading"] = func(topic string, payload []byte) {
+	handlers["+/+/occupancy/reading"] = func(topic string, payload []byte) {
 		saveOccupancy(db, sch.occupancy, topic, payload)
 	}
-	handlers["ventilation/+/command"] = func(topic string, payload []byte) {
+	handlers["+/+/ventilation/command"] = func(topic string, payload []byte) {
 		saveCommand(db, sch.command, topic, payload)
 	}
 	return handlers
 }
 
-// saveCO2Reading saves one message from co2/+/reading, or logs why it was
+// saveCO2Reading saves one message from +/+/co2/reading, or logs why it was
 // dropped.
 func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
 	var r message.CO2Reading
@@ -283,7 +282,7 @@ func saveCO2Reading(db store.Store, sch *jsonschema.Schema, topic string, payloa
 	}
 }
 
-// saveOccupancy saves one message from occupancy/+/reading, or logs why it
+// saveOccupancy saves one message from +/+/occupancy/reading, or logs why it
 // was dropped.
 func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
 	var o message.OccupancyReading
@@ -295,7 +294,7 @@ func saveOccupancy(db store.Store, sch *jsonschema.Schema, topic string, payload
 	}
 }
 
-// saveCommand saves one message from ventilation/+/command, or logs why it
+// saveCommand saves one message from +/+/ventilation/command, or logs why it
 // was dropped.
 func saveCommand(db store.Store, sch *jsonschema.Schema, topic string, payload []byte) {
 	var c message.VentilationCommand
@@ -336,15 +335,10 @@ func subscribe(client mqtt.Client, topic string) {
 	}
 }
 
-// roomMatchesTopic reports whether roomID ("level0/A125") names the same room
-// as topic ("co2/A125/reading"). The topic holds no level, so only the room
-// name is compared.
+// roomMatchesTopic reports whether topic ("level0/A125/co2/reading") belongs to
+// the room roomID ("level0/A125"), which every topic starts with.
 func roomMatchesTopic(roomID, topic string) bool {
-	parts := strings.Split(topic, "/") // e.g. ["co2", "A125", "reading"]
-	if len(parts) != 3 {
-		return false
-	}
-	return path.Base(roomID) == parts[1] // path.Base gives the part after the last "/"
+	return strings.HasPrefix(topic, roomID+"/")
 }
 
 // mustLoadSchema exits the process if a schema can't be loaded, so the
