@@ -1339,8 +1339,11 @@ _(nothing yet)_
     `(room_id, ts)` is made unique in each table, and inserts skip a row
     that is already stored. Timestamps are whole seconds, so this assumes
     no source sends twice in one second. Rejected: QoS 2 (exactly once) —
-    it holds only while the service remembers what it received, which it
-    forgets on restart, the case being guarded against. Decided 2026-09-26,
+    the MQTT library confirms a message to the broker only after the
+    handler has saved it, and keeps its record of received messages in
+    memory, so a restart between saving and confirming brings the message
+    again under QoS 2 too. Only the store can refuse that copy; with it,
+    QoS 2 adds two packets per message and gains nothing. Decided 2026-09-26,
     implemented 2026-09-27 (`SetCleanSession(false)` in
     `cmd/storage-service`; unique indexes and `ON CONFLICT DO NOTHING` in
     `internal/store/sqlite.go`).
