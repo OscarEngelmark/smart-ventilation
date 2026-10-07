@@ -711,10 +711,115 @@ A CO₂ reading stored during a simulated weekday:
 {"room_id": "level0/A125", "ppm": 836.2, "ts": "2026-10-22T06:20:02Z"}
 \end{verbatim}
 
-\textbf{REST endpoints.}
+\textbf{REST endpoints.} The Damper actuator and the Storage service
+serve the endpoints in Table~\ref{tab:endpoints}. A refused request is
+answered with the reason as plain text.
 
-\fillin{The Damper actuator's endpoint, the Storage service's endpoints,
-and the calls to BuildSim.}
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.20}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.17}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.23}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.40}}@{}}
+\caption{REST endpoints served by the project's containers.}\label{tab:endpoints}\\
+\toprule
+\textbf{Endpoint} & \textbf{Caller} & \textbf{Request} & \textbf{Answer} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Endpoint} & \textbf{Caller} & \textbf{Request} & \textbf{Answer} \\
+\midrule
+\endhead
+\texttt{POST /command}, Damper actuator, port 8080 & Decision service & A
+ventilation command (Table~\ref{tab:fields}) as JSON & 200 once BuildSim
+holds the new level; 400 if the body is not a valid ventilation command;
+404 if it is for another room; 502 if writing to BuildSim failed \\
+\midrule
+\texttt{GET /co2}, Storage service, port 8081 & Room-model service,
+Dashboard & Query parameters \texttt{room}, a room ID, and
+\texttt{since}, a time in RFC~3339; both required & 200 with a JSON array
+of the room's CO₂ readings from \texttt{since} on, oldest first; 400 if
+\texttt{room} is missing or \texttt{since} unreadable; 500 if the History
+store can't be read \\
+\midrule
+\texttt{GET /occupancy}, Storage service & Room-model service, Dashboard
+& As \texttt{/co2} & As \texttt{/co2}, with occupancy readings \\
+\midrule
+\texttt{GET /commands}, Storage service & Room-model service, Dashboard
+& As \texttt{/co2} & As \texttt{/co2}, with ventilation commands, led by
+the last one before \texttt{since}: the level in force at \texttt{since} \\
+\midrule
+\texttt{GET /latest}, Storage service & Dashboard & None & 200 with the
+newest time in the History store, as plain RFC~3339 text; 204 if nothing
+is stored yet \\
+\bottomrule
+\end{longtable}
+}
+
+When the Damper actuator answers anything but 200, the Decision service
+counts the command as not applied: it decides again on the next CO₂
+reading and sends that level. The Room-model service tries a failed
+request again every 5 real seconds.
+
+\textbf{Calls to BuildSim.} Table~\ref{tab:buildsim} lists every call
+the project makes to BuildSim's REST API, and
+Section~\ref{sec:usecase} says what each process uses BuildSim for.
+BuildSim keeps each sensor value and actuator state as text, so a
+number is written as text, such as \texttt{"836.2"} for the CO₂ or
+\texttt{"0.85"} for the damper. A device record holds one sensor or one
+actuator, with the fields in \texttt{internal/buildsim/client.go}. A call
+fails when BuildSim answers outside 2xx, or not within 5 real seconds. A
+process whose call fails at start exits, and Docker starts it again; a
+failed call in a process's loop skips that cycle, and the next cycle
+tries again. A failed damper write makes the Damper actuator answer 502
+instead.
+
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.32}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.28}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.40}}@{}}
+\caption{Calls to BuildSim, each with its callers and their rate in room
+time.}\label{tab:buildsim}\\
+\toprule
+\textbf{Call} & \textbf{Callers and rate} & \textbf{Sent or read} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Call} & \textbf{Callers and rate} & \textbf{Sent or read} \\
+\midrule
+\endhead
+\texttt{POST /api/equipment/\allowbreak bulk} & CO₂ sensor, Occupancy
+sensor, Damper actuator; once, at start & Sends a list holding the
+process's one device record. BuildSim skips a record whose ID it already
+holds, so a restarted process registers again safely \\
+\midrule
+\texttt{GET /api/building/\allowbreak floors/\{floor\}} & Occupancy
+simulator, Physical model; once, at start & Reads the floor's rooms, for
+the room's area in m² \\
+\midrule
+\texttt{PUT /api/occupancy} & Occupancy simulator; every 10~s & Sends
+who is in each room, keyed by room ID. It replaces the whole building's
+occupancy, so a room left out is emptied \\
+\midrule
+\texttt{GET /api/occupancy} & Occupancy sensor, every minute; Physical
+model, every 10~s & Reads who is in each room, keyed by room ID \\
+\midrule
+\texttt{GET /api/sensors/\{id\}} & CO₂ sensor, Physical model; every
+10~s & Reads the CO₂ sensor's value, in ppm \\
+\midrule
+\texttt{PUT /api/sensors/\{id\}/\allowbreak value} & Physical model, every
+10~s; Occupancy sensor, every minute & Sends the new CO₂ in ppm, or the
+head count, as the sensor's value \\
+\midrule
+\texttt{GET /api/actuators/\{id\}} & Physical model; every 10~s & Reads
+the damper's state, 0 to 1 \\
+\midrule
+\texttt{PUT /api/actuators/\{id\}/\allowbreak state} & Damper actuator;
+for each command & Sends the new damper level, 0 to 1 \\
+\bottomrule
+\end{longtable}
+}
 
 \section{Simulating the sensor values (the physical model)}\label{sec:simulation}
 
