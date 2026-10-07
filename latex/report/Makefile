@@ -6,8 +6,9 @@
 #   * TeX Live with pdflatex, latexmk and pgfplots
 #
 # latexmk reads .latexmkrc, renders changed diagrams, reruns pdflatex until
-# the cross-references settle, and writes everything to build/. Saving
-# report.tex in VS Code runs the same latexmk build through LaTeX Workshop.
+# the cross-references settle, and writes everything to build/. LaTeX
+# Workshop runs the same latexmk build whenever report.tex changes; a lock in
+# .latexmkrc makes builds that start at the same time run one after another.
 #
 # Usage:
 #   make            # render diagrams (if changed) and build build/report.pdf
