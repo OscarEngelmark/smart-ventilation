@@ -747,7 +747,7 @@ store can't be read \\
 \midrule
 \texttt{GET /commands}, Storage service & Room-model service, Dashboard
 & As \texttt{/co2} & As \texttt{/co2}, with ventilation commands, led by
-the last one before \texttt{since}: the level in force at \texttt{since} \\
+the last one before \texttt{since} (the level in force at \texttt{since}) \\
 \midrule
 \texttt{GET /latest}, Storage service & Dashboard & None & 200 with the
 newest time in the History store, as plain RFC~3339 text; 204 if nothing
@@ -755,11 +755,6 @@ is stored yet \\
 \bottomrule
 \end{longtable}
 }
-
-When the Damper actuator answers anything but 200, the Decision service
-counts the command as not applied: it decides again on the next CO₂
-reading and sends that level. The Room-model service tries a failed
-request again every 5 real seconds.
 
 \textbf{Calls to BuildSim.} Table~\ref{tab:buildsim} lists every call
 the project makes to BuildSim's REST API, and
