@@ -293,8 +293,11 @@ _(nothing yet)_
 
 - **Known caveat — services aren't synchronized: each runs on its own
   schedule.** Any component can therefore see a reading that is stale,
-  repeated, or skips a step, and has to tolerate that. Noted by 2026-09-05;
-  no handling designed yet.
+  repeated, or skips a step, and has to tolerate that. Noted by 2026-09-05.
+  Repeated messages are skipped by the store (see *Decided: the
+  storage-service connects with a persistent session…*, §7); a stale head
+  count is used as it is (see *Decided: a stale head count is used as it
+  is…*, §7).
   - Useful for: §5, §8.1, §10 (timing/delay failure tests), §13.
 
 - **Decided: two different communication patterns, chosen per link rather
@@ -1499,6 +1502,19 @@ _(nothing yet)_
   2026-10-06; no code change.
   - Useful for: §4.4, §7.1, §8.2, §11.
 
+- **Decided: a stale head count is used as it is, with no age limit, and
+  stated as a limitation.** The decision service plans with the latest head
+  count however old (`latest` in `cmd/decision/main.go`). If the occupancy
+  sensor stops, a count left too low lets CO2 rise until a reading at the
+  target opens the damper fully, and a count left too high only runs the fan
+  harder than needed, so neither pushes CO2 over the threshold. Rejected: an
+  age limit, treating a count older than a few minutes as unknown and
+  falling back to the CO2-only switch — it adds a rule and a test to the
+  decision service for a case the full opening at the target already
+  covers. A CO2 sensor stuck at a plausible value is likewise not detected.
+  Decided 2026-10-08.
+  - Useful for: §7.2, §13.
+
 ## 8. Behaviour
 
 - **One CO2 reading traced through the full loop: a damper command it
@@ -1596,7 +1612,7 @@ _(nothing yet)_
     window (`e2e_2026-10-07_*.json`).
   - Useful for: §10, §11.
 
-- **All 64 unit tests and subtests passed on 2026-10-08**, among them
+- **All 67 unit tests and subtests passed on 2026-10-08**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10

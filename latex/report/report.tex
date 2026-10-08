@@ -1119,10 +1119,77 @@ than the CO₂-only switch does; Section~\ref{sec:evaluation} reports both.
 
 \subsection{The data pipeline}\label{sec:pipeline}
 
-\guidance{How readings are collected, stored, and served to the autonomous service
-and the dashboard. State what is retained and for how long.}
+% Required points (report guide, section 3.7; template, section 7.2):
+% - how readings are collected, and whether the broker is a buffer
+% - storage, and why
+% - processing and feature engineering
+% - how data is served to the autonomous service and the dashboard
+% - what is retained and for how long
+% - data quality: missing, stale and duplicate readings
 
-\fillin{Describe the data pipeline here.}
+\textbf{Collection.} The CO₂ sensor and the Occupancy sensor publish
+each reading to the Message broker, and the Decision service publishes a
+copy of each command the Damper actuator has applied
+(Table~\ref{tab:topics}). The Storage service subscribes to all three
+and writes every message to the History store. For the Storage service
+the broker is a buffer: while the Storage service is stopped, the broker
+holds up to 1000 messages for it, about two hours of room time, and
+delivers them when it reconnects. The Decision service gets no such
+backlog. After a restart it starts from the next reading, since a
+backlog would make it decide on CO₂ from minutes before.
+
+\textbf{Storage.} The History store is one SQLite file inside the
+Storage service, holding every reading, head count and command
+(Table~\ref{tab:decisions}). There is no separate store for recent and
+for older data: every reader asks for a time window of the same tables,
+and 90 room days of one room take about 120~MB. No other container
+touches the file; they ask the Storage service over REST
+(Table~\ref{tab:endpoints}).
+
+\textbf{Retention.} The History store keeps the last 90 room days,
+counted back from its newest timestamp. Once an hour the Storage service
+deletes older rows, except each room's command in force at the cutoff,
+since a damper level holds until the next command. The window is far
+longer than the room model's 7 days, so recorded test days stay
+available for evaluation.
+
+\textbf{Processing and serving.} The Room-model service is the
+pipeline's processing step. At each fit it asks the Storage service for
+the last 7 days of CO₂ readings, head counts and commands, the commands
+led by the one in force when the window starts, so the damper level is
+known from the first reading. It turns them into one equation per pair
+of readings~(\ref{eq:fit}) and publishes the fitted rates. When a read
+fails, it tries again every 5~s of real time. The Dashboard reads the
+same endpoints for the last 6~hours of room time. The Decision service
+reads nothing from the History store: it takes the latest reading and
+head count from the broker as they arrive, and the room model as the
+retained message (Section~\ref{sec:decision-logic}).
+
+\textbf{Data quality.}
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Missing.} The Room-model service's fit leaves out a pair of readings more than a
+  minute apart, so a gap in the history adds no equation. Without a new
+  reading the Decision service makes no decision, and the damper keeps
+  its level.
+\item
+  \textbf{Duplicate.} At QoS~1 a message can arrive twice. The History
+  store holds one row per room and timestamp and skips a second copy.
+  Timestamps are whole seconds, so this assumes no source sends twice
+  within one second.
+\item
+  \textbf{Invalid.} The Storage service checks each message against its
+  schema and drops one that fails, or whose room differs from its
+  topic's. The Decision service does not check
+  (Section~\ref{sec:decision-logic}).
+\item
+  \textbf{Stale.} The Decision service uses the latest head count
+  however old. If the Occupancy sensor stops, a count left too low lets
+  CO₂ rise until a reading at $C_\text{target}$ opens the damper fully; a
+  count left too high only runs the fan harder than needed. A CO₂ sensor
+  stuck at a plausible value is not detected.
+\end{itemize}
 
 \section{Behaviour}\label{sec:behavior}
 

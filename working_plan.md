@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15f | §7.2 the data pipeline, including that the Room-model service retries a failed read of the history from the Storage service every 5 real seconds (`retryWait`, `cmd/room-model/main.go`) | | 1 |
 | 15g | `project_notes.md`: cut the two largest entries (*Decided: the system pursues three goals…* and *Deferred, not yet decided: issues and implicit choices found reviewing…*) down to what the oral exam needs, applying the notes rule *Entries record why, not a second copy of what*; also drop the two citations of the private Canvas page (MQTT in §4, InfluxDB in §7), which the notes may not reference | | 1 |
 | 15h | §8.1 dynamic diagram, walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-07*`) | | 1 |
 | 15i | §8.2 state diagram, including what a process does after a failed call to BuildSim: at start it exits and Docker starts it again; in its loop it skips that cycle and tries again at the next | | 1 |
