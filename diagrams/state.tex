@@ -11,7 +11,7 @@
   ]
   \node[dot] (start) at (0, 0) {};
   \node[state] (conn) at (2.8, 0) {Connecting};
-  \node[state] (sw) at (7.6, 0) {Switching on CO₂};
+  \node[state] (sw) at (7.6, 0) {On CO₂ alone};
   \node[state] (plan) at (13.2, 0) {Planning};
   \node[state, minimum width=7.6cm] (wait) at (10.4, -3) {Waiting for the broker};
   \node[state] (stop) at (13.2, -5.3) {Stopped};
@@ -23,7 +23,7 @@
   \draw[->] (start) -- (conn);
   \draw (conn) edge[loop above] node[lbl, above] {connect or subscribe fails:\\exit 1, Docker restarts} (conn);
   \draw[->] (conn) -- node[lbl, above] {subscribed} (sw);
-  \draw (sw) edge[loop above] node[lbl, above] {CO₂ reading:\\switch} (sw);
+  \draw (sw) edge[loop above] node[lbl, above] {CO₂ reading:\\open or close} (sw);
   \draw[->] (sw) -- node[lbl, above] {room model arrives} (plan);
   \draw (plan) edge[loop above] node[lbl, above] {CO₂ reading: plan;\\not applied: retry\\on the next reading} (plan);
 

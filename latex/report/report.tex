@@ -1061,7 +1061,8 @@ In A125 this holds three people at $d \approx 0.4$ and a full meeting at $d \app
  Table~\ref{tab:decisions} gives the alternatives this plan was chosen over.
 
 \textbf{When data is thin.} Until the first room model exists, the
-Decision service switches on the reading $C$ alone (FR-6):
+Decision service opens or closes the damper on the reading $C$ alone
+(FR-6):
 \begin{equation}\label{eq:switch}
   d = \begin{cases}
     1 & \text{if } C \geq C_\text{target}, \\
@@ -1109,7 +1110,7 @@ than the CO₂-only switch does; Section~\ref{sec:evaluation} reports both.
   service reconnects by itself and keeps the room model it holds. The
   broker keeps the retained room model only in memory, though, so a
   Decision service that restarts after a broker restart has no room
-  model and switches on CO₂ alone until the next fit.
+  model and opens or closes the damper on CO₂ alone until the next fit.
 \item
   \textbf{A malformed message.} The Decision service does not check the
   messages it receives against their schemas, so a CO₂ reading missing
@@ -1235,9 +1236,8 @@ answers. Protocols are as in Figure~\ref{fig:container}.}
 Figure~\ref{fig:state} shows the lifecycle of the Decision service. It
 starts by connecting to the Message broker and subscribing to its three
 inputs; if either fails, it exits with an error, and Docker starts it
-again. Docker restarts a container that exits with an error, but not one
-it stopped itself. Once subscribed, the Decision service switches on CO₂
-alone until a room model arrives, which, being retained, comes right
+again. Once subscribed, the Decision service opens or closes the damper
+on CO₂ alone (Equation~\ref{eq:switch}) until a room model arrives, which, being retained, comes right
 after subscribing unless the broker has restarted since the last fit
 (Section~\ref{sec:decision-logic}). From then on it plans on every
 reading.
@@ -1245,11 +1245,11 @@ reading.
 When the connection to the broker drops, no readings arrive, so no
 decisions are made and the damper keeps its last level. The Decision
 service tries to reconnect by itself, doubling the wait after each failed
-attempt up to 10~minutes. Once reconnected, it subscribes again and
-returns to the state it left, keeping the room model it holds.
+attempt up to 10~minutes (the MQTT library's default). Once reconnected,
+it subscribes again and
+returns to the state it left, keeping any room model it holds.
 
-The other processes follow the same pattern without a state of their
-own. One that fails to start, by registering with BuildSim or connecting
+The other processes have simpler lifecycles. One that fails to start, by registering with BuildSim or connecting
 to the broker, exits and is restarted. A failed call to BuildSim in a
 loop skips that cycle, and the next one tries again. The Damper actuator
 instead refuses the command, which the Decision service sends again on
