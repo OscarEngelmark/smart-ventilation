@@ -140,15 +140,15 @@ _(nothing yet)_
     Python's forecasting ecosystem.
   - Useful for: §4.4, §9.
 
-- **Decided: the three Go services (sensor, actuator, decision) share one Go
-  module, built as separate binaries under `cmd/`.** One `go.mod`/`go.sum`
+- **Decided: the project's Go services share one Go module, built as
+  separate binaries under `cmd/`.** One `go.mod`/`go.sum`
   keeps their dependency versions in sync and lets them share small internal
   packages (a BuildSim REST client, an MQTT wrapper) without duplication;
   each still builds and deploys as its own container, so this doesn't affect
   process independence. Rejected: a separate Go module per service —
   stronger isolation (a change to shared code can't silently affect a
-  service you didn't touch), but for three small services built solo, that
-  wasn't worth duplicating shared code three times or the extra
+  service you didn't touch), but for small services built solo, that
+  wasn't worth duplicating shared code in each or the extra
   private-module/replace-directive setup. Decided 2026-09-15.
   - Useful for: §4.4, §4.2, §9.
 
@@ -305,15 +305,20 @@ _(nothing yet)_
   producer, and the system already tolerates a late or dropped reading (see
   *Known caveat — services aren't synchronized*, above) — a fit for pub/sub's
   weaker, decoupled delivery. Decision→actuator is one producer to one fixed
-  consumer, low frequency, and a lost command has a real effect with no
-  self-correcting next reading — a fit for an explicit REST call retried
-  until the actuator acknowledges it, rather than a broadcast that can
-  silently drop when the subscriber is offline. Rejected: REST throughout
+  consumer, low frequency, and the decision service needs to know whether
+  each command was applied — a fit for a REST call, whose answer says so,
+  rather than a broadcast that can silently drop when the subscriber is
+  offline. A command that wasn't applied is decided again on the next
+  reading (`decide` in `cmd/decision/main.go`). Rejected: REST throughout
   (loses producer/consumer decoupling; requires hand-rolling delivery/retry
   logic per link) and broker throughout (a 1:1 low-frequency command doesn't
   get the multi-consumer benefit that justifies broker overhead, and plain
   pub/sub delivery can silently drop it). Replaces the earlier undecided
   single-pattern framing. Decided 2026-09-15.
+  - The reason first given was a lost command with no next reading to
+    correct it, so REST would retry until the actuator acknowledged. As
+    built, the next reading does correct it, and the REST answer is what
+    tells the decision service a command needs sending again.
   - **Decided: MQTT as the broker implementation**, over Kafka (built for
     high-throughput distributed streaming at a scale this system doesn't
     reach — a handful of topics on one laptop) and Redis pub/sub
@@ -328,19 +333,18 @@ _(nothing yet)_
     Docker image. Chosen as the common default for small setups; no other
     broker was compared. Low stakes: every client speaks plain MQTT, so a
     different broker would need no code changes. Decided 2026-09-17.
-  - **Decided: the decision service also publishes each command to MQTT**
-    (a `ventilation_command` topic), alongside the REST call to the
-    actuator. REST stays the actual delivery path — it's the link that needs
-    confirmed delivery and confirmed execution, which MQTT would need extra
-    machinery (a persistent session, a second confirmation topic) to match.
-    The MQTT copy is for consumers that only need visibility (the
-    storage-service, later the dashboard), which can tolerate a missed
-    message the same way readings can. Rejected: replacing REST with MQTT
-    for decision→actuator directly — even with guaranteed eventual delivery,
-    a command queued while the actuator is offline can arrive stale (the
-    situation it was decided for may no longer hold), and delivery to the
-    actuator isn't the same as confirmation the command was executed.
-    Decided 2026-09-16.
+  - **Decided: the decision service also publishes each command to MQTT** (on
+    `<room_id>/ventilation/command`), alongside the REST call to the actuator.
+    REST stays the actual delivery path — it's the link that needs confirmed
+    delivery and confirmed execution, which MQTT would need extra machinery (a
+    persistent session, a second confirmation topic) to match. The MQTT copy
+    is for consumers that only need visibility (the storage-service, whose
+    history the dashboard reads), which can tolerate a missed message the same
+    way readings can. Rejected: replacing REST with MQTT for decision→actuator
+    directly — even with guaranteed eventual delivery, a command queued while
+    the actuator is offline can arrive stale (the situation it was decided for
+    may no longer hold), and delivery to the actuator isn't the same as
+    confirmation the command was executed. Decided 2026-09-16.
   - Useful for: §4.4, §5, §7.2.
 
 - **Decided: everything derived from a room's floor area lives in one
@@ -373,13 +377,10 @@ _(nothing yet)_
   `docker-compose.yml`. The path to that scale is grouping rooms, e.g. one decision process per floor
   subscribing to `level0/+/co2/reading`, which fails per floor instead of
   per room.
-  Decided and implemented 2026-09-26 (`cmd/decision`, choosing a level on
-  every CO2 reading and commanding the actuator only when it changes; the
-  decision logic itself is not yet written).
+  Decided and implemented 2026-09-26 (`cmd/decision`).
   - Replaces *Deferred, not yet decided: one decision-service instance per
     room, or one instance handling all rooms* (proposal sections 3 and 6).
-    Storage has since been decided (§7); how the dashboard reads it is
-    still open.
+    Storage and the dashboard have since been decided (§7, §12).
   - Useful for: §4.2, §4.4, §9, §13 (scaling).
 
 - **Decided: scaling to more rooms works differently on each side of the
@@ -445,23 +446,20 @@ _(nothing yet)_
   (see *Decided: failure testing covers a sensor giving bad readings, a
   component going down, and delayed or dropped communication*, §10) needs
   anyway; a bare example payload is only documentation, nothing checks
-  against it. Four schemas exist so far: `co2_reading`,
-  `occupancy_reading` and `room_model` (the MQTT payloads) and
-  `ventilation_command` (the REST request for the decision→actuator link,
-  see *Decided: two different communication patterns...*, §4). Decided and
-  implemented 2026-09-15; `co2_forecast` was removed with the CO2 forecast
-  service 2026-09-25, `occupancy_forecast` with the occupancy forecast
-  2026-09-27, and `ventilation_command_response` 2026-10-05 (see *Decided:
-  the actuator serves one endpoint…*, below).
+  against it. Decided and implemented 2026-09-15; the current schemas are
+  the files in `schemas/`.
   - `ventilation_command`'s `level` field (0–1) was a placeholder; now
     settled to match the damper state in BuildSim (see *Decided: room A125's
     devices in BuildSim...*, below).
   - Runtime validation against the schemas is implemented in the
     storage-service (2026-09-17, `schemas/schemas.go`) and in the actuator,
     which checks every command before writing the damper (2026-09-23).
-    - **Revisit:** the decision service will need the same check when it's
-      written. The room-model service goes without it: its history comes
-      from the storage-service, which checked each message before saving.
+    - **Revisit:** the decision service was written without the check: it
+      reads CO2 readings, head counts and room models with `json.Unmarshal`
+      alone (`decode` in `cmd/decision/main.go`), so a reading missing its
+      `ppm` field reads as 0 ppm. The room-model service goes without it:
+      its history comes from the storage-service, which checked each
+      message before saving.
   - Only received messages are validated, not published ones: a publisher
     fills a Go struct whose fields are the schema's fields, so its own output
     can't fail the check, while a receiver is handed bytes another process
@@ -500,9 +498,10 @@ _(nothing yet)_
     2026-10-04.
   - Useful for: §4.4, §5.
 
-- **Decided: room A125's devices in BuildSim are a CO2 sensor `A125-co2`
-  (value in ppm) and a ventilation damper `A125-damper` (state 0–1, 0 closed,
-  1 fully open).** The physical model writes the sensor value and reads the
+- **Decided: room A125's devices in BuildSim are a CO2 sensor (value in
+  ppm) and a ventilation damper (state 0–1, 0 closed, 1 fully open)**, with
+  the IDs `CO2_SENSOR_ID` and `DAMPER_ID` in `sim.env`. The physical model
+  writes the sensor value and reads the
   damper state; BuildSim stores both as text, so each side converts to and
   from a number. The 0–1 range matches `ventilation_command`'s `level`, so a
   command passes to the damper unchanged. Simple defaults, not weighed
@@ -572,13 +571,14 @@ _(nothing yet)_
   (`Category`, `DataType`), at the cost of the client's exported types no
   longer mirroring BuildSim's API and of a `Unit` field meaning nothing for
   actuators. Kept because the duplication is only written once per device
-  type, both call sites now exist and are correct, and the device list is
-  fixed at one CO2 sensor and one damper per room — so the flat shape would
+  type, the call sites existed and were correct, and the device list is
+  fixed per room — so the flat shape would
   guard against a mistake that is already past, while making the client
   harder to check against BuildSim's own API. Noted 2026-09-22 as open;
   decided 2026-09-23 with the sensor and actuator processes written.
-  - **Revisit:** if a third device type is added, the duplication returns with
-    it and the flat shape is worth weighing again.
+  - **Revisit:** the people counter (2026-09-24) is a third device type, so
+    the duplication has returned with it (`equipment` in each device
+    process); the flat shape has not been weighed again.
   - Useful for: §5.
 
 ## 6. Simulating the sensor values (the physical model)
@@ -622,16 +622,15 @@ _(nothing yet)_
     6 people), so a second room needs no new configuration. Rejected:
     writing both values per room into `docker-compose.yml` or a `.env` file.
   - **Values not read from BuildSim are environment variables, loaded by
-    Docker Compose from one shared file**, so each value is written once
-    and every service that uses it reads the same number. This covers
-    ceiling height, area per person, outdoor CO2, `G`, the minimum airflow
-    per m², and `Δt` (describing the simulation), and the threshold (a
-    setting of the system itself). Only values from
-    BuildSim count as facts about the building; the rest are assumptions,
-    so they should be changeable between runs without a rebuild. Rejected:
-    a shared config file (YAML/JSON) mounted into each container — allows
-    grouping and comments, but needed parsing code in both Go and Python,
-    the forecast service's planned language at the time. Decided 2026-09-18.
+    Docker Compose from one shared file**, so each value is written once and
+    every service that uses it reads the same number. It holds the
+    simulation's assumed values, such as ceiling height and `G`, and settings
+    of the system that several places read, such as the threshold. Only values
+    from BuildSim count as facts about the building; the rest are assumptions,
+    so they should be changeable between runs without a rebuild. Rejected: a
+    shared config file (YAML/JSON) mounted into each container — allows
+    grouping and comments, but needed parsing code in both Go and Python, the
+    forecast service's planned language at the time. Decided 2026-09-18.
     - Replaces fixing ceiling height and area per person as constants in a
       shared Go package, which treated them as facts about the building
       rather than assumptions.
@@ -850,25 +849,25 @@ _(nothing yet)_
     timetables, night guards) and publishes them to BuildSim's entities and
     occupancy endpoints. Kept the schedule plan for now; no new reason beyond
     the proposal's was given for preferring it.
-  - **The schedule for A125** (weekdays; empty at weekends): half the
-    room's capacity, rounded up, are regulars, 3 in A125. They arrive one
-    at a time at 07:00, 07:40 and 08:20, all leave for lunch 11:30–12:30,
-    so the room empties rather than thins out, and leave one at a time at
-    16:00, 16:40 and 17:20. The rest of the capacity join a meeting
-    13:00–14:00, filling the room to its 6-person maximum. Each of a
-    person's times is shifted by up to ±20 minutes, drawn from a random
-    generator seeded with the date. `PeopleAt` keeps no state and draws the
-    shifts again on every call, every 10 room seconds; the date seed makes
-    every call on one day draw the same shifts, so each person keeps one
-    arrival time all day, and a restarted Occupancy simulator carries on
-    with the same day. The 13:00 meeting is the scenario the demo turns on:
-    six people in 71.5 m³ is the case where CO2 climbs fast enough to cross
-    the threshold, so it is what the decision service has to hold under it.
-    Times are room time, so they follow the simulation speed. Plausible
-    office hours, not taken from a source or a measured building. Decided
-    and implemented 2026-09-20, `internal/occupancy/schedule.go`, with unit
-    tests covering the counts at known times, the weekend, the lunch dip,
-    and that the room fills to capacity exactly once a day.
+  - **The schedule for A125** (weekdays; empty at weekends; the times are
+    constants in `internal/occupancy/schedule.go`): half the room's capacity,
+    rounded up, are regulars, who arrive one at a time in the morning, leave
+    together for lunch, so the room empties rather than thins out, and leave
+    one at a time in the afternoon. The rest of the capacity join a meeting
+    13:00–14:00, filling the room to its 6-person maximum. Each of a person's
+    times is shifted by up to ±20 minutes, drawn from a random generator
+    seeded with the date. `PeopleAt` keeps no state and draws the shifts again
+    on every call, every 10 room seconds; the date seed makes every call on
+    one day draw the same shifts, so each person keeps one arrival time all
+    day, and a restarted Occupancy simulator carries on with the same day. The
+    13:00 meeting is the scenario the demo turns on: six people in 71.5 m³ is
+    the case where CO2 climbs fast enough to cross the threshold, so it is
+    what the decision service has to hold under it. Times are room time, so
+    they follow the simulation speed. Plausible office hours, not taken from a
+    source or a measured building. Decided and implemented 2026-09-20,
+    `internal/occupancy/schedule.go`, with unit tests covering the counts at
+    known times, the weekend, the lunch dip, and that the room fills to
+    capacity exactly once a day.
   - **Revisit:** adopt a different occupancy source later if the schedule
     turns out too simple to be realistic (a risk in proposal section 6) —
     either the course's `occupancysim/` or a public occupancy dataset.
@@ -1226,8 +1225,8 @@ _(nothing yet)_
     reversed once the storage interface made a later swap cheap enough that
     committing to InfluxDB now wasn't buying anything.
   - **Decided: a dedicated storage-service process owns storage** — it
-    subscribes to the `co2_reading`, `occupancy_reading`, and
-    `ventilation_command` MQTT topics and writes each through the storage
+    subscribes to the CO2 reading, head count and command topics and
+    writes each through the storage
     interface, and answers read requests from other components over REST.
     Rejected: folding writing into the CO2 forecast service (since
     removed), which already subscribed to readings — it would mix forecasting logic with
@@ -1239,20 +1238,14 @@ _(nothing yet)_
     both in one process, an outage stops both, which only matters to a
     service reading stored history at that moment. Writing decided and
     implemented 2026-09-16 (`cmd/storage-service`); reads decided 2026-09-17
-    and implemented 2026-09-23 as `GET /co2?room=<id>&since=<RFC3339>`,
-    answering with the room's readings from that time onwards, oldest first,
-    as a JSON array of `co2_reading` messages. Both parameters are required;
-    a missing `room` or an unparseable `since` gives 400, a failed read 500.
-    Verified against the running stack: readings published by the sensor came
-    back through the endpoint, a `since` after the newest reading returned an
-    empty array, and both bad-request cases were refused.
+    and implemented 2026-09-23 (`GET /co2`, `serveCO2`), and verified
+    against the running stack.
     - Timestamps are converted to UTC before they are stored (2026-09-24).
       They are compared as text, so one sent with another offset would
       otherwise sort out of time order.
-    - Occupancy counts are stored and served the same way, at
-      `GET /occupancy?room=<id>&since=<RFC3339>`, answering a JSON array of
-      `occupancy_reading` messages, for the room model's history.
-      Implemented and verified against the running stack 2026-09-24.
+    - Occupancy counts are stored and served the same way
+      (`GET /occupancy`), for the room model's history. Implemented and
+      verified against the running stack 2026-09-24.
     - **Decided: commands are served at
       `GET /commands?room=<id>&since=<RFC3339>`, led by the last command
       stored before `since`**, for the room model's history. A damper level
@@ -1302,16 +1295,15 @@ _(nothing yet)_
     replies to requests and timing out would be hand-built, while a REST
     call returns the readings or an immediate error. Rejected: querying
     SQLite directly — it breaks the storage-interface rule. Decided
-    2026-09-17, implemented 2026-09-23. Verified against the running stack:
-    after a restart it refilled its window with 37 stored readings and
-    published its next forecast 4 seconds later, instead of waiting 5
-    minutes. The calling side was removed with the service 2026-09-25 (see
+    2026-09-17, implemented 2026-09-23. The calling side was removed with
+    the service 2026-09-25 (see
     *Decided: the CO2 forecast service is removed…*, above); the storage
     side, `GET /co2`, stays.
-  - **Deferred, not yet decided:** how the dashboard reads from storage. The
-    proposal left the data pipeline out entirely; the feedback on accepting
-    it (2026-09-15) was "Do not forget the data pipeline and how sensor data
-    is transmitted", so the report must cover it explicitly.
+  - The dashboard reads history through the storage-service's REST
+    endpoints (see *Decided: the dashboard is a small service of its own…*,
+    §12). The proposal left the data pipeline out entirely; the feedback on
+    accepting it (2026-09-15) was "Do not forget the data pipeline and how
+    sensor data is transmitted", so the report must cover it explicitly.
   - **Decided: the diagrams and report call the SQLite file the History
     store.** It holds the readings and damper commands over time, which the
     Room-model service and the Dashboard read back as history. Replaces
@@ -1500,11 +1492,12 @@ _(nothing yet)_
 
 - **Decided: one `docker-compose.yml` starts the whole system, BuildSim
   included.** BuildSim is built from the course repository at a pinned
-  commit, so no local copy is needed and its behavior can't change
+  commit (its build context in `docker-compose.yml`), so no local copy is
+  needed and its behavior can't change
   mid-project. Rejected: running BuildSim by hand outside Docker — one more
   manual step before every run and demo. Pinning the commit is an unchecked
-  default. Decided and implemented 2026-09-17 (BuildSim, Mosquitto,
-  storage-service so far).
+  default. Decided and implemented 2026-09-17; every service has been
+  added to it since.
   - Useful for: §4.2, §9.
 
 ## 10. Test plan
@@ -1634,8 +1627,11 @@ _(nothing yet)_
 
 - **Decided: failure testing covers a sensor giving bad readings, a component
   going down, and delayed or dropped communication.** These are the failure
-  modes named in proposal sections 6 and 7. No concrete tests designed yet.
-  Proposal, 2026-09-04.
+  modes named in proposal sections 6 and 7. The crash test covers a
+  component going down (see *Decided: the crash test kills the CO2 sensor
+  and the decision service together…*, above); a frozen CO2 sensor and a
+  stopped broker are not yet tested, and delay only as a measurement
+  (NFR-4). Proposal, 2026-09-04.
   - Useful for: §10, §11, §13.
 
 - **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a
@@ -1702,11 +1698,11 @@ _(nothing yet)_
 
 - **Decided: the dashboard is a small service of its own, serving one web
   page that reads the room's history from the storage-service's REST
-  endpoints.** The page asks `GET /latest` for the newest stored room time
-  and draws the room time before it: CO2 with the 950 ppm target and the
-  1000 ppm threshold, the head count, and the damper level, refreshed every
-  5 real seconds, with the session's speed beside the room time. The service passes the page's `/api/...` requests on to
-  the storage-service, since a browser refuses to read from another address
+  endpoints.** The page asks the storage-service for the newest stored room
+  time and draws the history before it (`cmd/dashboard/static/index.html`),
+  since room time runs ahead of the wall clock. The service passes the
+  page's `/api/...` requests on to the storage-service, since a browser
+  refuses to read from another address
   than the page's own unless that address allows it. Rejected: Grafana
   reading the same endpoints through a plugin. Grafana draws every chart
   over a window of wall-clock time and hides data outside it, while stored
@@ -1930,7 +1926,7 @@ was caught. Kept for the report's reflection and the oral exam.
   runs.** They gave lunch as 11:30–13:00 with 0–1 people in the room; the
   occupancy schedule has always emptied the room 11:30–12:30. Caught when
   the code was read to describe the schedule in the report. Correct: the
-  schedule in *Decided: occupancy comes from a time-of-day schedule…*, §6.
+  schedule in `internal/occupancy/schedule.go`.
   Noted 2026-10-08.
   - Useful for: §6.
 

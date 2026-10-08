@@ -16,7 +16,7 @@ decisions.
 |---|---|---|---|
 | 15e | §7.1 the autonomous service, including what happens after a failed request: the Decision service decides again on the next CO2 reading when the Damper actuator answers anything but 200, and the Room-model service retries a failed history read every 5 real seconds | | 1 |
 | 15f | §7.2 the data pipeline | | 1 |
-| 15g | `project_notes.md`: cut the two largest entries (*Decided: the system pursues three goals…* and *Deferred, not yet decided: issues and implicit choices found reviewing…*) down to what the oral exam needs | | 1 |
+| 15g | `project_notes.md`: cut the two largest entries (*Decided: the system pursues three goals…* and *Deferred, not yet decided: issues and implicit choices found reviewing…*) down to what the oral exam needs, applying the notes rule *Entries record why, not a second copy of what*; also drop the two citations of the private Canvas page (MQTT in §4, InfluxDB in §7), which the notes may not reference | | 1 |
 | 15h | §8.1 dynamic diagram, walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-07*`) | | 1 |
 | 15i | §8.2 state diagram, including what a process does after a failed call to BuildSim: at start it exits and Docker starts it again; in its loop it skips that cycle and tries again at the next | | 1 |
 | 15j | §9 deployment diagram and component view | | 1 |
@@ -34,6 +34,7 @@ Each result also updates report §10 and §11.
 |---|---|---|---|
 | 16 | Fault tests: a frozen CO2 sensor; the broker down | what counts as recovered | 2 |
 | 17 | Stress test to a breaking point | what to scale up, and what counts as broken | 1–2 |
+| 20 | The Decision service checks each message it receives against its schema, as the Storage service and the Damper actuator do; today a CO2 reading missing its `ppm` field reads as 0 ppm (Revisit in the notes' JSON Schema entry, §5) | what it does with a refused message | 1 |
 | 18 | Pipeline delay, measured from stored data; the history store keeps whole seconds (`internal/store/sqlite.go`), too coarse for sub-second delays | whether to store each message's receive time | 1 |
 
 ## 2026-10-12
