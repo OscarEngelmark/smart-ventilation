@@ -856,11 +856,11 @@ stay as they are. Because the step is exact, its accuracy does not depend
 on $\Delta t$, unlike a forward-Euler step, which is accurate only for
 steps much shorter than $V/Q$. $\Delta t$ only sets how late the model
 notices a change in $N$ or the damper, and 10~s is short compared with
-the time scale on which the room's CO₂ changes, $V/Q$, which is about
-17 minutes even with the damper fully open.
+the time scale on which the room's CO₂ changes,
+$V/Q \geq V/Q_\text{max} \approx 17$~min.
 
-\textbf{How the damper closes the loop.} The damper level $d$, from 0
-(closed) to 1 (fully open), sets the airflow:
+\textbf{How the damper closes the loop.} The damper level
+$0 \leq d \leq 1$ (0 closed, 1 fully open) sets the airflow:
 \begin{equation}\label{eq:airflow}
   Q = Q_\text{min} + d\,(Q_\text{max} - Q_\text{min}).
 \end{equation}
@@ -885,9 +885,9 @@ By~(\ref{eq:step}), a full room settles exactly at the threshold when
 $Q = G\,N_\text{max}/(C_\text{threshold} - C_\text{out})$. $Q_\text{max}$
 is 1.2 times that airflow, so a fully open damper holds a full room under
 the threshold with some reserve, while the fan stays no larger than a
-full room needs. The factor 1.2 is a judgment, not a sourced figure. A
-full A125 then settles at about 903~ppm with the damper fully open, and
-at 1000~ppm with $d$ at about 0.8.
+full room needs. The factor 1.2 is a judgment, not a sourced figure. For
+a full A125, $C_\text{steady} \approx 903$~ppm at $d = 1$, and
+$C_\text{steady} = 1000$~ppm at $d \approx 0.8$.
 
 % Sources: AFS 2023:12, chapter 3, section 5, general advice, p. 17
 % (ceiling height); chapter 5, section 4, p. 39 (0.35 L/s per m²).
@@ -949,9 +949,9 @@ multiple of the body's resting energy use. Their Table~2 lists rates at
 1.4 and 1.6~met~\cite[p.~4]{persily2017}; the average of those two
 columns over men and women aged 21 to 60 is 0.0052~L/s at 0~°C, which is
 0.0056~L/s at 20~°C. Both numbers are computed here, not stated in the
-paper. With these values, one person raises A125's CO₂ by about 282~ppm
-an hour before ventilation removes any ($G/V$), and a full room with the
-damper closed raises it by about 23~ppm a minute near the threshold.
+paper. With these values, $G/V \approx 282$~ppm/h per person in A125,
+and a full room with the damper closed gives
+$dC/dt \approx 23$~ppm/min near the threshold.
 
 \textbf{Occupancy.} Every 10~s of room time, the Occupancy simulator works
 out how many people the schedule puts in the room and writes that many
@@ -996,11 +996,12 @@ The Decision service chooses the damper level. On every CO₂ reading it
 predicts, with a room model learned from the stored history, how CO₂
 would develop at each damper level, and picks the lowest level that keeps
 it under a target. Its inputs are the latest CO₂ reading, head count and
-room model, received over MQTT; its output is a damper level from 0 to 1,
-sent to the Damper actuator over REST (Section~\ref{sec:interfaces}).
+room model, received over MQTT; its output is a damper level
+$d \in [0, 1]$, sent to the Damper actuator over REST (Section~\ref{sec:interfaces}).
 
-\textbf{Threshold and target.} CO₂ must stay under 1000~ppm (REG-1,
-Section~\ref{sec:requirements}). The plan aims lower, at 950~ppm, so that
+\textbf{Threshold and target.} CO₂ must stay under
+$C_\text{threshold} = 1000$~ppm (REG-1, Section~\ref{sec:requirements}).
+The plan aims lower, at $C_\text{target} = 950$~ppm, so that
 a small error in the head count or the room model does not carry a room
 held at the target over the threshold. With the damper closed, a full
 room covers those 50~ppm in about two minutes
@@ -1035,8 +1036,8 @@ gives no room model and nothing is published. Because the Decision
 service learns the room rather than being told it, the same logic would
 carry over to a real room that provides the same three data streams.
 
-\textbf{The plan.} For each damper level $d$ from 0 to 0.95, in steps of
-0.05, the Decision service predicts CO₂ for the next hour, starting from
+\textbf{The plan.} For each damper level $d \in \{0, 0.05, \dots, 0.95\}$,
+the Decision service predicts CO₂ for the next hour, starting from
 the current reading $C_0$ and holding $d$ and the head count $N$ counted
 now fixed:
 \begin{equation}\label{eq:plan}
@@ -1045,20 +1046,25 @@ now fixed:
 \end{equation}
 This forward-Euler step is accurate because $\Delta t$ is far shorter than
 $1/(b_0 + b_1\,d)$, which is at least 17 minutes in A125. The Decision
-service chooses the lowest level whose predicted CO₂
-stays under the target, and fully open when none does, as for a reading
-already at the target. To keep the level from flipping back and forth
-at the edge between two levels, it keeps the current level while that
-still holds CO₂ under the target, and lowers it only to a level that
-holds CO₂ 20~ppm under it. A command is sent only when the level changes.
-In A125 this holds three people at about 0.4 and a full meeting at about
-0.9. Table~\ref{tab:decisions} gives the alternatives this plan was
-chosen over.
+service chooses the lowest $d$ with $C_k < C_\text{target}$ for all $k$,
+and $d = 1$ when none qualifies, as for a reading
+$C_0 \geq C_\text{target}$. To keep the level from flipping back and
+forth at the edge between two levels, it keeps the current $d$ while that
+still gives $C_k < C_\text{target}$ for all $k$, and lowers it only to a
+$d$ with $C_k < C_\text{target} - 20$~ppm for all $k$. A command is sent only when the level changes.
+In A125 this holds three people at $d \approx 0.4$ and a full meeting at $d \approx 0.9$.
+ Table~\ref{tab:decisions} gives the alternatives this plan was chosen over.
 
 \textbf{When data is thin.} Until the first room model exists, the
-Decision service switches on CO₂ alone (FR-6): fully open once a reading
-reaches 950~ppm, closed once CO₂ falls below 800~ppm, and unchanged in
-between. Besides keeping the room safe, this moves the damper between
+Decision service switches on the reading $C$ alone (FR-6):
+\begin{equation}\label{eq:switch}
+  d = \begin{cases}
+    1 & \text{if } C \geq C_\text{target}, \\
+    0 & \text{if } C < 800~\text{ppm}, \\
+    \text{the current } d & \text{otherwise.}
+  \end{cases}
+\end{equation}
+Besides keeping the room safe, this moves the damper between
 closed and fully open, which is the history the first fit needs.
 
 \textbf{Latency.} A command must follow its reading within 2~minutes of
@@ -1077,8 +1083,8 @@ than the CO₂-only switch does; Section~\ref{sec:evaluation} reports both.
 \begin{itemize}
 \tightlist
 \item
-  \textbf{A wrong head count or room model.} A reading at or above
-  950~ppm opens the damper fully, whatever the plan predicted.
+  \textbf{A wrong head count or room model.} A reading
+  $C \geq C_\text{target}$ sets $d = 1$, whatever the plan predicted.
 \item
   \textbf{The Decision service unavailable.} The damper keeps its last
   level in BuildSim. After a restart, the Decision service decides again
