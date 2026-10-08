@@ -70,6 +70,7 @@
 \titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
 \usepackage{microtype}
 \usepackage{pgfplots}
+\usetikzlibrary{calc}
 \pgfplotsset{compat=1.16}
 \setlength{\emergencystretch}{2em}
 
@@ -1205,7 +1206,7 @@ meeting in A125, taken from the History store on a running day
 (\texttt{test/results/\allowbreak scenario\_arrival\_2026-11-19\_*.json}).
 Four people are in the room and the damper is at 0.55. The Occupancy
 simulator moves a fifth person in (1), and the Occupancy sensor's next
-count, at 13:02:34, reports 5 (2--3). The Decision service only keeps
+count, at 13:02:34 room time in Stockholm, reports 5 (2--3). The Decision service only keeps
 the count (4): a decision waits for a CO₂ reading. The next one comes
 10~s later, at 853.5~ppm (6--10). Planned with five people, it needs
 $d = 0.75$ (11), which the Damper actuator applies in BuildSim (12--13),
@@ -1219,9 +1220,10 @@ room.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/dynamic.pdf}
-\caption{Sequence diagram of one arrival. Numbers give the order;
-dashed arrows are answers. Times are room time in Stockholm.}
+\input{../../diagrams/dynamic.tex}
+\caption{Sequence diagram of one arrival, with $N$, $C$ and $d$ as in
+Section~\ref{sec:simulation}. Numbers give the order; dashed arrows are
+answers. Protocols are as in Figure~\ref{fig:container}.}
 \label{fig:dynamic}
 \end{figure}
 

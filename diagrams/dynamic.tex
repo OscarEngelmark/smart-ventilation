@@ -1,0 +1,45 @@
+% Dynamic diagram: a fifth person arrives for the meeting in A125 on
+% 2026-11-19 and the damper opens before their CO2 builds up. N is the head
+% count, C the CO2 in ppm, d the damper level. Participants are named as in
+% container.d2. Dashed arrows are answers.
+% Stored data: test/results/scenario_arrival_2026-11-19_*.json.
+% Drawn in TikZ and included by latex/report/report.tex.
+\begin{tikzpicture}[
+    x=1cm, y=-0.6cm, % x in cm, y counts rows downward
+    font=\footnotesize, >=stealth,
+    participant/.style={draw, align=center, minimum width=1.45cm, minimum height=0.8cm},
+    lbl/.style={midway, above=1pt, font=\scriptsize, fill=white, inner sep=1pt, align=center},
+    answer/.style={->, dashed},
+  ]
+  \foreach \x/\id/\name in {
+      0/occ/Occupancy\\simulator, 1.75/model/Physical\\model, 3.4/bs/BuildSim,
+      5.05/act/Damper\\actuator, 6.8/occs/Occupancy\\sensor, 8.6/co2s/CO₂\\sensor,
+      10.65/broker/Message\\broker, 12.7/dec/Decision\\service, 14.4/store/Storage\\service} {
+    \node[participant] (\id) at (\x, 0) {\name};
+    \draw[dashed, gray] (\id.south) -- (\x, 21); % lifeline
+  }
+
+  % an arrow from #2 to #3 on row #4, labeled #5 above its middle
+  \newcommand{\seqmsg}[5][->]{\draw[#1] (#2 |- 0,#4) -- node[lbl]{#5} (#3 |- 0,#4);}
+
+  \seqmsg{occ}{bs}{2}{1. add person}
+  \seqmsg{occs}{bs}{3}{2. read $N$}
+  \seqmsg[answer]{bs}{occs}{4}{5}
+  \seqmsg{occs}{broker}{5}{3. $N = 5$}
+  \seqmsg{broker}{dec}{6}{4. $N = 5$}
+  \seqmsg{broker}{store}{7}{5. $N = 5$}
+  \seqmsg{model}{bs}{8}{6. step $C$}
+  \seqmsg{co2s}{bs}{9}{7. read $C$}
+  \seqmsg[answer]{bs}{co2s}{10}{853.5}
+  \seqmsg{co2s}{broker}{11}{8. $C = 853.5$}
+  \seqmsg{broker}{dec}{12}{9. $C = 853.5$}
+  \seqmsg{broker}{store}{13}{10. $C = 853.5$}
+  \draw[->] (dec |- 0,14) -- ++(0.3,0) -- ++(0,0.8) -- ++(-0.3,0); % to itself
+  \node[font=\scriptsize, fill=white, inner sep=1pt, align=center, anchor=west] at ($(dec |- 0,14.4) + (0.35,0)$) {11. plan\\$d = 0.75$};
+  \seqmsg{dec}{act}{15.6}{12. $d = 0.75$}
+  \seqmsg{act}{bs}{16.6}{13. set $d$}
+  \seqmsg[answer]{act}{dec}{17.6}{200 OK}
+  \seqmsg{dec}{broker}{18.6}{14. $d = 0.75$}
+  \seqmsg{broker}{store}{19.6}{15. $d = 0.75$}
+  \seqmsg{model}{bs}{20.6}{16. step $C$\\$d = 0.75$}
+\end{tikzpicture}

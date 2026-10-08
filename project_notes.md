@@ -1429,7 +1429,7 @@ _(nothing yet)_
   decision through the exact one gives the same levels (0.55 with four
   people, 0.75 with five). Evidence:
   `test/results/scenario_arrival_2026-11-19_{co2,occupancy,commands}.json`;
-  diagram `diagrams/dynamic.d2`. Noted 2026-10-08.
+  diagram `diagrams/dynamic.tex`. Noted 2026-10-08.
   - Replaces a trace of 2026-10-01 made with the topics and HTTP method of
     the time.
   - Useful for: §8.1, §10, §11.
