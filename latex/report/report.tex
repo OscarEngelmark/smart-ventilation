@@ -1087,8 +1087,8 @@ than the CO₂-only switch does; Section~\ref{sec:evaluation} reports both.
   $C \geq C_\text{target}$ sets $d = 1$, whatever the plan predicted.
 \item
   \textbf{The Decision service unavailable.} The damper keeps its last
-  level in BuildSim. After a restart, the Decision service decides again
-  from the next reading, with the retained room model.
+  level in BuildSim. After a restart, the Decision service gets the last
+  room model from the broker and decides again from the next reading.
 \item
   \textbf{A command not applied.} When the Damper actuator answers
   anything but 200, the level is decided and sent again on the next
