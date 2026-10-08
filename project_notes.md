@@ -1417,26 +1417,21 @@ _(nothing yet)_
 
 ## 8. Behaviour
 
-- **One CO2 reading traced through the full loop: a damper command it
-  triggered reached the physical model within one step.** Traced on the
-  running stack for A125 on 2026-10-01, room time (UTC), from the stored
-  readings and commands (`GET /co2`, `GET /commands`) and each container's
-  log, with the topics and the command's HTTP method as they were then:
-  1. `physical-model`, with 2 people and the damper at 0.80, steps CO2 to
-     555.6 ppm and writes it to BuildSim as the sensor's value.
-  2. `co2-sensor` reads it from BuildSim and publishes it on
-     `co2/A125/reading`, stamped 10:45:09; `storage-service` stores it.
-  3. `decision` receives it; the plan now needs 0.85 instead of 0.80, so it
-     sends `POST /command` with 0.85 to `actuator`, stamped 10:45:09.
-  4. `actuator` writes 0.85 to BuildSim as the damper's position and
-     answers that it was accepted; `decision` then publishes the copy on
-     `ventilation/A125/command`, and `storage-service` stores it.
-  5. `physical-model`'s next step reads 0.85 from BuildSim.
-  6. The next reading, stamped 10:45:19, is 556.0 ppm: the rise per
-     reading slowed from 0.5 to 0.4 ppm.
-  - Every hop logged in the same real second (at speed 10, one step of 10
-    room seconds); the logs are stamped to the whole second, so the time
-    per hop is not measured. Noted 2026-09-26.
+- **An arrival traced through the full loop: the damper opened at the
+  first CO2 reading after the head count rose, 10 s later.** On the running
+  stack, A125, 2026-11-19 (room time in Stockholm): the Occupancy sensor
+  counted 5 people, up from 4, at 13:02:34; the next CO2 reading, 853.5 ppm
+  at 13:02:44, was planned with five people and raised the damper from 0.55
+  to 0.75; the rise per reading fell from 1.3 to 0.6 ppm. Chosen over the
+  end-to-end test's run for report §8.1, since that test writes 980 ppm by
+  hand and so shows only the full opening at the target, never the head
+  count or the plan. The day ran with the forward-Euler plan; replaying the
+  decision through the exact one gives the same levels (0.55 with four
+  people, 0.75 with five). Evidence:
+  `test/results/scenario_arrival_2026-11-19_{co2,occupancy,commands}.json`;
+  diagram `diagrams/dynamic.d2`. Noted 2026-10-08.
+  - Replaces a trace of 2026-10-01 made with the topics and HTTP method of
+    the time.
   - Useful for: §8.1, §10, §11.
 
 ## 9. Deployment and component view
