@@ -106,3 +106,19 @@ func TestSwitchKeepsTheLevelInBetween(t *testing.T) {
 		t.Errorf("level %v at 800 ppm while open, want 1", got)
 	}
 }
+
+// BenchmarkLevelFullRoom times one plan for a full room held near the target,
+// the state the room spends a meeting in.
+func BenchmarkLevelFullRoom(b *testing.B) {
+	for b.Loop() {
+		Level(920, 0.9, 6, a125, settings)
+	}
+}
+
+// BenchmarkFullHorizonPrediction times one prediction that runs the whole
+// horizon; a plan makes at most steps+1 of them.
+func BenchmarkFullHorizonPrediction(b *testing.B) {
+	for b.Loop() {
+		staysUnder(settings.Cout, 1, 6, a125, settings, settings.Target)
+	}
+}

@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15e | §7.1 the autonomous service, including what happens after a failed request: the Decision service decides again on the next CO2 reading when the Damper actuator answers anything but 200, and the Room-model service retries a failed history read every 5 real seconds | | 1 |
 | 15f | §7.2 the data pipeline | | 1 |
 | 15g | `project_notes.md`: cut the two largest entries (*Decided: the system pursues three goals…* and *Deferred, not yet decided: issues and implicit choices found reviewing…*) down to what the oral exam needs, applying the notes rule *Entries record why, not a second copy of what*; also drop the two citations of the private Canvas page (MQTT in §4, InfluxDB in §7), which the notes may not reference | | 1 |
 | 15h | §8.1 dynamic diagram, walking one reading through the loop from the end-to-end run's stored data (`test/results/e2e_2026-10-07*`) | | 1 |

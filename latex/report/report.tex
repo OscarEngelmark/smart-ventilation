@@ -983,11 +983,113 @@ level. Section~\ref{sec:risks} weighs what these mean for the results.
 
 \subsection{The autonomous service}\label{sec:decision-logic}
 
-\guidance{The decision logic: inputs, the algorithm or rules, and outputs. Rule-based
-control is fully acceptable if justified; if a learned model is used, explain training,
-data, and the fallback when data is thin.}
+% Required points (report guide, section 3.7; template, section 7.1):
+% - the approach, the simplest that meets the requirement, and why
+% - why it fits the latency budget
+% - the inputs it uses, the action it produces, how it is integrated
+% - for a learned model: training, data, and the fallback when data is thin
+% - how it is evaluated
+% - failure and safety behavior: wrong, slow or unavailable, and the
+%   fallback that keeps the room safe
 
-\fillin{Describe the autonomous service here.}
+The Decision service chooses the damper level. On every CO₂ reading it
+predicts, with a room model learned from the stored history, how CO₂
+would develop at each damper level, and picks the lowest level that keeps
+it under a target. Its inputs are the latest CO₂ reading, head count and
+room model, received over MQTT; its output is a damper level from 0 to 1,
+sent to the Damper actuator over REST (Section~\ref{sec:interfaces}).
+
+\textbf{Threshold and target.} CO₂ must stay under 1000~ppm (REG-1,
+Section~\ref{sec:requirements}). The plan aims lower, at 950~ppm, so that
+a small error in the head count or the room model does not carry a room
+held at the target over the threshold. With the damper closed, a full
+room covers those 50~ppm in about two minutes
+(Section~\ref{sec:simulation}).
+
+\textbf{The room model.} The Decision service never sees the Physical
+model's volume or airflows. It plans with three rates learned from the
+stored data, in the shape of any well-mixed ventilated room:
+\begin{equation}\label{eq:roommodel}
+  \frac{dC}{dt} = a\,N - (b_0 + b_1\,d)\,(C - C_\text{out}),
+\end{equation}
+where $a$ is the CO₂ rise per person, in ppm per minute, $b_0$ the share
+of the excess over outdoor CO₂ that the room clears per minute with the
+damper closed, and $b_1$ the share added by a fully open damper. The
+Room-model service fits them by least squares over the last 7 days of
+stored readings, head counts and commands, at its start and at each
+room-time midnight. Each pair of consecutive CO₂ readings gives one
+equation, using the head count and damper level in force; a pair more
+than a minute apart, or across a change in either, is left out. The rates
+are published as a retained message, so a restarted Decision service gets
+the last ones at once. When the history cannot tell the three rates
+apart, because nobody was present or the damper never moved, the fit
+gives no room model and nothing is published. Because the Decision
+service learns the room rather than being told it, the same logic would
+carry over to a real room that provides the same three data streams.
+
+\textbf{The plan.} For each damper level from 0 to 0.95, in steps of 0.05,
+the Decision service steps~(\ref{eq:roommodel}) forward from the current
+reading in 10-second steps for the next hour, assuming the people counted
+now stay the whole hour. It chooses the lowest level whose predicted CO₂
+stays under the target, and fully open when none does, as for a reading
+already at the target. To keep the level from flipping back and forth
+at the edge between two levels, it keeps the current level while that
+still holds CO₂ under the target, and lowers it only to a level that
+holds CO₂ 20~ppm under it. A command is sent only when the level changes.
+In A125 this holds three people at about 0.4 and a full meeting at about
+0.9. Table~\ref{tab:decisions} gives the alternatives this plan was
+chosen over.
+
+\textbf{When data is thin.} Until the first room model exists, the
+Decision service switches on CO₂ alone (FR-6): fully open once a reading
+reaches 950~ppm, closed once CO₂ falls below 800~ppm, and unchanged in
+between. Besides keeping the room safe, this moves the damper between
+closed and fully open, which is the history the first fit needs.
+
+\textbf{Latency.} A command must follow its reading within 2~minutes of
+room time (FR-2), and a new reading arrives every 10~s. One plan for a
+full room near the target takes about 2.4~µs, and a plan makes at most
+21 hour-long predictions of about 1.0~µs each, about 22~µs in all
+(measured with Go benchmarks; \texttt{test/results/\allowbreak
+bench\_planner\_2026-10-08.txt}). The time from a reading to its command
+is therefore set by the messaging and the REST call, not by the plan.
+
+\textbf{Evaluation.} REG-1 checks that a full weekday stays under
+1000~ppm, and NFR-2 that the plan runs the damper lower over the day
+than the CO₂-only switch does; Section~\ref{sec:evaluation} reports both.
+
+\textbf{Failure and safety.}
+\begin{itemize}
+\tightlist
+\item
+  \textbf{A wrong head count or room model.} A reading at or above
+  950~ppm opens the damper fully, whatever the plan predicted.
+\item
+  \textbf{The Decision service unavailable.} The damper keeps its last
+  level in BuildSim. After a restart, the Decision service decides again
+  from the next reading, with the retained room model.
+\item
+  \textbf{A command not applied.} When the Damper actuator answers
+  anything but 200, the level is decided and sent again on the next
+  reading.
+\item
+  \textbf{The Room-model service unavailable, or a fit refused.} The last
+  room model stays in use, however old, since a room's rates change
+  slowly. A failed read of the history is retried every 5 real seconds.
+\item
+  \textbf{The Message broker unavailable.} No readings arrive, so no
+  decisions are made and the damper keeps its last level. The Decision
+  service reconnects by itself and keeps the room model it holds. The
+  broker keeps the retained room model only in memory, though, so a
+  Decision service that restarts after a broker restart has no room
+  model and switches on CO₂ alone until the next fit.
+\item
+  \textbf{A malformed message.} The Decision service does not check the
+  messages it receives against their schemas, so a CO₂ reading missing
+  its \texttt{ppm} field would be read as 0~ppm, a room far below the
+  target, and the damper would be lowered or closed.
+  The Storage service and the Damper actuator do check theirs.
+\end{itemize}
 
 \subsection{The data pipeline}\label{sec:pipeline}
 

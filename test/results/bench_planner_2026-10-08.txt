@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/OscarEngelmark/smart-ventilation/internal/planner
+cpu: AMD Ryzen 9 7900X 12-Core Processor            
+BenchmarkLevelFullRoom-24            	  449852	      2471 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24            	  493872	      2423 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24            	  486068	      2392 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24            	  496108	      2376 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24            	  481784	      2378 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFullHorizonPrediction-24    	 1000000	      1033 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFullHorizonPrediction-24    	 1000000	      1029 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFullHorizonPrediction-24    	 1000000	      1027 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFullHorizonPrediction-24    	 1000000	      1029 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFullHorizonPrediction-24    	 1000000	      1022 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	10.940s

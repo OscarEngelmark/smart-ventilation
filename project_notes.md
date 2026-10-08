@@ -967,8 +967,8 @@ _(nothing yet)_
       from it (uneven mixing, open windows, a slow sensor). The shape is
       standard ventilation physics, not taken from the simulator; the
       numbers are what the simulator sets.
-    - **Decided: the fitting runs in its own service, `room-model`**: once
-      per room day it fetches history from
+    - **Decided: the fitting runs in its own service, `room-model`**: at
+      its start and at each room midnight it fetches history from
       the storage-service, fits the model, and publishes the three numbers
       as a retained MQTT message. A slow or failing fit then can't delay a
       damper command, and the decision service keeps planning with the last
@@ -1035,6 +1035,11 @@ _(nothing yet)_
     stack on 2026-10-06, a day that already planned this way: the damper
     stayed closed over lunch, rose to 0.90 once six people were counted for
     the meeting, and CO2 peaked at 935 ppm.
+    - One plan takes about 2.4 µs for a full room near the target, and a
+      plan makes at most 21 hour-long predictions of about 1.0 µs each,
+      about 22 µs in all (derived), against FR-2's 2 minutes. Measured with
+      Go benchmarks in `internal/planner/planner_test.go` on 2026-10-08;
+      output in `test/results/bench_planner_2026-10-08.txt`.
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
     - Until 2026-09-27 the plan expected the occupancy forecast's head count
@@ -1079,8 +1084,10 @@ _(nothing yet)_
         0.95). Decided and implemented 2026-09-26.
   - **Decided: without a room model the damper switches on CO2 alone; an
     old room model is used however old.**
-    - No room model, as before the first fit succeeds or after the broker
-      restarts (it keeps retained messages in memory only): no level can be
+    - No room model, as before the first fit succeeds, or when the decision
+      service restarts after a broker restart (the broker keeps retained
+      messages in memory only, while a running decision service keeps the
+      model it holds across a reconnect): no level can be
       predicted, so the damper opens fully when a reading reaches 950 ppm
       and closes once CO2 is back below 800 ppm. The gap between the two
       keeps the damper from flipping on every reading. This also moves the
