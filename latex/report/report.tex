@@ -210,13 +210,15 @@ by being in the room; here they are simulated from a weekday schedule
 acting on it.
 
 \textbf{The scenario the demo shows.} For most of a weekday, three people
-work in A125. At 13:00 a meeting fills the room to its six-person maximum
-for an hour. This is the case where CO₂ climbs fast enough to cross
-1000 ppm, so it is the one the decision service has to hold under the
-threshold. The occupancy sensor reports six, and the decision service
-raises the damper to the lowest level its room model predicts will hold
-six people under the threshold. When the meeting ends, the level drops
-back. Room time can run faster than the wall clock, so the demo shows the
+work in A125, and the damper holds them under the decision service's
+950 ppm target (Section~\ref{sec:decision-logic}) at about 0.4. At 13:00
+a meeting fills the room to its six-person maximum for an hour. Six
+people need the damper at about 0.9, most of what the ventilation can
+give, so the meeting is the hardest case the decision service has to
+hold under the threshold. The occupancy sensor reports six, and the
+decision service raises the damper to the lowest level its room model
+predicts will hold six people under the target. When the meeting ends,
+the level drops back. Room time can run faster than the wall clock, so the demo shows the
 whole meeting in a few minutes. Section~\ref{sec:evaluation} reports whether the threshold
 holds.
 
@@ -288,7 +290,7 @@ first & End-to-end test \\
 FR-4 & Functional & Other components can fetch a room's stored
 readings and commands from a given time on & Must & A request for one
 room from a given time returns exactly that room's rows from that time
-on, oldest first & Unit tests, \texttt{internal/store} \\
+on, oldest first; commands are led by the one in force at that time & Unit tests, \texttt{internal/store} \\
 \midrule
 FR-5 & Functional & The room-model service fits the room model to the
 stored history & Must & The fit recovers the rates of a simulated room,
@@ -752,7 +754,7 @@ the last one before \texttt{since} (the level in force at \texttt{since}) \\
 \midrule
 \texttt{GET /latest}, Storage service & Dashboard & None & 200 with the
 newest time in the History store, as plain RFC~3339 text; 204 if nothing
-is stored yet \\
+is stored yet; 500 if the History store can't be read \\
 \bottomrule
 \end{longtable}
 }

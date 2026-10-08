@@ -66,7 +66,7 @@ _(nothing yet)_
   | FR-1 | Functional | Must | CO2 readings and head counts are saved in the history store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Stored data of a room day |
   | FR-2 | Functional | Must | The decision service sets the damper in BuildSim from the CO2 readings, in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
-  | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first | Unit tests, `internal/store` |
+  | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first; commands are led by the one in force at that time | Unit tests, `internal/store` |
   | FR-5 | Functional | Must | The room-model service fits the room model to the stored history; the fit gives no room model when the history can't separate the rates | Unit tests, `internal/roommodel` |
   | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
@@ -860,11 +860,12 @@ _(nothing yet)_
     on every call, every 10 room seconds; the date seed makes every call on
     one day draw the same shifts, so each person keeps one arrival time all
     day, and a restarted Occupancy simulator carries on with the same day. The
-    13:00 meeting is the scenario the demo turns on: six people in 71.5 m³ is
-    the case where CO2 climbs fast enough to cross the threshold, so it is
-    what the decision service has to hold under it. Times are room time, so
-    they follow the simulation speed. Plausible office hours, not taken from a
-    source or a measured building. Decided and implemented 2026-09-20,
+    13:00 meeting is the scenario the demo turns on: six people need the
+    damper at about 0.9 to stay under the 950 ppm target, against about 0.4
+    for three (the stored commands of 2026-10-22), so it is the hardest case
+    the decision service has to hold. Times are room time, so they follow the
+    simulation speed. Plausible office hours, not taken from a source or a
+    measured building. Decided and implemented 2026-09-20,
     `internal/occupancy/schedule.go`, with unit tests covering the counts at
     known times, the weekend, the lunch dip, and that the room fills to
     capacity exactly once a day.
@@ -1938,3 +1939,11 @@ was caught. Kept for the report's reflection and the oral exam.
   *Decided: a session can start at a chosen room time…*, §6. Noted
   2026-10-08.
   - Useful for: §6, §13.
+
+- **The notes and report said the 13:00 meeting is the case where CO2
+  climbs fast enough to cross 1000 ppm.** With the damper closed, any two
+  or more people cross it eventually: three settle near 2030 ppm. What sets
+  the meeting apart is the damper it needs, about 0.9 against about 0.4 for
+  three people, as the stored commands of 2026-10-22 show. Caught when the
+  report was checked against the code and stored data. Noted 2026-10-08.
+  - Useful for: §2, §13.
