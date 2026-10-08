@@ -1006,16 +1006,17 @@ held at the target over the threshold. With the damper closed, a full
 room covers those 50~ppm in about two minutes
 (Section~\ref{sec:simulation}).
 
-\textbf{The room model.} The Decision service never sees the Physical
-model's volume or airflows. It plans with three rates learned from the
-stored data, in the shape of any well-mixed ventilated room:
+\textbf{The room model.} The Decision service plans with the mass
+balance~(\ref{eq:massbalance}), divided by the room's volume and with the
+airflow~(\ref{eq:airflow}) put in:
 \begin{equation}\label{eq:roommodel}
   \frac{dC}{dt} = a\,N - (b_0 + b_1\,d)\,(C - C_\text{out}),
+  \qquad a = \frac{G}{V}, \quad b_0 = \frac{Q_\text{min}}{V}, \quad
+  b_1 = \frac{Q_\text{max} - Q_\text{min}}{V}.
 \end{equation}
-where $a$ is the CO₂ rise per person, in ppm per minute, $b_0$ the share
-of the excess over outdoor CO₂ that the room clears per minute with the
-damper closed, and $b_1$ the share added by a fully open damper. The
-Room-model service fits them by least squares over the last 7 days of
+It is never given $G$, $V$ or the airflows. The Room-model service learns
+$a$, $b_0$ and $b_1$ from the stored data instead, which can determine
+only these ratios. It fits them by least squares over the last 7 days of
 stored readings, head counts and commands, at its start and at each
 room-time midnight. Each pair of consecutive CO₂ readings gives one
 equation, using the head count and damper level in force; a pair more
