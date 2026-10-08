@@ -807,6 +807,20 @@ _(nothing yet)_
   - Changing speed means running `./start.sh` again. That recreates only the
     project's own services, which read the three values; BuildSim and the
     broker keep running, so the room's CO2 and damper carry on.
+  - **Decided: a session can start at a chosen room time, later than the
+    stored history and at most `FIT_DAYS` (7 days) after it**
+    (`./start.sh <speed> <room time>`), so the demo can begin just before a
+    weekday's 13:00 meeting. The skipped room time is a gap in the history.
+    The room model's fit pairs only readings under a minute apart, so the
+    gap adds nothing to it, and the limit keeps stored history inside the
+    fit's 7-day window. The room's CO2 in BuildSim carries over the gap
+    unchanged, as between any two sessions. Rejected: an earlier start,
+    which would write readings at room times already stored; and running
+    fast up to the meeting and stopping by hand, which needs no code but a
+    stop timed by eye, and every rehearsal uses up that day's meeting.
+    `FIT_DAYS` moved from the Room-model service's block in
+    `docker-compose.yml` to `sim.env`, since `start.sh` reads it too.
+    Decided and implemented 2026-10-08.
   - **Known caveat —** a full shutdown restarts BuildSim, which keeps state
     only in memory, so the room's CO2 resumes from outdoor air while room
     time continues. Ending sessions outside office hours hides this, since
@@ -842,9 +856,9 @@ _(nothing yet)_
     so the room empties rather than thins out, and leave one at a time at
     16:00, 16:40 and 17:20. The rest of the capacity join a meeting
     13:00–14:00, filling the room to its 6-person maximum. Each of a
-    person's times is shifted by up to ±20 minutes, drawn from the date so
-    the same day always plays out the same way and a demo or test can be
-    repeated. The 13:00 meeting is the scenario the demo turns on: six
+    person's times is shifted by up to ±20 minutes, drawn from a random
+    generator seeded with the date, so each date's schedule is fixed. The
+    13:00 meeting is the scenario the demo turns on: six
     people in 71.5 m³ is the case where CO2 climbs fast enough to cross the
     threshold, so it is what the decision service has to hold under it.
     Times are room time, so they follow the simulation speed. Plausible
@@ -1916,3 +1930,12 @@ was caught. Kept for the report's reflection and the oral exam.
   schedule in *Decided: occupancy comes from a time-of-day schedule…*, §6.
   Noted 2026-10-08.
   - Useful for: §6.
+
+- **The notes claimed that seeding the schedule's random shifts from the
+  date makes a demo or test repeatable.** The system never replays a date:
+  every session resumes from the latest stored room time, so the seed only
+  fixes each date's schedule. Caught by the user while reviewing report §6,
+  which also raised how the demo could show the 13:00 meeting at all; see
+  *Decided: a session can start at a chosen room time…*, §6. Noted
+  2026-10-08.
+  - Useful for: §6, §13.

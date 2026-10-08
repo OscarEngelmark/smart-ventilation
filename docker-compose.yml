@@ -131,7 +131,6 @@ services:
     environment:
       STORAGE_URL: http://storage-service:8081
       MQTT_BROKER_URL: *broker-url
-      FIT_DAYS: 7
     depends_on:
       - mosquitto
       - storage-service
