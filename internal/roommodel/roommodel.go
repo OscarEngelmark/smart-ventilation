@@ -11,6 +11,8 @@ import (
 	"errors"
 	"sort"
 	"time"
+
+	"github.com/OscarEngelmark/smart-ventilation/internal/massbalance"
 )
 
 // Sample is one stored value and the time it was taken. A head count or a
@@ -25,6 +27,14 @@ type Model struct {
 	A  float64 // CO2 rise per person, in ppm per minute
 	B0 float64 // share of the gap to outdoor CO2 cleared per minute, damper closed
 	B1 float64 // share cleared per minute added by each unit of damper opening
+}
+
+// Predict returns the CO2 level after t, in ppm, starting at C with N people
+// and the damper held at d. Cout is the outdoor CO2 level, in ppm.
+func (m Model) Predict(C, N, d, Cout float64, t time.Duration) float64 {
+	S := m.A * N       // CO2 added, in ppm per minute
+	k := m.B0 + m.B1*d // share of the gap to Cout cleared per minute
+	return massbalance.After(C, Cout, S, k, t)
 }
 
 // maxGap is the longest step between two CO2 readings still used.

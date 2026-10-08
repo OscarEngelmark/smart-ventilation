@@ -2,15 +2,15 @@ goos: linux
 goarch: amd64
 pkg: github.com/OscarEngelmark/smart-ventilation/internal/planner
 cpu: AMD Ryzen 9 7900X 12-Core Processor            
-BenchmarkLevelFullRoom-24    	 4345304	       272.4 ns/op	       0 B/op	       0 allocs/op
-BenchmarkLevelFullRoom-24    	 4427751	       270.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkLevelFullRoom-24    	 4423120	       274.1 ns/op	       0 B/op	       0 allocs/op
-BenchmarkLevelFullRoom-24    	 4394552	       273.1 ns/op	       0 B/op	       0 allocs/op
-BenchmarkLevelFullRoom-24    	 4420839	       269.6 ns/op	       0 B/op	       0 allocs/op
-BenchmarkPrediction-24       	100000000	        10.71 ns/op	       0 B/op	       0 allocs/op
-BenchmarkPrediction-24       	100000000	        10.70 ns/op	       0 B/op	       0 allocs/op
-BenchmarkPrediction-24       	100000000	        10.69 ns/op	       0 B/op	       0 allocs/op
-BenchmarkPrediction-24       	100000000	        10.67 ns/op	       0 B/op	       0 allocs/op
-BenchmarkPrediction-24       	100000000	        10.67 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24    	 4206943	       288.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24    	 4167381	       287.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24    	 4219256	       283.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24    	 4216380	       285.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLevelFullRoom-24    	 4193802	       285.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrediction-24       	100000000	        11.51 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrediction-24       	100000000	        11.50 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrediction-24       	100000000	        11.52 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrediction-24       	100000000	        11.51 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrediction-24       	100000000	        11.53 ns/op	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	11.334s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	11.772s

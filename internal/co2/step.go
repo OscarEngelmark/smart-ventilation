@@ -4,8 +4,9 @@
 package co2
 
 import (
-	"math"
 	"time"
+
+	"github.com/OscarEngelmark/smart-ventilation/internal/massbalance"
 )
 
 // Step advances the mass balance V*dC/dt = G*N - Q*(C - Cout) by dt and
@@ -20,11 +21,8 @@ import (
 //
 // N and Q are held fixed over the step, so dt should be set accordingly
 func Step(C float64, N int, V, Q, G, Cout float64, dt time.Duration) float64 {
-	// The level the room settles at while N and Q stay as they are.
-	Csteady := Cout + 1e6*G*float64(N)/Q // in ppm
-
-	// The factor the remaining gap to Csteady shrinks by over dt.
-	gapLeft := math.Exp(-Q * dt.Seconds() / (V * 1000)) // V in liters
-
-	return Csteady + (C-Csteady)*gapLeft
+	Vliters := V * 1000                      // in liters
+	S := 1e6 * G * float64(N) * 60 / Vliters // CO2 added, in ppm per minute
+	k := Q * 60 / Vliters                    // share of the air replaced per minute
+	return massbalance.After(C, Cout, S, k, dt)
 }

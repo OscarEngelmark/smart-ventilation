@@ -363,6 +363,18 @@ _(nothing yet)_
     holding once the volume and both airflow limits turned out to be the same
     kind of value, derived the same way from the same input.
   - Useful for: §4.3, §4.4.
+- **Decided: the exact solution of the CO2 balance is written once, in
+  `internal/massbalance`, and both models call it.** The physical model
+  (`co2.Step`) and the learned room model (`roommodel.Model.Predict`) are the
+  same equation, `dC/dt = S − k·(C − C_out)`, with their own parameters:
+  `S = G·N/V`, `k = Q/V` for one, `S = a·N`, `k = b0 + b1·d` for the other.
+  The package holds only the solution, so the decision side shares
+  mathematics with the simulator, not the simulator's room. Rejected: a copy
+  in each model, about 20 lines each that could drift apart; and one model
+  importing the other, which would make the decision service depend on
+  simulator code, or the reverse. Trade-off: one more package for a single
+  function. Decided and implemented 2026-10-08.
+  - Useful for: §4.3, §7.1.
 
 - **Decided: one decision-service instance per room.** It matches the other
   per-room services (sensors, actuator, room model), each
@@ -607,13 +619,16 @@ _(nothing yet)_
   accuracy doesn't depend on the cycle length or on running the room faster
   than real time. What `Δt` still sets is how late the model notices a
   change in `N` or the damper. Decided 2026-09-17, exact solution 2026-09-18,
-  implemented 2026-09-21 as `co2.Step` in `internal/co2/massbalance.go`.
+  implemented 2026-09-21 as `co2.Step` in `internal/co2/step.go`, which
+  since 2026-10-08 hands the solving to `massbalance.After` (see *Decided:
+  the exact solution of the CO2 balance is written once…*, §4).
   - Replaces forward-Euler stepping, `C_next = C + Δt·(G·N/V − (Q/V)·(C −
     C_out))`. That is only accurate while `Δt` is much smaller than the time
     constant `τ = V/Q` (≈ 10 min in A125 with the damper open), so a faster
     room would have needed more cycles, and more requests to BuildSim, to
     stay accurate.
-  - The claim that `Δt` is free is tested: in `internal/co2/massbalance_test.go`,
+  - The claim that `Δt` is free is tested: in `internal/co2/step_test.go` and
+    `internal/massbalance/massbalance_test.go`,
     one 10-minute step and sixty 10-second steps agree to within 0.01 ppm.
     Under forward Euler those two would differ, so this is the test that
     distinguishes the two methods rather than just exercising the code.
@@ -1034,19 +1049,18 @@ _(nothing yet)_
     stack on 2026-10-06, a day that already planned this way: the damper
     stayed closed over lunch, rose to 0.90 once six people were counted for
     the meeting, and CO2 peaked at 935 ppm.
-    - A plan makes at most 21 predictions and takes about 0.27 µs when it
+    - A plan makes at most 21 predictions and takes about 0.29 µs when it
       makes all 21 (a full room at 920 ppm), against FR-2's 2 minutes; one
-      prediction takes about 11 ns. Measured with Go benchmarks in
+      prediction takes about 12 ns. Measured with Go benchmarks in
       `internal/planner/planner_test.go` on 2026-10-08; output in
       `test/results/bench_planner_2026-10-08.txt`.
     - **Decided: the prediction is the exact solution of the room model,
-      checked only now and at the end of the hour** (`predict` and
-      `staysUnder` in `internal/planner/planner.go`). With `N` and `d` held
+      checked only now and at the end of the hour** (`Model.Predict` in
+      `internal/roommodel`, `staysUnder` in `internal/planner/planner.go`). With `N` and `d` held
       fixed, CO2 moves steadily toward its settling level, so if both ends
       are under the limit, the whole hour is. Replaces forward-Euler steps
       of 10 seconds over the hour: within 0.87 ppm of the exact solution
-      (derived),
-      but an approximation needing its own justification, inconsistent with
+      (derived), but an approximation needing its own justification, inconsistent with
       the physical model's exact step (see *Decided: the mass balance is
       `V·dC/dt = G·N − Q·(C − C_out)`…*, §6), and 360 steps where one
       calculation does; one plan took about 2.4 µs. Trade-off: the closed

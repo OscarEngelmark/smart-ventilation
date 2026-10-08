@@ -1,10 +1,7 @@
 // Package planner chooses a room's damper level from its head count and its
-// learned room model, by predicting CO2 ahead with
-//
-//	dC/dt = a·N − (b0 + b1·d)·(C − Cout)
-//
-// Without a room model, it chooses from the CO2 level alone. The plan and its
-// reasoning are in project_notes.md §7.
+// learned room model, by predicting CO2 ahead with the model. Without a room
+// model, it chooses from the CO2 level alone. The plan and its reasoning are
+// in project_notes.md §7.
 package planner
 
 import (
@@ -79,27 +76,5 @@ func staysUnder(C, d, N float64, m roommodel.Model, s Settings, limit float64) b
 	if C >= limit {
 		return false
 	}
-	return predict(C, d, N, m, s.Cout, s.Horizon) < limit
-}
-
-// predict returns the CO2 level after t, in ppm, starting at C with N people
-// and the damper held at d, from the exact solution of the room model
-//
-//	C(t) = Csteady + (C − Csteady)·e^(−(b0 + b1·d)·t),  Csteady = Cout + a·N/(b0 + b1·d)
-//
-// C and Cout are in ppm.
-func predict(C, d, N float64, m roommodel.Model, Cout float64, t time.Duration) float64 {
-	cleared := m.B0 + m.B1*d // share of the gap to Cout cleared per minute
-	minutes := t.Minutes()
-	if cleared == 0 {
-		return C + m.A*N*minutes
-	}
-
-	// The level the room settles at while N and d stay as they are.
-	Csteady := Cout + m.A*N/cleared // in ppm
-
-	// The factor the remaining gap to Csteady shrinks by over t.
-	gapLeft := math.Exp(-cleared * minutes)
-
-	return Csteady + (C-Csteady)*gapLeft
+	return m.Predict(C, N, d, s.Cout, s.Horizon) < limit
 }

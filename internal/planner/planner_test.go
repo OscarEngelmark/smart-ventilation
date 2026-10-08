@@ -77,7 +77,7 @@ func TestFullRoomAtTheTargetSettlesAfterOpeningFully(t *testing.T) {
 			levels = append(levels, next)
 		}
 		d = next
-		C = predict(C, d, 6, a125, settings.Cout, 10*time.Second)
+		C = a125.Predict(C, 6, d, settings.Cout, 10*time.Second)
 	}
 
 	if len(levels) != 2 || levels[0] != 1 || levels[1] != 0.95 {
