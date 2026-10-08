@@ -857,10 +857,13 @@ _(nothing yet)_
     16:00, 16:40 and 17:20. The rest of the capacity join a meeting
     13:00–14:00, filling the room to its 6-person maximum. Each of a
     person's times is shifted by up to ±20 minutes, drawn from a random
-    generator seeded with the date, so each date's schedule is fixed. The
-    13:00 meeting is the scenario the demo turns on: six
-    people in 71.5 m³ is the case where CO2 climbs fast enough to cross the
-    threshold, so it is what the decision service has to hold under it.
+    generator seeded with the date. `PeopleAt` keeps no state and draws the
+    shifts again on every call, every 10 room seconds; the date seed makes
+    every call on one day draw the same shifts, so each person keeps one
+    arrival time all day, and a restarted Occupancy simulator carries on
+    with the same day. The 13:00 meeting is the scenario the demo turns on:
+    six people in 71.5 m³ is the case where CO2 climbs fast enough to cross
+    the threshold, so it is what the decision service has to hold under it.
     Times are room time, so they follow the simulation speed. Plausible
     office hours, not taken from a source or a measured building. Decided
     and implemented 2026-09-20, `internal/occupancy/schedule.go`, with unit
