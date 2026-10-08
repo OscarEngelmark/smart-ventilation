@@ -8,8 +8,8 @@ import (
 
 // A125's airflow at both ends of the damper, from project_notes.md §6.
 const (
-	Qshut = 10.43  // L/s, 0.35 per m² of 29.8 m²
-	Qopen = 115.86 // L/s, 2 * G*N_max / (1000 - 420)
+	Qshut = 10.43 // L/s, 0.35 per m² of 29.8 m²
+	Qopen = 69.52 // L/s, 1.2 * G*N_max / (1000 - 420)
 )
 
 // step advances A125 by dt, so each test only spells out what it is about.
@@ -24,8 +24,8 @@ func settled(C float64, N int, Q float64) float64 {
 }
 
 func TestFullRoomFullyOpenSettlesBelowThreshold(t *testing.T) {
-	// 420 + 1e6 * 0.0056*6 / 115.86
-	nearly(t, settled(420, 6, Qopen), 710, 1)
+	// 420 + 1e6 * 0.0056*6 / 69.52
+	nearly(t, settled(420, 6, Qopen), 903, 1)
 }
 
 func TestFullRoomDamperShutSettlesFarAbove(t *testing.T) {
@@ -42,7 +42,7 @@ func TestEmptyRoomReturnsToOutdoor(t *testing.T) {
 }
 
 func TestRoomAtItsSteadyLevelStaysThere(t *testing.T) {
-	nearly(t, step(710, 6, Qopen, 10*time.Second), 710, 1)
+	nearly(t, step(903, 6, Qopen, 10*time.Second), 903, 1)
 }
 
 // The step is exact, so the result must not depend on how it is divided up.

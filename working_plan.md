@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15d | §6 simulating the sensor values | | 1 |
 | 15e | §7.1 the autonomous service, including what happens after a failed request: the Decision service decides again on the next CO2 reading when the Damper actuator answers anything but 200, and the Room-model service retries a failed history read every 5 real seconds | | 1 |
 | 15f | §7.2 the data pipeline | | 1 |
 | 15g | `project_notes.md`: cut the two largest entries (*Decided: the system pursues three goals…* and *Deferred, not yet decided: issues and implicit choices found reviewing…*) down to what the oral exam needs | | 1 |

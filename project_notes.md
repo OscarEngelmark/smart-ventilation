@@ -72,7 +72,7 @@ _(nothing yet)_
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
   | FR-8 | Functional | Must | The storage service keeps bad messages out of the history store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
   | FR-9 | Functional | Must | The occupancy simulator fills the room on a weekday schedule; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
-  | FR-10 | Functional | Must | The physical model's CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 710 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
+  | FR-10 | Functional | Must | The physical model's CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 903 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
   | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Peak CO2 over a room day, `eval/day_summary.py` |
   | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash-and-restart test, at speed 1 |
   | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Decision-quality comparison |
@@ -584,16 +584,17 @@ _(nothing yet)_
 ## 6. Simulating the sensor values (the physical model)
 
 - **Decided: CO2 comes from a simple mass-balance model, not a replayed
-  dataset.** CO2 rises roughly 40 ppm per occupant per hour and decays toward
-  an outdoor baseline at a rate set by the ventilation level. Rejected:
+  dataset.** CO2 rises with the people in the room and decays toward an
+  outdoor baseline at a rate set by the ventilation level. Rejected:
   replaying a recorded CO2 dataset — a fixed trace can't respond to the
   actuator, so the control loop wouldn't close. Proposal section 4,
   2026-09-04.
-  - **Revisit:** the 40 ppm/occupant/hour figure isn't sourced yet, and it
-    implicitly assumes a room size (the same person raises CO2 faster in a
-    smaller room). Superseded by the parameters in the entry below, which
-    give ≈ 280 ppm/h per person in A125; the difference is worth explaining
-    in the report.
+  - Replaces the proposal's rise of roughly 40 ppm per person per hour, the
+    course's guidance for a typical room. Before ventilation removes any,
+    one person raises CO2 by `G/V`, so the rate depends on the room's air
+    volume: ≈ 282 ppm/h in A125's 71.5 m³, and 40 ppm/h only in a room of
+    about 500 m³ (both computed from `G` in the entry below). Settled
+    2026-10-08.
   - Useful for: §6.
 
 - **Decided: the mass balance is `V·dC/dt = G·N − Q·(C − C_out)`, advanced
@@ -666,7 +667,7 @@ _(nothing yet)_
       (`internal/roomtime`). Decided and implemented 2026-10-05.
   - **Ceiling height 2.4 m:** BuildSim gives no height. This is the minimum
     the Swedish Work Environment Authority advises for workplaces (general
-    advice to section 5 of AFS 2023:12,
+    advice to chapter 3, section 5 of AFS 2023:12, p. 17,
     https://www.av.se/globalassets/filer/publikationer/foreskrifter/utformning-av-arbetsplatser-afs2023-12.pdf),
     so it gives the fastest plausible CO2 rise. Rejected: an unsourced 3 m
     guess.
@@ -700,25 +701,29 @@ _(nothing yet)_
       factor 1.2, so how early a room must be ventilated ahead of a meeting
       is the same for every room.
   - **`Q_min` = 0.35 L/s per m² of floor area** (≈ 10 L/s in A125), so it
-    is computed from floor area like `V` and `N_max`. Both FoHMFS 2014:18
-    (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf)
-    and AFS 2023:12, chapter 5, section 4, give this as the minimum outdoor
-    airflow per m² of floor, on top of the airflow per person. It covers
+    is computed from floor area like `V` and `N_max`. AFS 2023:12, chapter
+    5, section 4 (p. 39), gives this as the minimum outdoor airflow per m²
+    of floor at workplaces, on top of the airflow per person; FoHMFS 2014:18
+    (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf,
+    p. 1) gives the same for schools and childcare premises. It covers
     pollution from building materials. A closed damper therefore means
     ventilation at a low background level, not fully off. With it, CO2 in
     A125 settles around 3650 ppm for 6 people and around 960 ppm for one
-    person. Rejected: a fixed share of `Q_max` (e.g. 10%), which is simpler
-    but has no source; and leakage through the building shell, which
-    matches "closed" literally but has no source checked yet. Decided
-    2026-09-18.
-  - **CO2 per person `G` = 0.0056 L/s** (≈ 280 ppm/h per person in A125 with
-    no ventilation). Table 2 of Persily & de Jonge, "Carbon Dioxide
+    person. Rejected: a fixed share of `Q_max` (e.g. 10%),
+    which is simpler but has no source; and leakage through the building
+    shell, which matches "closed" literally but has no source checked yet.
+    Decided 2026-09-18.
+  - **CO2 per person `G` = 0.0056 L/s** (≈ 282 ppm/h per person in A125 with
+    no ventilation), computed from Persily & de Jonge, "Carbon Dioxide
     Generation Rates from Building Occupants", Healthy Buildings 2017 Europe
     (https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=922955; journal
-    version in Indoor Air 27(5), https://doi.org/10.1111/ina.12383) gives
-    ≈ 0.0052 L/s averaged over adults aged 21–60 at the paper's 1.5 met for
-    office work, matching the ASHRAE 62.1 value it cites; scaled from the
-    table's 273 K to room temperature this is 0.0056 L/s.
+    version in Indoor Air 27(5), https://doi.org/10.1111/ina.12383). The
+    paper puts seated office work at 1.5 met (section 3, p. 3); its Table 2
+    (p. 4) lists rates by age and sex at 1.4 and 1.6 met but not 1.5.
+    Averaging those two columns over men and women aged 21–60 gives
+    ≈ 0.0052 L/s, the ASHRAE 62.1 value the paper cites (p. 3). The paper
+    states its rates at 273 K; at 20 °C the same CO2 fills 0.0056 L/s. Both
+    figures are computed here, not stated in the paper.
   - **`Δt` = 10 s of room time**, not real time, so the model notices a
     change in `N` or the damper within the same room time at any speed;
     only the real wait between cycles (and so the traffic to BuildSim)
@@ -831,21 +836,22 @@ _(nothing yet)_
     timetables, night guards) and publishes them to BuildSim's entities and
     occupancy endpoints. Kept the schedule plan for now; no new reason beyond
     the proposal's was given for preferring it.
-  - **The schedule for A125** (weekdays; empty at weekends): 0 people before
-    07:00; arriving one at a time to 3 between 07:00 and 09:00; 3 until
-    11:30; 0–1 over lunch, 11:30–13:00; a meeting filling the room to its
-    6-person maximum 13:00–14:00; back to 3 until 16:00; leaving one at a
-    time to 0 between 16:00 and 18:00. Each person's arrival and departure
-    is shifted by up to ±20 minutes, drawn from the date so the same day
-    always plays out the same way and a demo or test can be repeated. The
-    13:00 meeting is the scenario the demo turns on: six people in 71.5 m³
-    is the case where CO2 climbs fast enough to cross the threshold, so it
-    is what the decision service has to hold under it. Times are room time, so they
-    follow the simulation speed. Plausible office hours, not taken from a
-    source or a measured building. Decided and implemented 2026-09-20,
-    `internal/occupancy/schedule.go`, with unit tests covering the counts at
-    known times, the weekend, the lunch dip, and that the room fills to
-    capacity exactly once a day.
+  - **The schedule for A125** (weekdays; empty at weekends): half the
+    room's capacity, rounded up, are regulars, 3 in A125. They arrive one
+    at a time at 07:00, 07:40 and 08:20, all leave for lunch 11:30–12:30,
+    so the room empties rather than thins out, and leave one at a time at
+    16:00, 16:40 and 17:20. The rest of the capacity join a meeting
+    13:00–14:00, filling the room to its 6-person maximum. Each of a
+    person's times is shifted by up to ±20 minutes, drawn from the date so
+    the same day always plays out the same way and a demo or test can be
+    repeated. The 13:00 meeting is the scenario the demo turns on: six
+    people in 71.5 m³ is the case where CO2 climbs fast enough to cross the
+    threshold, so it is what the decision service has to hold under it.
+    Times are room time, so they follow the simulation speed. Plausible
+    office hours, not taken from a source or a measured building. Decided
+    and implemented 2026-09-20, `internal/occupancy/schedule.go`, with unit
+    tests covering the counts at known times, the weekend, the lunch dip,
+    and that the room fills to capacity exactly once a day.
   - **Revisit:** adopt a different occupancy source later if the schedule
     turns out too simple to be realistic (a risk in proposal section 6) —
     either the course's `occupancysim/` or a public occupancy dataset.
@@ -1545,12 +1551,14 @@ _(nothing yet)_
     window (`e2e_2026-10-07_*.json`).
   - Useful for: §10, §11.
 
-- **All 64 unit tests and subtests passed on 2026-10-07**, among them
+- **All 64 unit tests and subtests passed on 2026-10-08**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
-  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-07.txt`, the
-  output of `go test -v -count=1 ./...`.
+  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-08.txt`, the
+  output of `go test -v -count=1 ./...`. It replaces a pass on 2026-10-07,
+  rerun after `internal/co2`'s tests took the fully open airflow from
+  `MAX_AIRFLOW_FACTOR` 1.2 instead of the earlier 2.
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
@@ -1890,3 +1898,21 @@ was caught. Kept for the report's reflection and the oral exam.
   *Decided: every MQTT topic starts with the room as BuildSim names it…*,
   §5). Noted 2026-10-07.
   - Useful for: §5, §13.
+
+- **The CO2 per person was attributed to a table column that does not
+  exist.** The notes said Table 2 of Persily & de Jonge gives ≈ 0.0052 L/s
+  at 1.5 met, the paper's level for office work. The table has columns for
+  1.4 and 1.6 met only, so the figure was the assistant's own average of
+  the two. Caught when the value was checked against the paper itself
+  before citing it in the report. Correct: `G` is computed from the paper,
+  and marked as such (see *Decided: the mass balance is…*, §6). Noted
+  2026-10-08.
+  - Useful for: §6, §13.
+
+- **The notes described a different lunch break from the one the code
+  runs.** They gave lunch as 11:30–13:00 with 0–1 people in the room; the
+  occupancy schedule has always emptied the room 11:30–12:30. Caught when
+  the code was read to describe the schedule in the report. Correct: the
+  schedule in *Decided: occupancy comes from a time-of-day schedule…*, §6.
+  Noted 2026-10-08.
+  - Useful for: §6.

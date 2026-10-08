@@ -318,7 +318,7 @@ capacity & Unit tests, \texttt{internal/\allowbreak occupancy} \\
 FR-10 & Functional & The physical model's CO₂ follows the people and
 the damper & Must & With the damper closed, a full room settles at about
 3640 ppm and one person at about 957 ppm; fully open, a full room
-settles at about 710 ppm; an empty room returns to the outdoor 420 ppm
+settles at about 903 ppm; an empty room returns to the outdoor 420 ppm
 & Unit tests, \texttt{internal/co2} \\
 \midrule
 \mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
@@ -814,13 +814,175 @@ for each command & Sends the new damper level, 0 to 1 \\
 
 \section{Simulating the sensor values (the physical model)}\label{sec:simulation}
 
-\guidance{How sensor values are produced. State the per-room physical model
-(temperature heat balance, CO₂ from occupancy and ventilation) and, critically, how
-actuator commands feed back so the control loop closes. Include the occupancy model
-(for example, a head-count per room sampled conditional on room type and time of day).
-Give the governing equations.}
+% Required points (report guide, section 3.6; template, section 6):
+% - how each sensor value is produced, by a physical model per room
+% - how actuator commands feed back into the model, closing the loop
+% - the occupancy model: weekday schedule, meetings, empty weekends, and
+%   randomness so no two days are alike
+% - the governing equations
+% - the approach (physics-based, data replay or hybrid), and its limitations
 
-\fillin{Describe the physical and occupancy models, with equations, here.}
+Two containers stand in for the physical world: the Occupancy simulator
+sets who is in the room, and the Physical model computes the CO₂ that
+follows (Section~\ref{sec:usecase}). The CO₂ comes from a physical model
+rather than a replayed dataset, because a recorded trace cannot respond
+to the damper, so the loop would not close. Only CO₂ is simulated, since
+it is the one variable the system senses.
+
+\textbf{The CO₂ mass balance.} The Physical model treats the room's air as
+one well-mixed volume $V$, to which people add CO₂ and from which
+ventilation removes it by replacing room air with outdoor air:
+\begin{equation}\label{eq:massbalance}
+  V\,\frac{dC}{dt} = G\,N - Q\,(C - C_\text{out}),
+\end{equation}
+where $C$ is the room's CO₂ concentration, $N$ the number of people, $G$
+the CO₂ one person breathes out per second, $Q$ the airflow through the
+room, and $C_\text{out}$ the outdoor concentration. $C$ is a fraction of
+the air (1~ppm is $10^{-6}$), and $V$, $G$ and $Q$ share one volume unit.
+Every 10~s of room time ($\Delta t$), the Physical model reads $N$, the
+damper level and $C$ from BuildSim, holds $N$ and the damper fixed over
+the step, and writes back the exact solution
+of~(\ref{eq:massbalance}):
+\begin{equation}\label{eq:step}
+  C(t+\Delta t) = C_\text{steady}
+  + \big(C(t) - C_\text{steady}\big)\,e^{-Q\,\Delta t/V},
+  \qquad
+  C_\text{steady} = C_\text{out} + \frac{G\,N}{Q},
+\end{equation}
+where $C_\text{steady}$ is the level the room settles at while $N$ and $Q$
+stay as they are. Because the step is exact, its accuracy does not depend
+on $\Delta t$, unlike a forward-Euler step, which is accurate only for
+steps much shorter than $V/Q$. A unit test checks this: one 10-minute
+step and sixty 10-second steps agree to within 0.01~ppm. $\Delta t$ only
+sets how late the model notices a change in $N$ or the damper, and 10~s is
+short compared with the minutes between arrivals.
+
+\textbf{How the damper closes the loop.} The damper level $d$, from 0
+(closed) to 1 (fully open), sets the airflow:
+\begin{equation}\label{eq:airflow}
+  Q = Q_\text{min} + d\,(Q_\text{max} - Q_\text{min}).
+\end{equation}
+The Damper actuator writes each new $d$ to BuildSim, and the Physical
+model reads it at its next step. A larger $d$ raises $Q$, which lowers
+$C_\text{steady}$ in~(\ref{eq:step}) and brings $C$ to it sooner, so CO₂
+falls and the CO₂ sensor's next reading shows it. $Q_\text{min}$ is the
+building's background ventilation, which runs with the damper closed;
+without it, CO₂ in an occupied room would rise without limit.
+
+\textbf{Parameters.} Every value specific to the room follows from the
+floor area $A$ that BuildSim gives for it, so another room needs no new
+settings:
+\begin{equation}\label{eq:parameters}
+  V = A\,h, \qquad
+  N_\text{max} = \operatorname{round}\!\Big(\frac{A}{a}\Big), \qquad
+  Q_\text{min} = q\,A, \qquad
+  Q_\text{max} = 1.2\,\frac{G\,N_\text{max}}{C_\text{threshold} - C_\text{out}},
+\end{equation}
+with the symbols and values in Table~\ref{tab:simparams}. The fraction in
+$Q_\text{max}$ is the airflow that, by~(\ref{eq:step}), would hold a full
+room exactly at the threshold, so any larger $Q_\text{max}$ leaves the
+Decision service a level that holds a full room under it. The factor 1.2
+is a judgment, not a sourced figure: it gives some reserve while keeping
+the fan no larger than a full room needs. A full A125 then settles at
+about 903~ppm with the damper fully open, and at 1000~ppm with $d$ at
+about 0.8.
+
+% Sources: AFS 2023:12, chapter 3, section 5, general advice, p. 17
+% (ceiling height); chapter 5, section 4, p. 39 (0.35 L/s per m²).
+% FoHMFS 2014:18, p. 1 (0.35 L/s per m²). Persily and de Jonge, section 3,
+% p. 3 (1.5 met for office work), Table 2, p. 4 (rates at 1.4 and 1.6 met).
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.32}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.18}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.50}}@{}}
+\caption{Parameters of the physical model, with their values for A125
+and where each comes from.}\label{tab:simparams}\\
+\toprule
+\textbf{Parameter} & \textbf{A125} & \textbf{Source} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Parameter} & \textbf{A125} & \textbf{Source} \\
+\midrule
+\endhead
+Floor area $A$ & 29.8~m² & BuildSim \\
+\midrule
+Ceiling height $h$ & 2.4~m & The minimum the Swedish workplace rules
+advise~\cite[p.~17]{afs2023}; BuildSim gives no height \\
+\midrule
+Air volume $V$ & 71.5~m³ & Computed, $A\,h$ \\
+\midrule
+Floor area per person $a$ & 5~m² & An estimate, not sourced \\
+\midrule
+Capacity $N_\text{max}$ & 6 people & Computed, $A/a$ rounded \\
+\midrule
+CO₂ per person $G$ & 0.0056~L/s & Computed from Persily and de
+Jonge~\cite{persily2017}, as described below \\
+\midrule
+Outdoor CO₂ $C_\text{out}$ & 420~ppm & Assumed, not sourced \\
+\midrule
+Threshold $C_\text{threshold}$ & 1000~ppm & FoHMFS
+2014:18~\cite{fohmfs2014} (Section~\ref{sec:requirements}) \\
+\midrule
+Background airflow per floor area $q$ & 0.35~L/s per m² & The minimum
+outdoor airflow per m² of floor that the Swedish workplace rules add to
+the airflow per person~\cite[p.~39]{afs2023}; the public-health advice
+gives the same for schools~\cite[p.~1]{fohmfs2014} \\
+\midrule
+Airflow, damper closed, $Q_\text{min}$ & 10.4~L/s & Computed,
+$q\,A$ \\
+\midrule
+Airflow, damper fully open, $Q_\text{max}$ & 69.5~L/s & Computed
+by~(\ref{eq:parameters}); the factor 1.2 is a judgment \\
+\midrule
+Step $\Delta t$ & 10~s of room time & Chosen, not tuned \\
+\bottomrule
+\end{longtable}
+}
+
+$G$ is computed from Persily and de Jonge, who put seated office work at
+1.5~met~\cite[p.~3]{persily2017}, met being an activity level as a
+multiple of the body's resting energy use. Their Table~2 lists rates at
+1.4 and 1.6~met~\cite[p.~4]{persily2017}; the average of those two
+columns over men and women aged 21 to 60 is 0.0052~L/s at 0~°C, which is
+0.0056~L/s at 20~°C. Both numbers are computed here, not stated in the
+paper. With these values, one person raises A125's CO₂ by about 282~ppm
+an hour before ventilation removes any ($G/V$), and a full room with the
+damper closed raises it by about 23~ppm a minute near the threshold. The
+course's guidance of about 40~ppm per person per hour in a typical room
+corresponds to a room of about 500~m³ (computed here); A125 holds
+71.5~m³, so the same person raises its CO₂ about seven times faster.
+Requirement FR-10 (Table~\ref{tab:requirements}) lists the levels the
+model settles at, which unit tests check.
+
+\textbf{Occupancy.} Every 10~s of room time, the Occupancy simulator works
+out how many people the schedule puts in the room and writes that many
+to BuildSim. Half the room's capacity, rounded up, are regulars, three in
+A125. They arrive one at a time at 07:00, 07:40 and 08:20, leave together
+for lunch from 11:30 to 12:30, and leave one at a time at 16:00, 16:40
+and 17:20. The other three come only for a meeting from 13:00 to 14:00,
+which fills the room to its capacity; this is the scenario the demo
+shows (Section~\ref{sec:usecase}). At weekends the room is empty. Each of
+a person's times is shifted by up to $\pm$20 minutes, drawn from a random
+generator seeded with the date, so no two days are alike, yet a given day
+plays out the same way every time it is run, which makes a demo or test
+repeatable. The times are plausible office hours, not taken from a source
+or a measured building. FR-9 states the counts its unit tests check. A
+schedule was chosen over replaying a public occupancy dataset, and over
+moving individual people along BuildSim's walkable graph as the course's
+own occupancy simulator does, because it shapes a scenario such as a
+meeting filling the room directly.
+
+\textbf{Limitations.} The model treats the room's air as one well-mixed
+volume, so CO₂ is the same everywhere in the room, and the room exchanges
+no air with other rooms. The CO₂ sensor reports the model's value
+exactly, with no noise or delay. Five values are judgments rather than
+sourced figures: the floor area per person, the factor 1.2, the outdoor
+CO₂, $\Delta t$ and the schedule's times, and the schedule repeats the
+same shape every weekday. BuildSim keeps its state only in memory, so
+after BuildSim restarts, the room's CO₂ starts again from the outdoor
+level. Section~\ref{sec:risks} weighs what these mean for the results.
 
 \section{Autonomous services and data pipeline}\label{sec:autonomy}
 
@@ -933,6 +1095,17 @@ steps.}
 Folkhälsomyndigheten, \emph{Folkhälsomyndighetens allmänna råd om
 ventilation}, FoHMFS 2014:18, 2014.
 \url{https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf}
+
+\bibitem{afs2023}
+Arbetsmiljöverket, \emph{Arbetsmiljöverkets föreskrifter och allmänna
+råd om utformning av arbetsplatser}, AFS 2023:12, 2023.
+\url{https://www.av.se/globalassets/filer/publikationer/foreskrifter/utformning-av-arbetsplatser-afs2023-12.pdf}
+
+\bibitem{persily2017}
+A.~Persily and L.~de~Jonge, ``Carbon dioxide generation rates from
+building occupants,'' in \emph{Healthy Buildings 2017 Europe}, Lublin,
+Poland, 2017, paper 0242.
+\url{https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=922955}
 
 \end{thebibliography}
 
