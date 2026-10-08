@@ -732,7 +732,7 @@ _(nothing yet)_
     Rejected: `Δt` in real time, where a faster room would notice changes
     later in room time. Decided 2026-09-18.
   - `C_threshold` is set in *Decided: the system pursues three goals…*, §7.
-  - Useful for: §4.4, §6, §13.
+  - Useful for: §4.4, §6, §10, §13.
 
 - **Decided: room time runs at a speed chosen per session, and each session
   continues the room timeline where the previous one stopped.** A session

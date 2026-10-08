@@ -162,8 +162,9 @@ room for six people. BuildSim holds the shared state of the building in memory:
 its rooms and their floor areas, the devices registered in each room with
 their current values, and who is in which room. Processes read and write
 that state through its REST API, and a 3D view shows the building in a
-browser. BuildSim is the course's own program, built from the course
-repository at a fixed version and never modified. The project only adds
+browser. BuildSim is built from the \texttt{buildingsim} folder of its
+public repository~\cite{buildsim}, pinned to one commit, and never
+modified. The project only adds
 its own devices to it through the API: a CO₂ sensor, an occupancy sensor,
 and a damper in A125.
 
@@ -826,8 +827,7 @@ Two containers stand in for the physical world: the Occupancy simulator
 sets who is in the room, and the Physical model computes the CO₂ that
 follows (Section~\ref{sec:usecase}). The CO₂ comes from a physical model
 rather than a replayed dataset, because a recorded trace cannot respond
-to the damper, so the loop would not close. Only CO₂ is simulated, since
-it is the one variable the system senses.
+to the damper, so the loop would not close.
 
 \textbf{The CO₂ mass balance.} The Physical model treats the room's air as
 one well-mixed volume $V$, to which people add CO₂ and from which
@@ -852,10 +852,10 @@ of~(\ref{eq:massbalance}):
 where $C_\text{steady}$ is the level the room settles at while $N$ and $Q$
 stay as they are. Because the step is exact, its accuracy does not depend
 on $\Delta t$, unlike a forward-Euler step, which is accurate only for
-steps much shorter than $V/Q$. A unit test checks this: one 10-minute
-step and sixty 10-second steps agree to within 0.01~ppm. $\Delta t$ only
-sets how late the model notices a change in $N$ or the damper, and 10~s is
-short compared with the minutes between arrivals.
+steps much shorter than $V/Q$. $\Delta t$ only sets how late the model
+notices a change in $N$ or the damper, and 10~s is short compared with
+the time scale on which the room's CO₂ changes, $V/Q$, which is about
+17 minutes even with the damper fully open.
 
 \textbf{How the damper closes the loop.} The damper level $d$, from 0
 (closed) to 1 (fully open), sets the airflow:
@@ -878,14 +878,14 @@ settings:
   Q_\text{min} = q\,A, \qquad
   Q_\text{max} = 1.2\,\frac{G\,N_\text{max}}{C_\text{threshold} - C_\text{out}},
 \end{equation}
-with the symbols and values in Table~\ref{tab:simparams}. The fraction in
-$Q_\text{max}$ is the airflow that, by~(\ref{eq:step}), would hold a full
-room exactly at the threshold, so any larger $Q_\text{max}$ leaves the
-Decision service a level that holds a full room under it. The factor 1.2
-is a judgment, not a sourced figure: it gives some reserve while keeping
-the fan no larger than a full room needs. A full A125 then settles at
-about 903~ppm with the damper fully open, and at 1000~ppm with $d$ at
-about 0.8.
+with the symbols and values in Table~\ref{tab:simparams}.
+By~(\ref{eq:step}), a full room settles exactly at the threshold when
+$Q = G\,N_\text{max}/(C_\text{threshold} - C_\text{out})$. $Q_\text{max}$
+is 1.2 times that airflow, so a fully open damper holds a full room under
+the threshold with some reserve, while the fan stays no larger than a
+full room needs. The factor 1.2 is a judgment, not a sourced figure. A
+full A125 then settles at about 903~ppm with the damper fully open, and
+at 1000~ppm with $d$ at about 0.8.
 
 % Sources: AFS 2023:12, chapter 3, section 5, general advice, p. 17
 % (ceiling height); chapter 5, section 4, p. 39 (0.35 L/s per m²).
@@ -949,12 +949,7 @@ columns over men and women aged 21 to 60 is 0.0052~L/s at 0~°C, which is
 0.0056~L/s at 20~°C. Both numbers are computed here, not stated in the
 paper. With these values, one person raises A125's CO₂ by about 282~ppm
 an hour before ventilation removes any ($G/V$), and a full room with the
-damper closed raises it by about 23~ppm a minute near the threshold. The
-course's guidance of about 40~ppm per person per hour in a typical room
-corresponds to a room of about 500~m³ (computed here); A125 holds
-71.5~m³, so the same person raises its CO₂ about seven times faster.
-Requirement FR-10 (Table~\ref{tab:requirements}) lists the levels the
-model settles at, which unit tests check.
+damper closed raises it by about 23~ppm a minute near the threshold.
 
 \textbf{Occupancy.} Every 10~s of room time, the Occupancy simulator works
 out how many people the schedule puts in the room and writes that many
@@ -968,11 +963,10 @@ a person's times is shifted by up to $\pm$20 minutes, drawn from a random
 generator seeded with the date, so no two days are alike, yet a given day
 plays out the same way every time it is run, which makes a demo or test
 repeatable. The times are plausible office hours, not taken from a source
-or a measured building. FR-9 states the counts its unit tests check. A
-schedule was chosen over replaying a public occupancy dataset, and over
-moving individual people along BuildSim's walkable graph as the course's
-own occupancy simulator does, because it shapes a scenario such as a
-meeting filling the room directly.
+or a measured building. A schedule was chosen over replaying a public
+occupancy dataset, and over moving individual people along BuildSim's
+walkable graph, because it shapes a scenario such as a meeting filling
+the room directly.
 
 \textbf{Limitations.} The model treats the room's air as one well-mixed
 volume, so CO₂ is the same everywhere in the room, and the room exchanges
@@ -1090,6 +1084,11 @@ than claiming there are none.}
 steps.}
 
 \begin{thebibliography}{9}
+
+\bibitem{buildsim}
+eislab-cps, \emph{D7065E}, GitHub repository, folder
+\texttt{buildingsim}, commit \texttt{80a4c59}, 2026.
+\url{https://github.com/eislab-cps/D7065E}
 
 \bibitem{fohmfs2014}
 Folkhälsomyndigheten, \emph{Folkhälsomyndighetens allmänna råd om
