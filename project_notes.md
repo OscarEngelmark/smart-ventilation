@@ -327,11 +327,7 @@ _(nothing yet)_
     reach — a handful of topics on one laptop) and Redis pub/sub
     (fire-and-forget only, nothing delivered to a subscriber offline at
     publish time). MQTT is built for small, constrained-device messaging,
-    matching this system's shape, and is the course's own example
-    justification (Canvas Introduction page: "we used MQTT because the
-    publish/subscribe model decouples sensors from agents, allowing the
-    agent to restart without disrupting sensor data publishing"). Decided
-    2026-09-15.
+    matching this system's shape. Decided 2026-09-15.
   - **Decided: Eclipse Mosquitto as the MQTT broker**, run from its official
     Docker image. Chosen as the common default for small setups; no other
     broker was compared. Low stakes: every client speaks plain MQTT, so a
@@ -899,30 +895,20 @@ _(nothing yet)_
   is no larger than the first goal needs (cost) — and the decision service's
   plan serves the second.** The fan is sized by the first goal alone: a room
   can fill without warning, so the fan must hold a full room (`N_max`) under
-  the threshold by itself, with a safety factor on top. On every reading,
-  the decision service picks the lowest damper level that its learned room
-  model predicts will hold the people counted now under the threshold (see
-  *Decided: on every CO2 reading, the decision service picks the lowest
-  damper level…*, below). Rejected: a fan smaller than a full room needs,
-  relying on a forecast to clean the room beforehand — a room that fills
-  unexpectedly then goes over the threshold. Decided 2026-09-24; implemented
-  2026-09-26.
-  - Replaces, 2026-09-27, an occupancy forecast serving the second goal:
-    ventilating moderately ahead of a predicted meeting, so the fan could
-    run lower during it, with a reactive mechanism for unexpected occupancy
-    (see *Decided: the occupancy forecast is removed…*, below).
+  the threshold by itself, with a safety factor on top. Rejected: a fan
+  smaller than a full room needs, relying on a forecast to clean the room
+  beforehand — a room that fills unexpectedly then goes over the threshold.
+  Decided 2026-09-24; implemented 2026-09-26.
+  - Replaces, 2026-09-27, an occupancy forecast serving the second goal (see
+    *Decided: the occupancy forecast is removed…*, below).
   - Replaces the proposal's plan (proposal sections 1 and 5): a CO2
     forecast 30 minutes ahead, compared to the threshold so ventilation
     starts before it is crossed. In this simulation that gains nothing over
-    reacting at the threshold. A new damper position takes effect at the
-    physical model's next step, and a fully open damper reverses a full
-    room's rise at once: in A125 with 6 people at 1000 ppm, CO2 rises about
-    23 ppm/min with the damper closed and falls about 28 ppm/min fully open
-    (with the fan factor then at 2, see §6), so opening when a reading reaches 1000 overshoots by about 10 ppm. A
-    delay between command and effect, or a weaker fan, would give that
+    reacting: a new damper position takes effect at the physical model's
+    next step, and a fully open damper reverses a full room's rise at once.
+    A delay between command and effect, or a weaker fan, would give that
     forecast work, but only by creating the problem it then solves. A
-    forecast from recent CO2 also can't see a rise before people arrive;
-    the daily occupancy pattern can.
+    forecast from recent CO2 also can't see a rise before people arrive.
   - **Threshold `C_threshold` = 1000 ppm.** The Public Health Agency of
     Sweden's general advice on ventilation, FoHMFS 2014:18
     (https://www.folkhalsomyndigheten.se/contentassets/641784832543443ea4eebe9b300c244e/fohmfs-2014-18.pdf),
@@ -932,126 +918,100 @@ _(nothing yet)_
     limit, only a minimum outdoor airflow per person and per m². No
     alternative value was weighed. Decided 2026-09-18.
   - **Decided: occupancy is sensed by its own sensor process**, reporting
-    the room's head count the way the CO2 sensor reports CO2. The room
-    model's fit and the plan both need the number of people, which CO2
-    can't give: past CO2 also records what the damper did, so the same
-    reading can mean six people with the damper open or two with it closed;
-    the head count doesn't depend on the damper. No other way of obtaining
-    occupancy was weighed. Decided 2026-09-24.
-    - **Decided: the occupancy sensor counts once a minute of room time**,
-      against 10 s for the CO2 sensor. People arrive one at a time, so the
-      count changes a few dozen times a day. The physical model reads the
-      head count from BuildSim every step, so the physics doesn't depend on
-      this interval. Rejected: 10 s like the CO2 sensor — six times the
-      stored history, for no gain in the occupancy forecast the interval was
-      first chosen for. Trade-off: an arrival reaches the decision service
-      up to a minute late, and with the forecast removed the plan learns of
-      every arrival this way. Decided and implemented 2026-09-25
-      (`SENSOR_INTERVAL` in `docker-compose.yml`).
+    the room's head count the way the CO2 sensor reports CO2. The fit and
+    the plan both need the number of people, which CO2 can't give: the same
+    reading can mean six people with the damper open or two with it closed.
+    No other way of obtaining occupancy was weighed. Decided 2026-09-24.
+    - **Decided: the occupancy sensor counts once a minute of room time**
+      (`SENSOR_INTERVAL` in `docker-compose.yml`). People arrive one at a
+      time, so the count changes a few dozen times a day, and the physical
+      model reads the head count from BuildSim every step, so the physics
+      doesn't depend on this interval. Rejected: 10 s like the CO2 sensor —
+      six times the stored head counts. Trade-off: an arrival reaches the
+      decision service up to a minute late. Decided and implemented
+      2026-09-25.
   - **Decided: the decision service plans with a room model learned from
     stored data, never with the simulator's own values.** The model has the
-    shape of any well-mixed ventilated room, `dC/dt = a·N − (b0 + b1·d)·(C −
-    C_out)`, with `d` the damper level. Its three numbers are fitted by least
-    squares from stored CO2 readings, head counts and damper levels: `a`, how
-    fast CO2 rises per person; `b0`, how fast the room clears with the damper
-    closed; `b1`, how much faster per unit of damper opening. The volume,
-    CO2 per person and airflows the physical model uses (§6) are never given
-    to it, so the decision logic would carry over to a real building, which
-    provides the same three data streams, and how well the model is learned
-    can be measured. Rejected: the physical model's equation and values,
-    which make the decision work by construction and show nothing. Rejected:
-    a model with no physics, such as a table of the CO2 level each head count
-    and damper level has led to — it assumes nothing about the room, but
-    needs far more history and can't plan for a head count or starting level
-    it hasn't seen. Decided 2026-09-25; the fit implemented 2026-09-25
-    (`internal/roommodel`, with unit tests), run by `cmd/room-model`.
+    shape of the mass balance (§6) divided by the room's volume, and only
+    its three rates are learned (`internal/roommodel`). None of the physical
+    model's values are given to it, so the decision logic would carry over
+    to a real building that provides the same three data streams, and how
+    well the model is learned can be measured. Rejected: the physical
+    model's equation and values, which make the decision work by
+    construction and show nothing. Rejected: a model with no physics, such
+    as a table of the CO2 level each head count and damper level has led to
+    — it assumes nothing about the room, but needs far more history and
+    can't plan for a head count or starting level it hasn't seen. Decided
+    and implemented 2026-09-25 (`internal/roommodel`, with unit tests).
     - **Decided: each step, from one CO2 reading to the next, gives one
-      equation for the fit**, using the head count and damper level last
-      stored at or before the step's start (each holds until the next is
-      stored), and the average of its two readings as the step's CO2 level.
-      A step is left out when it is longer than a minute, when the head
-      count or damper level changed during it, or when either is not yet
-      known. On 8 simulated hours the fit recovers the physical model's
-      values to within 0.01%. Rejected: averaging all three streams onto a
-      1-minute grid first — it discards CO2 detail and blends the minutes
-      where the damper or head count changed into rows that match neither.
-      Trade-off: the head count is stored once a minute, so an arrival shows
-      up to a minute late, and the steps in that minute carry the old count.
-      The fit refuses to answer when the history can't separate the three
-      numbers, e.g. with the damper never moved. Decided and implemented
-      2026-09-25.
+      equation for the fit**, with the head count and damper level in force
+      and the average of its two readings; the rules for leaving a step out
+      are in `equations` (`internal/roommodel/roommodel.go`). On 8
+      simulated hours the fit recovers the physical model's values to within
+      0.01%. Rejected: averaging all three streams onto a 1-minute grid first
+      — it discards CO2 detail and blends the minutes where the damper or
+      head count changed into rows that match neither. Trade-off: the head
+      count is stored once a minute, so the steps in the minute of an
+      arrival carry the old count. Decided and implemented 2026-09-25.
     - **Known caveat —** the model's shape matches the simulated room
       exactly, so the fit will be close to exact here. A real room departs
       from it (uneven mixing, open windows, a slow sensor). The shape is
       standard ventilation physics, not taken from the simulator; the
       numbers are what the simulator sets.
-    - **Decided: the fitting runs in its own service, `room-model`**: at
-      its start and at each room midnight it fetches history from
-      the storage-service, fits the model, and publishes the three numbers
-      as a retained MQTT message. A slow or failing fit then can't delay a
-      damper command, and the decision service keeps planning with the last
-      published numbers while the learner is down. Rejected: fitting inside
-      the decision service — one container fewer to build, test and draw,
-      but it mixes a slow batch job with the per-minute loop. Trade-off: one
-      more container and message format, and the decision service must
-      handle a missing or outdated model. The rates are published on `<room_id>/model`
-      (`schemas/room_model.schema.json`). When the history can't separate
-      them, nothing is published and the last model stays retained. Decided
-      2026-09-25; implemented 2026-09-26 (`cmd/room-model`). Verified against
-      the running stack with one person present and the damper set by hand to
-      closed, fully open and half open: `a` = 4.701 ppm/min per person
-      (physical model 4.698), `b0` = 0.00908 per min (0.00875, 4% high),
-      `b1` = 0.0486 per min (0.0496, 2% low).
+    - **Decided: the fitting runs in its own service, `room-model`**, which
+      publishes the rates as a retained MQTT message on `<room_id>/model`.
+      A slow or failing fit then can't delay a damper command, and the
+      decision service keeps planning with the last published rates while
+      the learner is down. Rejected: fitting inside the decision service —
+      one container fewer to build, test and draw, but it mixes a slow batch
+      job with the decisions made on every reading. Trade-off: one more
+      container and message format, and the decision service must handle a
+      missing or outdated model. Decided 2026-09-25; implemented 2026-09-26
+      (`cmd/room-model`). Verified against the running stack with one person
+      present and the damper set by hand to closed, fully open and half
+      open: `a` = 4.701 ppm/min per person (physical model 4.698), `b0` =
+      0.00908 per min (0.00875, 4% high), `b1` = 0.0486 per min (0.0496, 2%
+      low).
       - **Revisit:** the unit tests recover all three to within 0.01%, the
         running stack only to within 4%. The cause is not yet checked.
     - **Decided: each fit uses the last 7 days of history.** Every usable
-      step between CO2 readings adds to the same few sums, so a longer window
-      costs one larger fetch (about 60,000 readings and 10,000 head counts),
-      not a harder fit. With a noise-free simulated sensor, far fewer steps
-      would give the same rates; the window is sized so it always holds
+      step adds to the same few sums, so a longer window costs one larger
+      fetch, not a harder fit. The window is sized so it always holds
       weekdays with people present and the damper at more than one level.
       Rejected: only the last day — after a weekend it holds an empty room
       and an unmoved damper, which the fit refuses. Rejected: all stored
       history — the model would never forget a room that has changed.
       Trade-off: after a change, such as the fan losing capacity, the fit
       blends old and new behavior for several days. Decided 2026-09-26.
-      - **Revisit:** a model that adapts over hours rather than days. With
-        one fit per room day on 7 days of history, a change to the room
-        takes about 4 room days to mostly show. Two ways to shorten it:
-        refit more often on a shorter window fetched from storage, or
-        subscribe to the readings and update the sums at every step, with
-        old steps fading out. Either way the shorter memory must still hold
-        the damper at more than one level, or the fit can't separate the
-        rates.
+      - **Revisit:** a model that adapts over hours rather than days: refit
+        more often on a shorter window, or update the sums at every reading
+        with old steps fading out. Either way the shorter memory must still
+        hold the damper at more than one level.
   - **Decided: on every CO2 reading, the decision service picks the lowest
     damper level that keeps predicted CO2 under 950 ppm for the next 60
     minutes, for the people counted now, holding that level the whole
-    time.** The prediction starts from the current reading and expects the
-    latest head count the whole hour (nobody before the first count); levels are tried
-    from closed upward in steps of 0.05, and fully open is chosen when none
-    lower is enough. The plan is made again on every reading, so an arrival
-    or departure changes the level as soon as the occupancy sensor counts
-    it, before the arrivals' CO2 has built up. The target sits below the
-    1000 ppm threshold so that small errors in the head count or the fit
-    don't push a room held at the target over it. A reading at or above 950
-    ppm opens the damper fully, since no lower level keeps CO2 under it,
-    which covers a wrong model or a failed counter. Both numbers are
-    untuned defaults (`PLAN_TARGET_PPM` in `sim.env`, shared with the
-    dashboard, and `PLAN_HORIZON` in `docker-compose.yml`); 60 minutes is longer than the 20–40 minutes a
-    moderately open damper takes to clear the room. Rejected: a level for
-    every minute ahead, chosen to use the least fan in total — it needs an
+    time.** The plan is made again on every reading, so an arrival or
+    departure changes the level as soon as the occupancy sensor counts it,
+    before the arrivals' CO2 has built up. The target sits below the 1000
+    ppm threshold so that small errors in the head count or the fit don't
+    push a room held at the target over it. A reading at or above the
+    target opens the damper fully, since no lower level keeps CO2 under it,
+    which covers a wrong model or a failed counter. 60 minutes is longer
+    than the 20–40 minutes a moderately open damper takes to clear the
+    room. Both are untuned defaults (`PLAN_TARGET_PPM` in `sim.env`,
+    `PLAN_HORIZON` in `docker-compose.yml`). Rejected: a level for every
+    minute ahead, chosen to use the least fan in total — it needs an
     optimization solver and is harder to test and explain. Rejected:
     opening fully when a reading reaches the threshold — simpler, but it
     runs the whole fan for one extra person, against the second goal, and
     waits until CO2 is at the limit. Trade-off: the plan assumes the people
     counted now stay the whole hour and nobody else arrives, and it relies
     on the head count and the room model being right; if either is wrong,
-    only the full opening at 950 ppm is left. Decided and implemented
-    2026-09-26 (`internal/planner`, with unit tests; used by `cmd/decision`);
-    planning from the head count alone since 2026-09-27. Seen on the running
-    stack on 2026-10-06, a day that already planned this way: the damper
-    stayed closed over lunch, rose to 0.90 once six people were counted for
-    the meeting, and CO2 peaked at 935 ppm.
+    only the full opening at the target is left. Decided and implemented
+    2026-09-26 (`internal/planner`, used by `cmd/decision`). Seen on the
+    running stack on 2026-10-06: the damper stayed closed over lunch, rose
+    to 0.90 once six people were counted for the meeting, and CO2 peaked at
+    935 ppm.
     - A plan makes at most 21 predictions and takes about 0.29 µs when it
       makes all 21 (a full room at 920 ppm), against FR-2's 2 minutes; one
       prediction takes about 12 ns. Measured with Go benchmarks in
@@ -1059,83 +1019,66 @@ _(nothing yet)_
       `test/results/bench_planner_2026-10-08.txt`.
     - **Decided: the prediction is the exact solution of the room model,
       checked only now and at the end of the hour** (`Model.Predict` in
-      `internal/roommodel`, `staysUnder` in `internal/planner/planner.go`). With `N` and `d` held
-      fixed, CO2 moves steadily toward its settling level, so if both ends
-      are under the limit, the whole hour is. Replaces forward-Euler steps
-      of 10 seconds over the hour: within 0.87 ppm of the exact solution
-      (derived), but an approximation needing its own justification, inconsistent with
-      the physical model's exact step (see *Decided: the mass balance is
-      `V·dC/dt = G·N − Q·(C − C_out)`…*, §6), and 360 steps where one
-      calculation does; one plan took about 2.4 µs. Trade-off: the closed
-      form holds only while the plan assumes `N` fixed for the hour; a plan
-      expecting the head count to change would need to step again. Decided
-      and implemented 2026-10-08.
+      `internal/roommodel`, `staysUnder` in `internal/planner/planner.go`).
+      With `N` and `d` held fixed, CO2 moves steadily toward its settling
+      level, so if both ends are under the limit, the whole hour is.
+      Replaces forward-Euler steps of 10 seconds over the hour: within 0.87
+      ppm of the exact solution (derived), but an approximation needing its
+      own justification, inconsistent with the physical model's exact step
+      (see *Decided: the mass balance is `V·dC/dt = G·N − Q·(C − C_out)`…*,
+      §6), and 360 steps where one calculation does; one plan took about 2.4
+      µs. Trade-off: the closed form holds only while the plan assumes `N`
+      fixed for the hour; a plan expecting the head count to change would
+      need to step again. Decided and implemented 2026-10-08.
     - Replaces *Deferred, not yet decided: how the decision service turns a
-      predicted meeting into a damper level*.
-    - Until 2026-09-27 the plan expected the occupancy forecast's head count
-      at each step, and the counted people only when more were counted than
-      forecast (see *Decided: the occupancy forecast is removed…*, below).
+      predicted meeting into a damper level*. Until 2026-09-27 the plan
+      expected the occupancy forecast's head count (see *Decided: the
+      occupancy forecast is removed…*, below).
     - **Decided: the level is raised as soon as the current one no longer
       keeps CO2 under the target, but lowered only to a level that keeps it
       20 ppm under the target.** Without this, the chosen level flipped
       back and forth, each flip a new command: 32 in 22 room minutes of the
-      meeting of 2026-10-01. Replaying that meeting's stored readings, head
-      counts, forecast and room model through the planner reproduced all 32
-      commands exactly and showed two causes:
-      - Between 0.80 and 0.85, once a minute: the level needed sat right at
-        the boundary between the two, and the prediction then stepped in
-        whole minutes from the reading, so the meeting time left in it
-        dropped by a whole minute at the first reading of each minute and
-        then stayed fixed while measured CO2 rose.
-      - Between 0.85 and fully open, at the target: a reading at or above
-        950 ppm opened the damper fully, and the next reading just under 950
-        returned the ordinary level.
-      - With the 20 ppm margin, a level that only just keeps CO2 under the
-        target no longer replaces the current one. A full room at the
-        target opens fully until CO2 is under 930 ppm, then settles at 0.95
-        (about 925 ppm) instead of 0.90 (about 948 ppm). Rejected: only
-        shortening the prediction's step to 10 seconds, which removes the
-        first cause in that meeting but not the second, nor flips from other
-        small changes at a boundary. Rejected: a limit on how often a
-        command may be sent, which slows the alternation without ending it
+      meeting of 2026-10-01, all reproduced by replaying that meeting's
+      stored data through the planner. Two causes:
+      - The level needed sat at the boundary between 0.80 and 0.85, and the
+        prediction, then stepped in whole minutes, changed only at the
+        first reading of each minute while measured CO2 rose at every
+        reading. The whole-minute steps are gone since.
+      - A reading at or above 950 ppm opened the damper fully, and the next
+        reading just under 950 returned the ordinary level.
+      - With the margin, a level that only just keeps CO2 under the target
+        no longer replaces the current one: a full room at the target opens
+        fully until CO2 is under 930 ppm, then settles at 0.95 (about 925
+        ppm). Rejected: only shortening the prediction's step — it ends the
+        first cause but not the second. Rejected: a limit on how often a
+        command may be sent — it slows the alternation without ending it
         and would hold back a needed rise. Rejected: a gap at the target
-        like the fallback switch's, staying fully open until CO2 is under
-        900 ppm — fully open, a full room settles at 903 ppm, so the damper
-        would stay fully open for the rest of the meeting. Trade-off: the
-        fan runs a little higher than strictly needed, and at full for a
-        few minutes after CO2 reaches the target. The 20 ppm is an untuned
-        default (`PLAN_LOWER_MARGIN_PPM` in `docker-compose.yml`). The
-        prediction's step was shortened from 1 minute to 10 seconds in the
-        same change.
-      - Evidence: replayed on the same stored readings, the planner holds
-        0.85 and changes once, to fully open at 950 ppm; a unit test running
-        the planner against the room model for an hour, starting a full
-        room at the target, changes the level twice (fully open, then
+        like the fallback switch's, fully open until CO2 is under 900 ppm —
+        fully open, a full room settles at 903 ppm, so the damper would stay
+        fully open for the rest of the meeting. Trade-off: the fan runs a
+        little higher than strictly needed, and at full for a few minutes
+        after CO2 reaches the target. The 20 ppm is an untuned default
+        (`PLAN_LOWER_MARGIN_PPM` in `docker-compose.yml`).
+      - Evidence: replayed on the same stored data, the planner holds 0.85
+        and changes once, to fully open at 950 ppm; a unit test starting a
+        full room at the target changes the level twice (fully open, then
         0.95). Decided and implemented 2026-09-26.
   - **Decided: without a room model the damper switches on CO2 alone; an
-    old room model is used however old.**
-    - No room model, as before the first fit succeeds, or when the decision
-      service restarts after a broker restart (the broker keeps retained
-      messages in memory only, while a running decision service keeps the
-      model it holds across a reconnect): no level can be
-      predicted, so the damper opens fully when a reading reaches 950 ppm
-      and closes once CO2 is back below 800 ppm. The gap between the two
-      keeps the damper from flipping on every reading. This also moves the
-      damper between closed and fully open, which the room-model fit needs
-      before it can publish a first model. 800 ppm is an untuned default
-      (`FALLBACK_CLOSE_PPM` in `docker-compose.yml`).
-    - An old room model: kept, since a room's rates change slowly. When a
-      fit fails, the room-model service publishes nothing and the last
-      model stays retained.
-    - Rejected for the missing model: keeping the damper closed — with 3
-      people CO2 settles near 2100 ppm, and the damper never moves, so the
-      room model can never be fitted. Rejected: fully open whenever anyone
-      is counted — safe, since the fan holds a full room, but it runs the
-      whole fan all day and relies on the counter. Trade-off: until the
-      first model, CO2 swings between 800 and 950 ppm, with the fan off or
-      at full.
-    - Decided and implemented 2026-09-26 (`planner.Switch` in
-      `internal/planner`, with unit tests; used by `cmd/decision`).
+    old room model is used however old.** With no room model — before the
+    first fit, or when the decision service restarts after a broker restart
+    (the broker keeps retained messages in memory only) — no level can be
+    predicted, so the damper opens fully at the target and closes once CO2
+    is back below 800 ppm (`planner.Switch`; `FALLBACK_CLOSE_PPM`, an
+    untuned default). The gap between the two keeps the damper from flipping
+    on every reading, and the moves give the fit the damper history it
+    needs for a first model. An old model is kept, since a room's rates
+    change slowly. Rejected: keeping the damper closed — with 3 people CO2
+    settles at about 2030 ppm (derived), and the room model can never be
+    fitted. Rejected: fully open whenever anyone is counted — safe, since
+    the fan holds a full room, but it runs the whole fan all day and relies
+    on the counter. Trade-off: until the first model, CO2 swings between
+    800 and 950 ppm, with the fan off or at full. Decided and implemented
+    2026-09-26.
   - Useful for: §1, §4.4, §6, §7.1, §11, §13.
 
 - **Decided: the occupancy forecast is removed; the decision service plans
@@ -1253,8 +1196,7 @@ _(nothing yet)_
   actual requirements needs more at this project's current scale (one room),
   and it adds no new infrastructure on top of Go, Docker, and MQTT, all new
   to this project at once. Rejected: InfluxDB — the better fit for
-  time-series data and for multi-room scale (a course-named storage option,
-  Canvas Introduction page), but that scale isn't planned before the
+  time-series data and for multi-room scale, but that scale isn't planned before the
   deadline, and running it is a real cost (a separate container, where
   SQLite runs inside the storage-service) with no current payoff. The
   interface is what keeps this reversible: swapping to InfluxDB later means one new implementation
@@ -1350,139 +1292,97 @@ _(nothing yet)_
     stored. Decided 2026-10-07.
   - Useful for: §4.4, §5, §7.2.
 
-- **Deferred, not yet decided: issues and implicit choices found reviewing
-  `cmd/storage-service` and `internal/store`, to fix or decide one by one.**
-  Noted 2026-09-17.
-  - **Fixed 2026-09-17 (bug):** payloads weren't validated against the JSON
-    schemas, so a message with missing fields was saved with zero values
-    (e.g. 0 ppm). Each message is now checked against its schema before
-    saving; an invalid one is logged with the reason and dropped. The
-    schemas are built into the program (`schemas/schemas.go`), so the
-    `.json` files stay the only definition of a valid message. Rejected:
-    hand-written checks in Go — the same rules would live in two places and
-    drift apart. Verified with Mosquitto: a valid reading was saved; a
-    missing `ppm`, a negative `ppm`, an invalid `ts`, and a `level` of 7
-    were each rejected with a clear log line.
+- **Issues found reviewing `cmd/storage-service` and `internal/store`, each
+  fixed or decided below.** Reviewed 2026-09-17.
+  - **Fixed 2026-09-17 (bug):** payloads weren't validated, so a message
+    with missing fields was saved with zero values (e.g. 0 ppm). Each
+    message is now checked against its JSON schema and an invalid one is
+    logged and dropped; the schemas are built into the program
+    (`schemas/schemas.go`), so the `.json` files stay the only definition of
+    a valid message. Rejected: hand-written checks in Go — the same rules
+    would live in two places and drift apart. Verified with Mosquitto: a
+    missing `ppm`, a negative `ppm`, an invalid `ts` and a `level` of 7 were
+    each rejected.
   - **Decided: a message whose `room_id` names another room than its topic
-    is dropped** — `level0/B200` arriving on `level0/A125/co2/reading` is logged
-    and not saved. Before, only `room_id` was used, so a publisher bug would
-    have filed readings under the wrong room without any sign. Today the two
-    can't disagree, since each publisher builds both from the same level and
-    room name settings. Rejected: documenting it as a known limitation —
-    simpler, but a wrong-room save would stay silent. Tested by
-    `cmd/storage-service/main_test.go` and by publishing a mismatched message
-    to the running stack. Decided and implemented 2026-09-28.
-    - **Known caveat —** topics hold the room name but not the level, so only
-      the name is compared, and two rooms with the same name on different
-      floors would share a topic.
-  - **Fixed 2026-09-17 (bug):** after a broker restart, the MQTT client
-    reconnected but didn't resubscribe (the default clean session makes the
-    broker forget subscriptions), so the service kept running and silently
-    saved nothing. Now subscribes in the on-connect handler, which runs on
-    every reconnect. Verified by restarting a Mosquitto container mid-run: a
-    reading published after the restart was stored. Rejected: a persistent
-    session instead — Mosquitto keeps sessions in memory by default, so a
-    broker restart would still lose the subscriptions.
+    is dropped**, so a publisher bug can't file readings under the wrong
+    room without a sign. Today the two can't disagree, since each publisher
+    builds both from the same settings. Rejected: documenting it as a known
+    limitation — simpler, but a wrong-room save would stay silent. Tested by
+    `cmd/storage-service/main_test.go` and on the running stack. Decided and
+    implemented 2026-09-28.
+    - **Known caveat —** topics hold the room name but not the level, so
+      two rooms with the same name on different floors would share a topic.
+  - **Fixed 2026-09-17 (bug):** after a broker restart the client
+    reconnected but didn't resubscribe, so the service silently saved
+    nothing. It now subscribes in the on-connect handler, which runs on
+    every reconnect. Verified by restarting Mosquitto mid-run.
   - **Decided: the storage-service connects with a persistent session, and
     each table refuses a second row with the same room and timestamp.**
-    With a clean session, the broker forgets it on disconnect and every
-    reading published while it is down is lost. With
-    clean session off, the broker keeps its subscriptions and saves QoS 1
-    messages for it until it reconnects under the same client ID. Mosquitto
-    saves at most 1000 per absent client by default, about 14 real minutes
-    at 10× speed; a longer outage still loses the rest, and a broker restart
-    loses the saved messages (they are kept in memory), which is why
-    resubscribing on every connect stays. The broker resends any QoS 1
-    message it isn't sure was received, so duplicates become more likely:
-    `(room_id, ts)` is made unique in each table, and inserts skip a row
-    that is already stored. Timestamps are whole seconds, so this assumes
-    no source sends twice in one second. Rejected: QoS 2 (exactly once) —
-    the MQTT library confirms a message to the broker only after the
-    handler has saved it, and keeps its record of received messages in
-    memory, so a restart between saving and confirming brings the message
-    again under QoS 2 too. Only the store can refuse that copy; with it,
-    QoS 2 adds two packets per message and gains nothing. Decided 2026-09-26,
-    implemented 2026-09-27 (`SetCleanSession(false)` in
-    `cmd/storage-service`; unique indexes and `ON CONFLICT DO NOTHING` in
-    `internal/store/sqlite.go`).
-    - SQLite can't add a unique index to a table that already holds
-      duplicates. Opening the file first deleted them, keeping the earliest
-      saved row, until 2026-10-05; the live database held none (105,025 CO2
-      readings checked) and has had the indexes since 2026-09-27, so the
-      cleanup was removed. Rejected: keeping it, so an older copy of the
-      database still opens. Trade-off: an older copy that holds duplicates
-      now fails to open, with SQLite's error; no such copy exists.
-    - The message handlers are attached to the MQTT client before it
-      connects (`AddRoute`), not when subscribing. The broker sends the
-      messages it held as soon as the connection opens, before the
-      on-connect handler has subscribed; the library leaves a message with
-      no handler unsaved and unacknowledged, so it waits for the next
-      connection. Found in a 60 s outage that lost the first 5 readings;
-      the broker delivered them once the fix was running.
-    - Evidence: a unit test for a reading saved twice (stored once). On
-      the running stack at 10×, three 60 s stops of the storage-service
-      left no hole in the stored history: 248 CO2 readings, each 10 room
-      seconds after the last, and head counts every 60.
+    The broker then keeps its subscriptions and holds QoS 1 messages for it
+    while it is away (Mosquitto's default limit is 1000 per client), instead
+    of losing every reading published meanwhile. A broker restart still
+    loses them, as the broker keeps them in memory, which is why
+    resubscribing on every connect stays. Resent messages make duplicates
+    more likely, so `(room_id, ts)` is unique in each table and an insert
+    skips a stored row; timestamps are whole seconds, so this assumes no
+    source sends twice in one second. Rejected: QoS 2 (exactly once) — the
+    library keeps its record of received messages in memory, so a restart
+    between saving and confirming brings the message again under QoS 2
+    too; only the store can refuse that copy, and QoS 2 then adds two
+    packets per message for nothing. Decided 2026-09-26, implemented
+    2026-09-27 (`SetCleanSession(false)` in `cmd/storage-service`; unique
+    indexes and `ON CONFLICT DO NOTHING` in `internal/store/sqlite.go`).
+    - Message handlers are attached before connecting (`AddRoute`), since
+      the broker sends held messages before the on-connect handler has
+      subscribed, and the library leaves a message with no handler
+      unacknowledged.
+    - Evidence: a unit test for a reading saved twice (stored once). On the
+      running stack at 10×, three 60 s stops of the storage-service left no
+      hole in the stored history.
   - **Fixed 2026-09-27 (bug): a save or read that met another request's
     lock on the SQLite file failed at once with "database is locked".**
-    In SQLite's default mode a write must wait for reads in progress and
-    reads for a write, and the default wait allowed is zero. Over about 8
-    real hours of running the log held 86 such errors, 29 of them saves (27 CO2
-    readings, 2 head counts) that were lost; the others were reads, which
-    showed on the dashboard as a failed refresh. The file is now opened in
-    WAL mode, where new rows go to a side file first so reads and a write
-    don't block each other, with a 5 s wait on any lock left
-    (`OpenSQLite` in `internal/store/sqlite.go`). Rejected: the wait alone —
-    collisions would become short waits instead of errors, enough at
-    today's load, but reads would still hold up saves as readers are
-    added. Rejected: one database connection shared by every request, so
-    the program queues them itself — no lock ever meets another, but each
-    save waits behind whole reads, including the room model's 7-day fetch.
-    Trade-off: WAL keeps two extra files beside the database, and works
-    only while every program using the file runs on the same machine.
-    Evidence: a unit test saving readings while four goroutines read in a
-    loop failed on every run before the change (4 read errors per run) and
-    passes after it; a second test checks the file is in WAL mode. On the
-    running stack at 10×, 5 minutes of `GET /latest` and a 6-hour
-    `GET /co2` every real second gave no failed request, lock error or
-    failed save.
-    - Indexes on `(room_id, ts)` would shorten each read, but not stop the
-      failures. Each table has one since 2026-09-27, as the uniqueness rule
-      above; before that every query scanned its whole table, and
-      `GET /latest` took about 17 ms at two weeks of history.
+    Over about 8 real hours the log held 86 such errors, 29 of them lost
+    saves. The file is now opened in WAL mode, where reads and a write
+    don't block each other, with a 5 s wait on any lock left (`OpenSQLite`
+    in `internal/store/sqlite.go`). Rejected: the wait alone — enough at
+    today's load, but reads would still hold up saves as readers are added.
+    Rejected: one connection shared by every request — no lock ever meets
+    another, but each save waits behind whole reads, including the room
+    model's 7-day fetch. Trade-off: WAL keeps two extra files beside the
+    database, and works only while every program using the file runs on
+    the same machine. Evidence: a unit test saving while four goroutines
+    read failed on every run before the change and passes after it; on the
+    running stack at 10×, 5 minutes of `GET /latest` and a 6-hour `GET
+    /co2` every real second gave no failed request or save.
   - **Known caveat — a bad payload or a failed save is logged and dropped,
-    never retried.** Accepted: a bad payload fails the same way on every
-    try, and the failed saves seen so far were lock errors, fixed at their
-    cause by WAL mode (above). Rejected: retrying — it would add a queue
-    and a retry limit for a failure that no longer occurs. Decided
-    2026-09-27.
+    never retried.** A bad payload fails the same way on every try, and the
+    failed saves seen so far were lock errors, fixed at their cause above.
+    Rejected: retrying — a queue and a retry limit for a failure that no
+    longer occurs. Decided 2026-09-27.
   - **Revisit:** only the sender's timestamp is stored (as text, whole
-    seconds), not the receive time — pipeline latency can't be measured from
-    stored data.
+    seconds), not the receive time, so pipeline latency can't be measured
+    from stored data.
   - Fixed 2026-09-17: the SQLite file was lost whenever the container was
-    recreated. `docker-compose.yml` now stores it in a Docker volume (storage
-    kept outside the container), so readings survive a restart or rebuild.
-  - **Decided: the pure-Go SQLite library (`modernc.org/sqlite`).** The
-    service is built with no C compiler (`CGO_ENABLED=0`) into an image
-    holding only the program. Rejected: `mattn/go-sqlite3`, which wraps
-    SQLite's C code and would need a C compiler in the build and C libraries
-    in the image. Trade-off: the pure-Go library is slower, by an amount not
-    yet measured; the stress test shows whether it matters. Decided
-    2026-09-27.
-  - **Decided for convention: settings come from environment variables**
-    (broker URL, database path, retention), set in `docker-compose.yml` and
-    required (see *Decided: every setting is required…*, §6). No
-    alternative to environment variables was weighed. Decided 2026-09-27.
+    recreated; it now lives in a Docker volume (storage kept outside the
+    container).
+  - **Decided: the pure-Go SQLite library (`modernc.org/sqlite`)**, so the
+    service builds with no C compiler into an image holding only the
+    program. Rejected: `mattn/go-sqlite3`, which wraps SQLite's C code and
+    needs a C compiler and C libraries. Trade-off: slower, by an amount not
+    yet measured. Decided 2026-09-27.
+  - **Decided for convention: settings come from environment variables**,
+    set in `docker-compose.yml` and required (see *Decided: every setting is
+    required…*, §6). No alternative was weighed. Decided 2026-09-27.
   - **Decided: if the broker is unreachable at startup, the process exits
-    and Docker starts it again** (`restart: on-failure`). Rejected: retrying
-    inside the program — it would repeat what the restart policy already
-    does, and the same policy covers a crash later on. Decided 2026-09-27.
+    and Docker starts it again** (`restart: on-failure`). Rejected:
+    retrying inside the program — it repeats what the restart policy
+    already does, and the same policy covers a crash later on. Decided
+    2026-09-27.
   - **Known caveat — no graceful shutdown: on container stop the database
     isn't closed and the client doesn't disconnect.** Accepted: each save is
-    committed as it happens, and the library confirms a message to the
-    broker only after its handler has returned, so a message cut off
-    mid-save is sent again after the restart and the duplicate check skips
-    it if it was saved after all. Decided 2026-09-27.
+    committed as it happens, and a message is confirmed to the broker only
+    after it is saved, so one cut off mid-save is sent again and the
+    duplicate check skips it if it was saved after all. Decided 2026-09-27.
   - Useful for: §5, §7.2, §9, §10.
 
 - **Decided: the decision service connects to the broker with a clean
