@@ -1227,12 +1227,41 @@ answers. Protocols are as in Figure~\ref{fig:container}.}
 
 \subsection{Process lifecycle (state diagram)}\label{sec:state}
 
-\guidance{The lifecycle of a key process or zone (for example, setback $\rightarrow$
-active $\rightarrow$ fault), as a state diagram with the transitions.}
+% Required points (report guide, section 3.8; template, section 8.2):
+% - a state machine for one process whose lifecycle matters
+% - what happens when the network drops, and how it recovers
+% - every transition is a piece of code
 
-\diagramslot{State diagram for the process lifecycle}
+Figure~\ref{fig:state} shows the lifecycle of the Decision service. It
+starts by connecting to the Message broker and subscribing to its three
+inputs; if either fails, it exits with an error, and Docker starts it
+again. Docker restarts a container that exits with an error, but not one
+it stopped itself. Once subscribed, the Decision service switches on CO₂
+alone until a room model arrives, which, being retained, comes right
+after subscribing unless the broker has restarted since the last fit
+(Section~\ref{sec:decision-logic}). From then on it plans on every
+reading.
 
-\fillin{Narrative for the state diagram.}
+When the connection to the broker drops, no readings arrive, so no
+decisions are made and the damper keeps its last level. The Decision
+service tries to reconnect by itself, doubling the wait after each failed
+attempt up to 10~minutes. Once reconnected, it subscribes again and
+returns to the state it left, keeping the room model it holds.
+
+The other processes follow the same pattern without a state of their
+own. One that fails to start, by registering with BuildSim or connecting
+to the broker, exits and is restarted. A failed call to BuildSim in a
+loop skips that cycle, and the next one tries again. The Damper actuator
+instead refuses the command, which the Decision service sends again on
+the next reading.
+
+\begin{figure}[H]
+\centering
+\input{../../diagrams/state.tex}
+\caption{State diagram of the Decision service. Every arrow is a path in
+its code; the dashed box holds the states in which the process runs.}
+\label{fig:state}
+\end{figure}
 
 \section{Deployment and component view}\label{sec:deployment}
 
