@@ -1018,9 +1018,16 @@ It is never given $G$, $V$ or the airflows. The Room-model service learns
 $a$, $b_0$ and $b_1$ from the stored data instead, which can determine
 only these ratios. It fits them by least squares over the last 7 days of
 stored readings, head counts and commands, at its start and at each
-room-time midnight. Each pair of consecutive CO₂ readings gives one
-equation, using the head count and damper level in force; a pair more
-than a minute apart, or across a change in either, is left out. The rates
+room-time midnight. Each pair of consecutive CO₂ readings $C_i$ and
+$C_{i+1}$, taken $\Delta t_i$ apart, gives one equation in the three
+unknowns,
+\begin{equation}\label{eq:fit}
+  \frac{C_{i+1} - C_i}{\Delta t_i}
+  = a\,N_i - (b_0 + b_1\,d_i)\,\Big(\frac{C_i + C_{i+1}}{2} - C_\text{out}\Big),
+\end{equation}
+where $N_i$ and $d_i$ are the head count and damper level in force. A pair
+more than a minute apart, or across a change in $N_i$ or $d_i$, is left
+out. The rates
 are published as a retained message, so a restarted Decision service gets
 the last ones at once. When the history cannot tell the three rates
 apart, because nobody was present or the damper never moved, the fit
@@ -1028,10 +1035,17 @@ gives no room model and nothing is published. Because the Decision
 service learns the room rather than being told it, the same logic would
 carry over to a real room that provides the same three data streams.
 
-\textbf{The plan.} For each damper level from 0 to 0.95, in steps of 0.05,
-the Decision service steps~(\ref{eq:roommodel}) forward from the current
-reading in 10-second steps for the next hour, assuming the people counted
-now stay the whole hour. It chooses the lowest level whose predicted CO₂
+\textbf{The plan.} For each damper level $d$ from 0 to 0.95, in steps of
+0.05, the Decision service predicts CO₂ for the next hour, starting from
+the current reading $C_0$ and holding $d$ and the head count $N$ counted
+now fixed:
+\begin{equation}\label{eq:plan}
+  C_{k+1} = C_k + \Delta t\,\big[a\,N - (b_0 + b_1\,d)\,(C_k - C_\text{out})\big],
+  \qquad \Delta t = 10~\text{s}, \quad k = 0, \dots, 359.
+\end{equation}
+This forward-Euler step is accurate because $\Delta t$ is far shorter than
+$1/(b_0 + b_1\,d)$, which is at least 17 minutes in A125. The Decision
+service chooses the lowest level whose predicted CO₂
 stays under the target, and fully open when none does, as for a reading
 already at the target. To keep the level from flipping back and forth
 at the edge between two levels, it keeps the current level while that
