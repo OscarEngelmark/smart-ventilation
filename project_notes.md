@@ -1008,9 +1008,8 @@ _(nothing yet)_
   - **Decided: on every CO2 reading, the decision service picks the lowest
     damper level that keeps predicted CO2 under 950 ppm for the next 60
     minutes, for the people counted now, holding that level the whole
-    time.** The prediction steps the room model every 10 seconds, the CO2
-    sensor's interval, from the current reading, expecting the latest head
-    count at every step (nobody before the first count); levels are tried
+    time.** The prediction starts from the current reading and expects the
+    latest head count the whole hour (nobody before the first count); levels are tried
     from closed upward in steps of 0.05, and fully open is chosen when none
     lower is enough. The plan is made again on every reading, so an arrival
     or departure changes the level as soon as the occupancy sensor counts
@@ -1035,11 +1034,25 @@ _(nothing yet)_
     stack on 2026-10-06, a day that already planned this way: the damper
     stayed closed over lunch, rose to 0.90 once six people were counted for
     the meeting, and CO2 peaked at 935 ppm.
-    - One plan takes about 2.4 µs for a full room near the target, and a
-      plan makes at most 21 hour-long predictions of about 1.0 µs each,
-      about 22 µs in all (derived), against FR-2's 2 minutes. Measured with
-      Go benchmarks in `internal/planner/planner_test.go` on 2026-10-08;
-      output in `test/results/bench_planner_2026-10-08.txt`.
+    - A plan makes at most 21 predictions and takes about 0.27 µs when it
+      makes all 21 (a full room at 920 ppm), against FR-2's 2 minutes; one
+      prediction takes about 11 ns. Measured with Go benchmarks in
+      `internal/planner/planner_test.go` on 2026-10-08; output in
+      `test/results/bench_planner_2026-10-08.txt`.
+    - **Decided: the prediction is the exact solution of the room model,
+      checked only now and at the end of the hour** (`predict` and
+      `staysUnder` in `internal/planner/planner.go`). With `N` and `d` held
+      fixed, CO2 moves steadily toward its settling level, so if both ends
+      are under the limit, the whole hour is. Replaces forward-Euler steps
+      of 10 seconds over the hour: within 0.87 ppm of the exact solution
+      (derived),
+      but an approximation needing its own justification, inconsistent with
+      the physical model's exact step (see *Decided: the mass balance is
+      `V·dC/dt = G·N − Q·(C − C_out)`…*, §6), and 360 steps where one
+      calculation does; one plan took about 2.4 µs. Trade-off: the closed
+      form holds only while the plan assumes `N` fixed for the hour; a plan
+      expecting the head count to change would need to step again. Decided
+      and implemented 2026-10-08.
     - Replaces *Deferred, not yet decided: how the decision service turns a
       predicted meeting into a damper level*.
     - Until 2026-09-27 the plan expected the occupancy forecast's head count

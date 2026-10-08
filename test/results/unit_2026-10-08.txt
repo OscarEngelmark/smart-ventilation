@@ -9,14 +9,14 @@
 === RUN   TestRoomMatchesTopic
 --- PASS: TestRoomMatchesTopic (0.00s)
 === RUN   TestReadingOnAnotherRoomsTopicIsNotSaved
-2026/10/08 08:53:29 reading: room "level0/B200" doesn't match topic level0/A125/co2/reading
+2026/10/08 13:32:41 reading: room "level0/B200" doesn't match topic level0/A125/co2/reading
 --- PASS: TestReadingOnAnotherRoomsTopicIsNotSaved (0.13s)
 === RUN   TestReadingFailingItsSchemaIsNotSaved
-2026/10/08 08:53:29 reading: invalid payload: jsonschema validation failed with 'https://smart-ventilation.local/schemas/co2_reading.schema.json#'
+2026/10/08 13:32:41 reading: invalid payload: jsonschema validation failed with 'https://smart-ventilation.local/schemas/co2_reading.schema.json#'
 - at '/ppm': minimum: got -5, want 0
---- PASS: TestReadingFailingItsSchemaIsNotSaved (0.12s)
+--- PASS: TestReadingFailingItsSchemaIsNotSaved (0.13s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/cmd/storage-service	0.254s
+ok  	github.com/OscarEngelmark/smart-ventilation/cmd/storage-service	0.257s
 ?   	github.com/OscarEngelmark/smart-ventilation/internal/buildsim	[no test files]
 === RUN   TestFullRoomFullyOpenSettlesBelowThreshold
 --- PASS: TestFullRoomFullyOpenSettlesBelowThreshold (0.00s)
@@ -65,7 +65,7 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/message	0.005s
 === RUN   TestZeroCapacityIsEmpty
 --- PASS: TestZeroCapacityIsEmpty (0.00s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/occupancy	0.004s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/occupancy	0.002s
 === RUN   TestEmptyRoomStaysClosed
 --- PASS: TestEmptyRoomStaysClosed (0.00s)
 === RUN   TestChosenLevelIsTheLowestThatHoldsTheCountedPeople
@@ -83,7 +83,7 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/occupancy	0.004s
 === RUN   TestSwitchKeepsTheLevelInBetween
 --- PASS: TestSwitchKeepsTheLevelInBetween (0.00s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	0.003s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	0.002s
 ?   	github.com/OscarEngelmark/smart-ventilation/internal/room	[no test files]
 === RUN   TestFitRecoversTheRoom
 --- PASS: TestFitRecoversTheRoom (0.00s)
@@ -100,7 +100,7 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	0.003s
 === RUN   TestStepBeforeTheFirstHeadCountIsLeftOut
 --- PASS: TestStepBeforeTheFirstHeadCountIsLeftOut (0.00s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/roommodel	0.004s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/roommodel	0.003s
 === RUN   TestAtSessionStartRoomTimeIsRoomStart
 --- PASS: TestAtSessionStartRoomTimeIsRoomStart (0.00s)
 === RUN   TestRoomTimeRunsSpeedTimesFaster
@@ -119,9 +119,9 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/roomtime	0.002s
 === RUN   TestReadingExactlyAtSinceIsIncluded
 --- PASS: TestReadingExactlyAtSinceIsIncluded (0.12s)
 === RUN   TestReadingBeforeSinceIsLeftOut
---- PASS: TestReadingBeforeSinceIsLeftOut (0.12s)
+--- PASS: TestReadingBeforeSinceIsLeftOut (0.13s)
 === RUN   TestReadingsComeBackOldestFirst
---- PASS: TestReadingsComeBackOldestFirst (0.08s)
+--- PASS: TestReadingsComeBackOldestFirst (0.07s)
 === RUN   TestOtherRoomsAreLeftOut
 --- PASS: TestOtherRoomsAreLeftOut (0.07s)
 === RUN   TestNoReadingsIsNotAnError
@@ -155,7 +155,7 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/roomtime	0.002s
 === RUN   TestOpenedFileIsInWALMode
 --- PASS: TestOpenedFileIsInWALMode (0.06s)
 === RUN   TestSavesAndReadsAtTheSameTimeAllSucceed
---- PASS: TestSavesAndReadsAtTheSameTimeAllSucceed (2.08s)
+--- PASS: TestSavesAndReadsAtTheSameTimeAllSucceed (2.09s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/store	3.507s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/store	3.516s
 ?   	github.com/OscarEngelmark/smart-ventilation/schemas	[no test files]

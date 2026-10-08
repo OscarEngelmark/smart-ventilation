@@ -77,8 +77,7 @@ func TestFullRoomAtTheTargetSettlesAfterOpeningFully(t *testing.T) {
 			levels = append(levels, next)
 		}
 		d = next
-		rate := a125.A*6 - (a125.B0+a125.B1*d)*(C-settings.Cout) // in ppm per minute
-		C += rate * dt.Minutes()
+		C = predict(C, d, 6, a125, settings.Cout, 10*time.Second)
 	}
 
 	if len(levels) != 2 || levels[0] != 1 || levels[1] != 0.95 {
@@ -115,9 +114,9 @@ func BenchmarkLevelFullRoom(b *testing.B) {
 	}
 }
 
-// BenchmarkFullHorizonPrediction times one prediction that runs the whole
-// horizon; a plan makes at most steps+1 of them.
-func BenchmarkFullHorizonPrediction(b *testing.B) {
+// BenchmarkPrediction times one prediction over the horizon; a plan makes at
+// most steps+1 of them.
+func BenchmarkPrediction(b *testing.B) {
 	for b.Loop() {
 		staysUnder(settings.Cout, 1, 6, a125, settings, settings.Target)
 	}

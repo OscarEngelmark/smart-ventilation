@@ -1037,21 +1037,25 @@ service learns the room rather than being told it, the same logic would
 carry over to a real room that provides the same three data streams.
 
 \textbf{The plan.} For each damper level $d \in \{0, 0.05, \dots, 0.95\}$,
-the Decision service predicts CO₂ for the next hour, starting from
-the current reading $C_0$ and holding $d$ and the head count $N$ counted
-now fixed:
+the Decision service predicts CO₂ over the next hour, $0 \leq t \leq
+1$~h, starting from the current reading $C_0$ and holding $d$ and the
+head count $N$ counted now fixed. The prediction is the exact solution
+of~(\ref{eq:roommodel}), of the same form as~(\ref{eq:step}):
 \begin{equation}\label{eq:plan}
-  C_{k+1} = C_k + \Delta t\,\big[a\,N - (b_0 + b_1\,d)\,(C_k - C_\text{out})\big],
-  \qquad \Delta t = 10~\text{s}, \quad k = 0, \dots, 359.
+  C(t) = C_\text{steady}
+  + \big(C_0 - C_\text{steady}\big)\,e^{-(b_0 + b_1\,d)\,t},
+  \qquad
+  C_\text{steady} = C_\text{out} + \frac{a\,N}{b_0 + b_1\,d}.
 \end{equation}
-This forward-Euler step is accurate because $\Delta t$ is far shorter than
-$1/(b_0 + b_1\,d)$, which is at least 17 minutes in A125. The Decision
-service chooses the lowest $d$ with $C_k < C_\text{target}$ for all $k$,
+$C(t)$ moves steadily toward $C_\text{steady}$, so it stays under a limit
+for the whole hour when both $C_0$ and $C(1~\text{h})$ are under it, and
+only these two are checked. The Decision
+service chooses the lowest $d$ with $C(t) < C_\text{target}$ for all $t$,
 and $d = 1$ when none qualifies, as for a reading
 $C_0 \geq C_\text{target}$. To keep the level from flipping back and
 forth at the edge between two levels, it keeps the current $d$ while that
-still gives $C_k < C_\text{target}$ for all $k$, and lowers it only to a
-$d$ with $C_k < C_\text{target} - 20$~ppm for all $k$. A command is sent only when the level changes.
+still gives $C(t) < C_\text{target}$ for all $t$, and lowers it only to a
+$d$ with $C(t) < C_\text{target} - 20$~ppm for all $t$. A command is sent only when the level changes.
 In A125 this holds three people at $d \approx 0.4$ and a full meeting at $d \approx 0.9$.
  Table~\ref{tab:decisions} gives the alternatives this plan was chosen over.
 
@@ -1068,11 +1072,12 @@ Besides keeping the room safe, this moves the damper between
 closed and fully open, which is the history the first fit needs.
 
 \textbf{Latency.} A command must follow its reading within 2~minutes of
-room time (FR-2), and a new reading arrives every 10~s. Choosing the
-damper level for one reading takes at most about 22~µs. It predicts the
-hour once for the current $d$, then for $d = 0, 0.05, \dots$ until one
-holds, so it makes at most 21 one-hour predictions, at about 1.0~µs each
-(measured with a Go benchmark; \texttt{test/results/\allowbreak
+room time (FR-2), and a new reading arrives every 10~s. The Decision
+service predicts the hour once for the current $d$, then for
+$d = 0, 0.05, \dots$ until one holds, so it makes at most 21 predictions.
+Choosing the damper level for one reading thus takes at most about
+0.3~µs (measured with a Go benchmark on a case that makes all 21;
+\texttt{test/results/\allowbreak
 bench\_planner\_2026-10-08.txt}).
 
 \textbf{Evaluation.} REG-1 checks that a full weekday stays under

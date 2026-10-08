@@ -26,9 +26,6 @@ type Settings struct {
 // steps is how many equal steps the damper range is divided into.
 const steps = 20
 
-// dt is the length of one step of the prediction, the CO2 sensor's interval.
-const dt = 10 * time.Second
-
 // Level returns the damper level, 0 (closed) to 1 (fully open) in steps of
 // 1/steps, for the next reading. Each level is judged by the CO2 it predicts
 // over s.Horizon from now, holding that level the whole time. C is the CO2
@@ -75,18 +72,34 @@ func Switch(C, current float64, s Settings) float64 {
 }
 
 // staysUnder reports whether CO2, starting at C with N people and the damper
-// held at d, stays under limit through every step of s.Horizon. C and limit
-// are in ppm.
+// held at d, stays under limit through s.Horizon. C and limit are in ppm.
+// CO2 moves steadily toward the level it settles at, so it stays under limit
+// throughout when it is under limit both now and at the end of s.Horizon.
 func staysUnder(C, d, N float64, m roommodel.Model, s Settings, limit float64) bool {
 	if C >= limit {
 		return false
 	}
-	for t := time.Duration(0); t < s.Horizon; t += dt {
-		rate := m.A*N - (m.B0+m.B1*d)*(C-s.Cout) // in ppm per minute
-		C += rate * dt.Minutes()
-		if C >= limit {
-			return false
-		}
+	return predict(C, d, N, m, s.Cout, s.Horizon) < limit
+}
+
+// predict returns the CO2 level after t, in ppm, starting at C with N people
+// and the damper held at d, from the exact solution of the room model
+//
+//	C(t) = Csteady + (C − Csteady)·e^(−(b0 + b1·d)·t),  Csteady = Cout + a·N/(b0 + b1·d)
+//
+// C and Cout are in ppm.
+func predict(C, d, N float64, m roommodel.Model, Cout float64, t time.Duration) float64 {
+	cleared := m.B0 + m.B1*d // share of the gap to Cout cleared per minute
+	minutes := t.Minutes()
+	if cleared == 0 {
+		return C + m.A*N*minutes
 	}
-	return true
+
+	// The level the room settles at while N and d stay as they are.
+	Csteady := Cout + m.A*N/cleared // in ppm
+
+	// The factor the remaining gap to Csteady shrinks by over t.
+	gapLeft := math.Exp(-cleared * minutes)
+
+	return Csteady + (C-Csteady)*gapLeft
 }
