@@ -1068,12 +1068,12 @@ Besides keeping the room safe, this moves the damper between
 closed and fully open, which is the history the first fit needs.
 
 \textbf{Latency.} A command must follow its reading within 2~minutes of
-room time (FR-2), and a new reading arrives every 10~s. One plan for a
-full room near the target takes about 2.4~µs, and a plan makes at most
-21 hour-long predictions of about 1.0~µs each, about 22~µs in all
-(measured with Go benchmarks; \texttt{test/results/\allowbreak
-bench\_planner\_2026-10-08.txt}). The time from a reading to its command
-is therefore set by the messaging and the REST call, not by the plan.
+room time (FR-2), and a new reading arrives every 10~s. Choosing the
+damper level for one reading takes at most about 22~µs. It predicts the
+hour once for the current $d$, then for $d = 0, 0.05, \dots$ until one
+holds, so it makes at most 21 one-hour predictions, at about 1.0~µs each
+(measured with a Go benchmark; \texttt{test/results/\allowbreak
+bench\_planner\_2026-10-08.txt}).
 
 \textbf{Evaluation.} REG-1 checks that a full weekday stays under
 1000~ppm, and NFR-2 that the plan runs the damper lower over the day
