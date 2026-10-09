@@ -28,7 +28,9 @@ latex/report/build/
 
 # Rendered diagrams (regenerated from the .d2 sources)
 diagrams/*.svg
-latex/report/figures/
+latex/report/figures/*
+# ...except the dashboard screenshot, which can't be regenerated
+!latex/report/figures/dashboard.png
 
 # OS / editor
 .DS_Store

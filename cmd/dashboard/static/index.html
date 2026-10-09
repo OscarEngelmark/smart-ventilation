@@ -37,9 +37,10 @@
 <script>
 const tz = "Europe/Stockholm"; // the time zone the room's office hours follow
 const refreshMs = 5000; // real time between refreshes
-const chartHeight = 220;
+const chartHeight = 160;
 const stepped = uPlot.paths.stepped({ align: 1 }); // each value holds until the next
 const axis = { stroke: "#9d9d9d", grid: { stroke: "#333" }, ticks: { stroke: "#333" } };
+const unlabeledTimes = { ...axis, values: (u, splits) => splits.map(() => ""), size: 10 }; // grid lines only
 
 // seconds turns a stored timestamp into Unix seconds, the time unit uPlot uses.
 const seconds = ts => Date.parse(ts) / 1000;
@@ -65,8 +66,9 @@ function held(points, since, latest) {
   return [xs, ys];
 }
 
-// makeChart draws an empty chart inside the element with the given id.
-function makeChart(id, series, yRange) {
+// makeChart draws an empty chart inside the element with the given id; only
+// a chart with showTimes labels its time axis, since all share one time span.
+function makeChart(id, series, yRange, showTimes) {
   const el = document.getElementById(id);
   const opts = {
     width: el.clientWidth,
@@ -74,7 +76,8 @@ function makeChart(id, series, yRange) {
     tzDate: ts => uPlot.tzDate(new Date(ts * 1000), tz),
     scales: { x: { time: true }, y: { range: yRange } },
     series: [{}, ...series],
-    axes: [axis, axis], // x axis, then y axis
+    axes: [showTimes ? axis : unlabeledTimes, axis], // x axis, then y axis
+    legend: { show: series.length > 1, live: false }, // a lone line is named by its heading
   };
   const empty = [[], ...series.map(() => [])];
   return new uPlot(opts, empty, el);
@@ -152,13 +155,13 @@ function main() {
       { label: "CO2", stroke: "#58a6ff", width: 2 },
       { label: "Target", stroke: "#d29922", dash: [6, 4] },
       { label: "Threshold", stroke: "#f85149", dash: [6, 4] },
-    ], (u, min, max) => [Math.min(400, min), Math.max(1100, max + 50)]),
+    ], (u, min, max) => [Math.min(400, min), Math.max(1100, max + 50)], false),
     people: makeChart("people", [
       { label: "People", stroke: "#3fb950", width: 2, paths: stepped },
-    ], (u, min, max) => [0, Math.max(1, max) + 1]),
+    ], (u, min, max) => [0, Math.max(1, max) + 1], false),
     damper: makeChart("damper", [
       { label: "Damper level", stroke: "#a371f7", width: 2, paths: stepped },
-    ], [0, 1.05]),
+    ], [0, 1.05], true),
   };
   window.addEventListener("resize", () => {
     for (const chart of Object.values(charts)) {
