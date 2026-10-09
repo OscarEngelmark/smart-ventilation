@@ -1498,6 +1498,17 @@ _(nothing yet)_
   refuses to run at any speed but 1. Rejected: speed 1 for everything,
   which costs about three of the days left before submission on three room
   days. Decided 2026-10-06.
+  - **Measured: speed 1000 gives the same room day as speed 60.** The same
+    Monday, 2026-11-23, run from the same stored history at both speeds:
+    peak CO2 943 ppm at 13:42 in both, mean damper level 0.141 over the
+    day and 0.896 in the meeting hour in both, and the same 21 damper
+    levels in the same order, each within 4 minutes of room time. The
+    per-minute CO2 differed by 0.3 ppm on average and 2.4 ppm at most. At
+    speed 1000 the containers' start took 29 room minutes, so the first
+    stored reading came at 00:29; a session starts an hour before the
+    first evaluated day. Evidence in `test/results/`:
+    `pilot_speed1000_2026-11-23*` and `pilot_speed60_2026-11-23*`.
+    Measured 2026-10-09.
   - Useful for: §10, §11.
 
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
@@ -1625,6 +1636,22 @@ _(nothing yet)_
   No other metric was weighed; chosen because the tool and a first result
   already exist. Decided 2026-10-06.
   - Useful for: §3 (NFR-2), §10, §11.
+
+- **Decided: the comparison runs both methods on the same five weekdays,
+  restoring the History store in between.** Each person's arrival and
+  departure times shift by up to ±20 minutes, seeded by the date, so two
+  different days have different occupancy, and only the same date gives
+  both methods the same people at the same times. One week runs with the
+  room model, then the History store is restored to its state before
+  that week (`eval/snapshot.sh`) and the same week runs with the CO2-only
+  switch, both at speed 1000 (see *Decided: tests run at speed 1…*, §10).
+  Rejected: one day per method on different dates, which needs the
+  person-minute scaling below to compare them; five days per method on
+  different dates, which averages the occupancy difference out but does
+  not remove it. Trade-off: a backup and restore between the two weeks,
+  and the stored history afterwards continues from whichever week ran
+  last. Decided 2026-10-09; runs pending.
+  - Useful for: §10, §11.
 
 - **Decided: the CO2-only day runs on the normal stack, with a setting that
   makes the decision service ignore room models.** With

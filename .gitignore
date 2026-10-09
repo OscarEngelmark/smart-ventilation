@@ -42,3 +42,6 @@ scratch/
 
 # Clock of the current session, written by start.sh
 run.env
+
+# History store snapshots for evaluation runs, written by eval/snapshot.sh
+eval/snapshots/

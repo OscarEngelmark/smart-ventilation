@@ -14,7 +14,7 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15l | §11 evaluation and results; the model-day run (`test/results/day_model_2026-10-22*`) was made with the forward-Euler plan, so rerun it with the exact one before citing it | | 1 |
+| 15l | §11 evaluation and results: first run Monday to Friday 2026-11-23 to 27 twice from the `before` snapshot (`eval/snapshot.sh`), once with the CO2-only switch and then with the room model, at speed 1000, starting each session an hour before Monday; save each day with `eval/save_day.sh`; the old pair (`day_model_2026-10-22*`, `day_switch_2026-10-27*`) ran on older code and is replaced | | 2 |
 | 15m | §12 dashboard, saving the dashboard screenshot (FR-7) | | 1 |
 | 15n | §13 risks and critical reflection | | 1 |
 | 15o | §1 summary, including the changes since the proposal | | 1 |
