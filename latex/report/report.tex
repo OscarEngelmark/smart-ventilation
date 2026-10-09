@@ -219,8 +219,10 @@ give, so the meeting is the hardest case the decision service has to
 hold under the threshold. The occupancy sensor reports six, and the
 decision service raises the damper to the lowest level its room model
 predicts will hold six people under the target. When the meeting ends,
-the level drops back. Room time can run faster than the wall clock, so the demo shows the
-whole meeting in a few minutes. Section~\ref{sec:evaluation} reports whether the threshold
+the level drops back. Room time, the simulated clock all of the
+project's own programs share, can run faster than the wall clock, so the
+demo shows the whole
+meeting in a few minutes. Section~\ref{sec:evaluation} reports whether the threshold
 holds.
 
 \textbf{Why it matters.} The system's goals pull against each other. The
@@ -275,8 +277,8 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 \endhead
 FR-1 & Functional & CO₂ readings and head counts are saved in the
 history store & Must & A full simulated weekday has a stored CO₂
-reading for every 10~s and a head count for every room minute & Stored
-data of a room day \\
+reading for every 10~s and a head count for every room minute & Room
+day \\
 \midrule
 FR-2 & Functional & The decision service sets the damper in BuildSim
 from the CO₂ readings, in time to hold the threshold & Must
@@ -326,20 +328,18 @@ settles at about 903 ppm; an empty room returns to the outdoor 420 ppm
 & Unit tests, \texttt{internal/co2} \\
 \midrule
 \mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
-a full simulated weekday, meeting included, is under 1000 ppm & Peak CO₂
-over a room day, \texttt{eval/day\_summary.py} \\
+a full simulated weekday, meeting included, is under 1000 ppm & Room day,
+\texttt{eval/\allowbreak day\_summary.py} \\
 \midrule
 NFR-1 & Non-functional & A killed container recovers without help & Must
 & Docker restarts it, a sensor or the damper actuator registers its
 device with BuildSim again, and after a reading above the target,
-BuildSim holds the damper fully open within 2 min of the kill, at
-room-time speed 1 & Crash-and-restart
-test,
-\texttt{test/crash/crash.sh} \\
+BuildSim holds the damper fully open within 2 min of the kill, with
+room time running as fast as the wall clock & Crash test, \texttt{test/crash/crash.sh} \\
 \midrule
 NFR-2 & Non-functional & The ventilation runs as low as it can & Should &
 The time-weighted mean damper level over a room day is lower than under
-the CO₂-only switch of FR-6 & Decision-quality comparison (Section~\ref{sec:evaluation}) \\
+the CO₂-only switch of FR-6 & Comparison day (Section~\ref{sec:evaluation}) \\
 \midrule
 NFR-3 & Non-functional & A faulty CO₂ sensor or a stopped broker does
 not let CO₂ through the threshold & Should & With the CO₂ sensor frozen
@@ -348,7 +348,7 @@ Fault tests \\
 \midrule
 NFR-4 & Non-functional & A command follows its reading in time to hold
 the threshold & Could & The time from a reading to its command stays
-under 2 min of room time & Delay measurement from stored data \\
+under 2 min of room time & Delay measurement \\
 \bottomrule
 \end{longtable}
 }
@@ -1342,7 +1342,7 @@ about (Table~\ref{tab:tests}): unit tests for one piece of logic on its
 own, the end-to-end test for the loop's answer to one reading, fault
 tests for what happens when something breaks, and a full room day for
 what the system does over a day. Checks that time how fast something
-happens run with room time at the pace of the wall clock (i.e. 1:1 speed), so that their
+happens run with room time at the pace of the wall clock, so that their
 limits, set in room time, hold in real time as well; they refuse to run
 otherwise. A room day runs faster, since the Physical model computes the
 same CO₂ at any pace (Section~\ref{sec:simulation}). Every check saves
