@@ -1,7 +1,7 @@
 # Deployment diagram: every process, the machine it runs on, and how it is
 # reached. Mirrors docker-compose.yml; box names follow container.d2 and
 # context.d2. Containers on the Compose network reach each other by service
-# name, so the only arrows drawn are those that cross the laptop's boundary
+# name, so the only arrows drawn are those that cross the computer's boundary
 # or touch the disk; the arrows between containers are in container.d2.
 direction: down
 
@@ -20,7 +20,7 @@ classes: {
   }
 }
 
-laptop: "Laptop  [Linux, Docker Engine]" {
+host: "Computer  [Linux, Docker Engine]" {
   style.font-size: 32
   grid-rows: 2
   grid-columns: 2
@@ -86,6 +86,6 @@ laptop: "Laptop  [Linux, Docker Engine]" {
   }
 }
 
-laptop.above.browser -> laptop.net.sys.dash: "web page\n[HTTP, 127.0.0.1:8082]" {style.font-size: 26}
-laptop.above.browser -> laptop.net.room.bs: "3D view\n[HTTP, 127.0.0.1:9090]" {style.font-size: 26}
-laptop.net.sys.storage -> laptop.disk.vol: "reads and writes\n[file]" {style.font-size: 26}
+host.above.browser -> host.net.sys.dash: "web page\n[HTTP, 127.0.0.1:8082]" {style.font-size: 26}
+host.above.browser -> host.net.room.bs: "3D view\n[HTTP, 127.0.0.1:9090]" {style.font-size: 26}
+host.net.sys.storage -> host.disk.vol: "reads and writes\n[file]" {style.font-size: 26}

@@ -121,7 +121,7 @@ _(nothing yet)_
 - **Decided: Go for every service, including the learning service; Python
   stays open for it if a later model needs its libraries.** Go for
   goroutine-based concurrency and small, fast-starting binaries, since the
-  whole system has to run on one laptop at once. The first forecast model
+  whole system has to run on one computer at once. The first forecast model
   was a straight-line fit (see *Decided: the CO2 forecast service is
   removed…*, §7) and the room model is a least-squares fit of three numbers;
   neither needs a library, and the rest of such a service is MQTT, REST, and
@@ -324,7 +324,7 @@ _(nothing yet)_
     tells the decision service a command needs sending again.
   - **Decided: MQTT as the broker implementation**, over Kafka (built for
     high-throughput distributed streaming at a scale this system doesn't
-    reach — a handful of topics on one laptop) and Redis pub/sub
+    reach — a handful of topics on one computer) and Redis pub/sub
     (fire-and-forget only, nothing delivered to a subscriber offline at
     publish time). MQTT is built for small, constrained-device messaging,
     matching this system's shape. Decided 2026-09-15.
@@ -381,10 +381,9 @@ _(nothing yet)_
   only. Rejected: one instance for all rooms — fewer containers, and the
   natural place for anything rooms must share, but one crash stops every
   room's decisions, and nothing is shared between rooms here. Trade-off:
-  containers grow with the room count. The five per-room services use
-  about 57 MiB of memory together, the Decision service about 9 MiB of it
-  (`test/results/resources_2026-10-09.txt`), so 1000 rooms is about 5000
-  containers and 55 GiB (derived) — possible on a server, but too many to
+  containers grow with the room count. Each per-room service uses about
+  10 MiB of memory (`test/results/resources_2026-10-09.txt`), so 1000
+  rooms is about 5000 containers and about 50 GiB (derived) — possible on a server, but too many to
   configure by hand in `docker-compose.yml`. The path to that scale is grouping rooms, e.g. one decision process per floor
   subscribing to `level0/+/co2/reading`, which fails per floor instead of
   per room.
@@ -1460,12 +1459,16 @@ _(nothing yet)_
   change that. Decided 2026-10-09.
   - Useful for: §9, §13.
 
-- **Measured: all eleven containers use 175 MiB of memory together and
-  under 0.2 % of one CPU each at speed 1.** BuildSim and the Storage
-  service use about 42 MiB each, every other container 7–19 MiB; no
-  container has a resource limit. Sampled once with `docker stats`, 91 s
-  after start and between room-model fits
-  (`test/results/resources_2026-10-09.txt`). Measured 2026-10-09.
+- **Measured: all eleven containers use under 200 MiB of memory together
+  and under 0.2 % of one CPU each at speed 1.** BuildSim and the Storage
+  service use about 40 MiB each, every other container about 10 MiB; no
+  container has a resource limit. One `docker stats` sample, 91 s after
+  start and between room-model fits
+  (`test/results/resources_2026-10-09.txt`), so the figures are rounded:
+  a Go program's memory moves by a few MiB with its garbage collection,
+  and earlier single samples of the Go services gave 12–15 MB. Measured 2026-10-09.
+  - **Revisit:** sample memory and CPU repeatedly over the stress test
+    run (working plan row 17).
   - Useful for: §9, §11.
 
 ## 10. Test plan
