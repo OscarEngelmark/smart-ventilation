@@ -1384,7 +1384,7 @@ the Message broker, on the running system & \req{NFR-3} & Test output; stored
 data & Not yet run \\
 \midrule
 Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
-(Section~\ref{sec:dashboard}) & Not yet run \\
+(Section~\ref{sec:dashboard}) & Run \\
 \midrule
 Stress test & Raises the load step by step until the system stops
 keeping up, to find its breaking point & None & Measurements & Not yet
@@ -1433,7 +1433,8 @@ first at 973.8~ppm & Met \\
 \req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 67 unit tests and subtests
 pass & Met \\
 \midrule
-\req{FR-7} & Not yet measured & Open \\
+\req{FR-7} & CO₂, head count and damper level shown over the last
+6~hours of room time (Figure~\ref{fig:dashboard}) & Met \\
 \midrule
 \req{REG-1} & Peak CO₂ 938--943~ppm on the five room-model weekdays, meetings
 included & Met \\
@@ -1560,17 +1561,39 @@ Friday 2026-11-27, per room minute, for both methods
 
 \section{Dashboard}\label{sec:dashboard}
 
-\guidance{What the dashboard shows and how it overlays state and decisions on the
-BuildSim 3D view. Include a screenshot.}
+% Required points (report guide, section 3.12; template, section 12):
+% - what the dashboard shows: sensor readings, actuator states, decisions,
+%   alerts
+% - how it is built
+% - a screenshot
+
+The Operator watches the room on the Dashboard, a web page served by the
+Dashboard container (Figure~\ref{fig:dashboard}). Its top line gives the
+newest room time and the speed it runs at, with the latest CO₂ reading,
+head count and damper level. Below it, three charts cover the same last
+6~hours of room time: CO₂ with the 950~ppm target and the 1000~ppm
+threshold, the head count, and the damper level of each stored command.
+The damper level is the Decision service's decision; the page shows
+neither the reason for a level nor any alerts.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/dashboard.png}
-\caption{The Dashboard.}
+\caption{The Dashboard at 14:05 on Monday 2026-11-30, as the meeting
+ends, with room time running 250 times as fast as the wall clock.}
 \label{fig:dashboard}
 \end{figure}
 
-\fillin{Describe the dashboard here.}
+The page refreshes every 5~s of real time and reads everything from the
+History store through the Storage service's endpoints
+(Table~\ref{tab:endpoints}). Since room time can run ahead of the wall
+clock, the page asks for the newest stored room time and draws the
+6~hours before it, not the 6~hours before the current wall-clock time.
+This is why a ready-made tool such as Grafana was rejected: it draws over
+a window of wall-clock time, and room time can run days ahead of it, so
+the stored data would fall outside the window. The charts are drawn with
+uPlot, a small chart library kept in the repository, so the page needs no
+internet connection.
 
 \section{Risks and critical reflection}\label{sec:risks}
 
