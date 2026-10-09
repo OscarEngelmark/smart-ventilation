@@ -15,7 +15,7 @@ decisions.
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
 | 15m | §12 dashboard, saving the dashboard screenshot (FR-7) | | 1 |
-| 15n | §13 risks and critical reflection | | 1 |
+| 15n | §13 risks and critical reflection, including that the plan's 60-minute horizon and 950 ppm target are untuned and a per-minute plan was rejected, so the room model might save more; more advanced ways to use the room model, such as that per-minute optimizer or a decision policy trained in the simulator (reinforcement learning) | | 1 |
 | 15o | §1 summary, including the changes since the proposal | | 1 |
 
 ## Phase 2: higher grade (2026-10-11, and any time left)
