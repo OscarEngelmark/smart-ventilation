@@ -25,7 +25,8 @@ services:
     # Default config without login, so services can connect without passwords.
     command: mosquitto -c /mosquitto-no-auth.conf
     ports:
-      - "1883:1883"
+      # Only reachable from this machine, for watching messages by hand.
+      - "127.0.0.1:1883:1883"
     # Docker starts the broker again if it stops with an error.
     restart: on-failure
 

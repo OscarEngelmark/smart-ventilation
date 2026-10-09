@@ -1277,10 +1277,9 @@ Every process runs as a Docker container on one computer
 (Figure~\ref{fig:deployment}). One \texttt{docker-compose.yml} starts all
 eleven, BuildSim included, which is built from its repository at a pinned
 commit~\cite{buildsim} to maintain consistent behavior. The containers 
-reach each other by service name on the Compose network. Only the ports the
-Operator or a test needs are published to the computer, and only on 127.0.0.1, 
-except the Message broker's, which is published on all of the computer's network 
-interfaces.
+reach each other by service name on the Compose network. The ports the
+Operator, the tests and manual checks use are published to the computer,
+and only on 127.0.0.1, so no other machine can reach a container.
 
 \begin{figure}[H]
 \centering

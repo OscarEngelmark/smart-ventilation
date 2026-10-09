@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 21 | Publish the Message broker's port 1883 on 127.0.0.1 only, as every other published port is; today `docker-compose.yml` opens it on all of the computer's network interfaces, with no login; update `diagrams/deployment.d2` and report §9 to match | | 1 |
 | 15k | §10 test plan | | 1 |
 | 15l | §11 evaluation and results; the model-day run (`test/results/day_model_2026-10-22*`) was made with the forward-Euler plan, so rerun it with the exact one before citing it | | 1 |
 | 15m | §12 dashboard, saving the dashboard screenshot (FR-7) | | 1 |

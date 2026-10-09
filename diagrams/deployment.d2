@@ -73,7 +73,7 @@ host: "Computer  [Linux, Docker Engine]" {
       storage: "Storage service\n[storage-service]\nport 8081, published\non 127.0.0.1" {class: box}
       decision: "Decision service\n[decision]" {class: box}
       roommodel: "Room-model service\n[room-model]" {class: box}
-      broker: "Message broker\n[mosquitto]\nport 1883, published on\nall interfaces" {class: box}
+      broker: "Message broker\n[mosquitto]\nport 1883, published\non 127.0.0.1" {class: box}
     }
   }
 
