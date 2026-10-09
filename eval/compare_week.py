@@ -21,7 +21,7 @@ from day_summary import ROOM_TZ, mean_level
 METHODS = ("model", "switch")
 
 
-def _load(folder: Path, method: str, day: date, kind: str) -> list[dict]:
+def load_day(folder: Path, method: str, day: date, kind: str) -> list[dict]:
     """Rows of one saved day, as stored."""
     path = folder / f"day_{method}_{day}_{kind}.json"
     with path.open() as f:
@@ -33,12 +33,12 @@ def _day_figures(folder: Path, method: str, day: date) -> tuple[float, float, fl
     day_start = datetime.combine(day, datetime.min.time(), tzinfo=ROOM_TZ)
     commands = [
         (datetime.fromisoformat(c["ts"]), c["level"])
-        for c in _load(folder, method, day, "commands")
+        for c in load_day(folder, method, day, "commands")
     ]
     whole_day = mean_level(commands, day_start, day_start + timedelta(days=1))
     meeting_start = day_start + timedelta(hours=13)
     meeting = mean_level(commands, meeting_start, meeting_start + timedelta(hours=1))
-    peak = max(r["ppm"] for r in _load(folder, method, day, "co2"))
+    peak = max(r["ppm"] for r in load_day(folder, method, day, "co2"))
     return whole_day, meeting, peak
 
 
@@ -46,7 +46,7 @@ def _counts(folder: Path, method: str, day: date) -> list[tuple[datetime, int]]:
     """The stored head counts of one day, with their times, oldest first."""
     return [
         (datetime.fromisoformat(r["ts"]), r["count"])
-        for r in _load(folder, method, day, "occupancy")
+        for r in load_day(folder, method, day, "occupancy")
     ]
 
 

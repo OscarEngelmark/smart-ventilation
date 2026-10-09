@@ -277,8 +277,8 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 \endhead
 FR-1 & Functional & CO₂ readings and head counts are saved in the
 history store & Must & A full simulated weekday has a stored CO₂
-reading for every 10~s and a head count for every room minute & Room
-day \\
+reading for every 10~s and a head count for every room minute & Comparison
+week \\
 \midrule
 FR-2 & Functional & The decision service sets the damper in BuildSim
 from the CO₂ readings, in time to hold the threshold & Must
@@ -328,8 +328,8 @@ settles at about 903 ppm; an empty room returns to the outdoor 420 ppm
 & Unit tests, \texttt{internal/co2} \\
 \midrule
 \mbox{REG-1} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
-a full simulated weekday, meeting included, is under 1000 ppm & Room day,
-\texttt{eval/\allowbreak day\_summary.py} \\
+a full simulated weekday, meeting included, is under 1000 ppm & Comparison
+week \\
 \midrule
 NFR-1 & Non-functional & A killed container recovers without help & Must
 & Docker restarts it, a sensor or the damper actuator registers its
@@ -339,7 +339,7 @@ room time running as fast as the wall clock & Crash test, \texttt{test/crash/cra
 \midrule
 NFR-2 & Non-functional & The ventilation runs as low as it can & Should &
 The time-weighted mean damper level over a room day is lower than under
-the CO₂-only switch of FR-6 & Comparison day (Section~\ref{sec:evaluation}) \\
+the CO₂-only switch of FR-6 & Comparison week \\
 \midrule
 NFR-3 & Non-functional & A faulty CO₂ sensor or a stopped broker does
 not let CO₂ through the threshold & Should & With the CO₂ sensor frozen
@@ -1340,12 +1340,12 @@ night.
 Each requirement is verified by the kind of check that fits what it is
 about (Table~\ref{tab:tests}): unit tests for one piece of logic on its
 own, the end-to-end test for the loop's answer to one reading, fault
-tests for what happens when something breaks, and a full room day for
-what the system does over a day. Checks that time how fast something
+tests for what happens when something breaks, and the comparison week
+for what the system does over whole days. Checks that time how fast something
 happens run with room time at the pace of the wall clock, so that their
 limits, set in room time, hold in real time as well; they refuse to run
-otherwise. A room day runs faster, since the Physical model computes the
-same CO₂ at any pace (Section~\ref{sec:simulation}). Every check saves
+otherwise. The comparison week runs faster, since the Physical model
+computes the same CO₂ at any pace (Section~\ref{sec:simulation}). Every check saves
 its raw output and the stored readings, commands and head counts of its
 time window in \texttt{test/results/}; Section~\ref{sec:evaluation}
 reports the results.
@@ -1375,26 +1375,27 @@ the occupancy schedule and the mass balance, each without the running
 system & FR-4, FR-5, FR-6, FR-8, FR-9, FR-10 & Test output & Run \\
 \midrule
 End-to-end test & Writes 980~ppm into BuildSim on the running system and
-checks that the reading is stored, a command to open the damper fully is
-stored within 2~min of it, BuildSim holds the damper open, and CO₂ falls
+checks that the reading is stored, that a command to open the damper fully
+is stored and BuildSim holds the damper fully open within 2~min of it, and
+that the third reading after the command is lower than the first
 & FR-2, FR-3 & Test output; stored data & Run \\
 \midrule
 Crash test & Kills the CO₂ sensor and the Decision service, writes
-980~ppm into BuildSim while both are down, and times how long until
-BuildSim holds the damper fully open & NFR-1 & Test output; stored data;
+980~ppm into BuildSim while both are down, checks that Docker restarts
+each once, and times how long until BuildSim holds the damper fully open
+& NFR-1 & Test output; stored data;
 both containers' logs & Run \\
 \midrule
-Room day & Runs a full weekday with the room model; \texttt{eval/\allowbreak
-day\_summary.py} reports the peak CO₂ and the number of stored readings
-& REG-1, FR-1 & Day summary; stored data & Run \\
-\midrule
-Comparison day & Runs a full weekday with the Decision service ignoring
-room models, so it uses the CO₂-only switch, and compares its
-time-weighted mean damper level with the room day's & NFR-2 & Day
-summary; stored data & Run \\
+Comparison week & Runs the same five weekdays twice from the same stored
+history, first with the Decision service ignoring room models, so it
+uses the CO₂-only switch, then with the room model; both see the same
+people. \texttt{eval/\allowbreak compare\_week.py} compares their
+damper levels and peak CO₂ & FR-1, REG-1, NFR-2 & Comparison table;
+stored data & Run \\
 \midrule
 Delay measurement & Takes the time from each stored reading to the
-command that followed it, over the room day & NFR-4 & Stored data & Not
+command that followed it, over the room-model days of the comparison
+week & NFR-4 & Stored data & Not
 yet run \\
 \midrule
 Fault tests & Freezes the CO₂ sensor at one value, and separately stops
@@ -1413,23 +1414,152 @@ run \\
 
 \section{Evaluation and results}\label{sec:evaluation}
 
-\guidance{The evidence that the system works, measured, not asserted. Charts and
-tables of results, compared against the requirements. Include an honest reading of
-where the numbers are weak. The plot below is a pgfplots placeholder, replace the
-coordinates with real data.}
+% Required points (report guide, section 3.11; template, section 11):
+% - the metrics measured, compared against the requirements
+% - charts and tables of results; a response-over-time plot and a
+%   comparison against a baseline for the higher grades
+% - trade-offs observed, and an honest reading of where the numbers are
+%   weak
 
-\begin{center}
+Table~\ref{tab:results} sets each result against its requirement. The
+checks are those of Table~\ref{tab:tests}, run on the final code.
+
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.18}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.70}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.12}}@{}}
+\caption{Measured results against the requirements of
+Table~\ref{tab:requirements}.}\label{tab:results}\\
+\toprule
+\textbf{ID} & \textbf{Measured} & \textbf{Result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Measured} & \textbf{Result} \\
+\midrule
+\endhead
+FR-1 & On each of the ten weekdays, 8640 stored CO₂ readings, each 9--11~s
+after the one before, and 1440 head counts, one for every room minute & Met \\
+\midrule
+FR-2 & After a 979~ppm reading, a command to open the damper fully was
+stored in the same room second, and BuildSim then held the damper fully
+open & Met \\
+\midrule
+FR-3 & The third reading after the command was 963.1~ppm, lower than the
+first at 973.8~ppm & Met \\
+\midrule
+FR-4, FR-5, FR-6, FR-8, FR-9, FR-10 & All 67 unit tests and subtests
+pass & Met \\
+\midrule
+FR-7 & Not yet measured & Open \\
+\midrule
+REG-1 & Peak CO₂ 938--943~ppm on the five room-model weekdays, meetings
+included & Met \\
+\midrule
+NFR-1 & Docker restarted both killed containers once, the restarted CO₂
+sensor's 980~ppm reading was stored, and BuildSim held the damper fully
+open 10.8~s after the kill & Met \\
+\midrule
+NFR-2 & Mean damper level over a room day 0.137 with the room model,
+0.153 with the CO₂-only switch; lower on every day & Met \\
+\midrule
+NFR-3 & Not yet measured & Open \\
+\midrule
+NFR-4 & Not yet measured & Open \\
+\bottomrule
+\end{longtable}
+}
+
+\textbf{Decision quality.} The comparison week ran Monday to Friday
+2026-11-23 to 27 twice from the same stored history, with room time
+running 250 times as fast as the wall clock. Every person's arrival and
+departure follow from the date (Section~\ref{sec:simulation}), so both
+methods saw the same people at the same times, and any difference in
+damper level comes from the decision logic alone.
+Table~\ref{tab:comparison} gives the means over the five days
+(\texttt{test/results/\allowbreak comparison\_week\_2026-11-23/}).
+
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.40}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.30}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.30}}@{}}
+\caption{The room model against the CO₂-only switch over the same five
+weekdays: means, with the range over the days in
+brackets.}\label{tab:comparison}\\
+\toprule
+& \textbf{Room model} & \textbf{CO₂-only switch} \\
+\midrule
+\endfirsthead
+\toprule
+& \textbf{Room model} & \textbf{CO₂-only switch} \\
+\midrule
+\endhead
+Mean damper level over a room day & 0.137 (0.134--0.141) & 0.153
+(0.149--0.157) \\
+\midrule
+Mean damper level over 13:00--14:00 & 0.845 (0.773--0.896) & 1.000 \\
+\midrule
+Peak CO₂ & 941~ppm (938--943) & 951~ppm (951--952) \\
+\bottomrule
+\end{longtable}
+}
+
+The difference is largest in the meeting, shown in
+Figure~\ref{fig:meeting} for Friday, the day closest to the mean. The
+room model raises the damper as the head count grows, in steps from
+0.15 to 0.90, and lowers it as people leave; CO₂ stays under the
+950~ppm target throughout. The CO₂-only switch stays closed until a
+reading reaches the target, then holds the damper fully open until CO₂
+falls below 800~ppm, so it ventilates harder than six people need and
+then cycles between closed and fully open with three. Both stay under
+the 1000~ppm threshold. The room model thus runs the damper about 10\,\%
+lower over a day, and about 15\,\% lower in the meeting hour.
+
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
-\begin{axis}[width=0.8\linewidth,height=5cm,xlabel={Time},ylabel={Metric},
-  title={Example result (replace with measured data)},grid=both,
-  legend pos=north east]
-\addplot coordinates {(0,0) (1,1) (2,1.5) (3,1.2) (4,1.8)};
-\legend{series 1}
+\begin{axis}[name=co2,scale only axis,width=0.8\linewidth,height=4cm,ymin=650,
+  ymax=1050,xmin=12,xmax=15,xtick={12,13,14,15},xticklabels={},
+  ylabel={CO\textsubscript{2} (ppm)},grid=major,grid style={gray!20},
+  yticklabel style={/pgf/number format/1000 sep={}},
+  legend columns=4,legend style={at={(0.5,1.03)},anchor=south,
+  font=\footnotesize,draw=none},
+  tick label style={font=\footnotesize},label style={font=\small}]
+\addplot[blue,thick] table[x=hour,y=co2_model]{data/meeting_2026-11-27.dat};
+\addplot[orange,thick] table[x=hour,y=co2_switch]{data/meeting_2026-11-27.dat};
+\addplot[red,dashed] coordinates {(12,1000) (15,1000)};
+\addplot[gray,dotted,thick] coordinates {(12,950) (15,950)};
+\legend{Room model,CO\textsubscript{2}-only switch,Threshold,Target}
+\end{axis}
+\begin{axis}[at={($(co2.south west)+(0,-0.3cm)$)},anchor=north west,
+  scale only axis,width=0.8\linewidth,height=2.2cm,
+  ymin=-0.05,ymax=1.05,
+  xmin=12,xmax=15,xtick={12,13,14,15},
+  xticklabels={12:00,13:00,14:00,15:00},ylabel={Damper level $d$},
+  grid=major,grid style={gray!20},tick label style={font=\footnotesize},
+  label style={font=\small}]
+\addplot[blue,thick,const plot] table[x=hour,y=damper_model]{data/meeting_2026-11-27.dat};
+\addplot[orange,thick,const plot] table[x=hour,y=damper_switch]{data/meeting_2026-11-27.dat};
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{CO₂ (top) and damper level (bottom) around the meeting on
+Friday 2026-11-27, per room minute, for both methods
+(\texttt{eval/\allowbreak meeting\_series.py}).}
+\label{fig:meeting}
+\end{figure}
 
-\fillin{Present and interpret the results here.}
+\textbf{Where the numbers are weak.} The evaluation covers one simulated
+room, whose CO₂ follows the same mass balance the room model is fitted
+to (Section~\ref{sec:decision-logic}), with exact head counts and a CO₂
+sensor without noise (Section~\ref{sec:simulation}); in a real room the
+room model would fit less well, and the 50~ppm between target and
+threshold would carry more of the load. The baseline is the system's own
+fallback rather than the ventilation a building would otherwise run,
+such as a fixed schedule, and the damper level stands in for fan
+energy, which is not modelled. The five days repeat one weekly
+schedule. FR-7, NFR-3 and NFR-4 are not yet measured.
 
 \section{Dashboard}\label{sec:dashboard}
 

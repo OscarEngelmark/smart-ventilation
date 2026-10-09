@@ -63,7 +63,7 @@ _(nothing yet)_
 
   | ID | Type | Priority | Requirement and acceptance criterion | Verified by |
   |---|---|---|---|---|
-  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the history store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Room day |
+  | FR-1 | Functional | Must | CO2 readings and head counts are saved in the history store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Comparison week |
   | FR-2 | Functional | Must | The decision service sets the damper in BuildSim from the CO2 readings, in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
   | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first; commands are led by the one in force at that time | Unit tests, `internal/store` |
@@ -73,9 +73,9 @@ _(nothing yet)_
   | FR-8 | Functional | Must | The storage service keeps bad messages out of the history store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
   | FR-9 | Functional | Must | The occupancy simulator fills the room on a weekday schedule; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
   | FR-10 | Functional | Must | The physical model's CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 903 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
-  | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Room day, `eval/day_summary.py` |
+  | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Comparison week |
   | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash test, at speed 1 |
-  | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Comparison day |
+  | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Comparison week |
   | NFR-3 | Non-functional | Should | A frozen CO2 sensor or a downed broker doesn't push CO2 over 1000 ppm | Fault tests |
   | NFR-4 | Non-functional | Could | Time from a reading to its command stays under 2 min of room time | Delay measurement |
 
