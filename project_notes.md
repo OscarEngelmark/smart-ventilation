@@ -1537,25 +1537,24 @@ _(nothing yet)_
     just before the actuator writes it to BuildSim, so the write itself is
     not timed; and the history store keeps whole seconds, so the gap is
     known to 1 s. Added 2026-10-06.
-  - Result, 2026-10-07, at speed 1 with the room at 900 ppm, one person
-    and the damper closed: passed in 31 real seconds. CO2 went to 980 ppm
-    at the injection; a 1.00 command was stored in the same room second as
-    that reading; CO2 then fell about 4.6 ppm per reading, 975 → 966 ppm
-    over three readings. It replaces a pass on 2026-10-06 with the same
-    outcome, rerun after the topics and room settings were renamed.
-    Evidence in `test/results/`: the test's output (`e2e_2026-10-07.txt`)
+  - Result, 2026-10-09, at speed 1 with the room empty at night and the
+    damper closed: passed in 34 real seconds. The stored reading was
+    979 ppm, since the Physical model stepped once after the injection; a
+    1.00 command was stored in the same room second; CO2 then fell from
+    973.8 to 963.1 ppm over the readings that followed. It replaces passes
+    on 2026-10-06 and 2026-10-07, rerun on the code of 2026-10-09.
+    Evidence in `test/results/`: the test's output (`e2e_2026-10-09.txt`)
     and the stored CO2 readings, commands and head counts of the run's
-    window (`e2e_2026-10-07_*.json`).
+    window (`e2e_2026-10-09_*.json`).
   - Useful for: §10, §11.
 
-- **All 67 unit tests and subtests passed on 2026-10-08**, among them
+- **All 67 unit tests and subtests passed on 2026-10-09**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
-  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-08.txt`, the
-  output of `go test -v -count=1 ./...`. It replaces a pass on 2026-10-07,
-  rerun after `internal/co2`'s tests took the fully open airflow from
-  `MAX_AIRFLOW_FACTOR` 1.2 instead of the earlier 2.
+  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-09.txt`, the
+  output of `go test -v -count=1 ./...`. It replaces passes on 2026-10-07
+  and 2026-10-08, rerun on the code of 2026-10-09.
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
@@ -1579,20 +1578,18 @@ _(nothing yet)_
   BuildSim. The other containers aren't killed: every one restarts through
   the same `restart: on-failure`, and every device process registers through
   the same `buildsim.Client.Register`. Decided and implemented 2026-10-06.
-  - Result, 2026-10-07, at speed 1: two runs, each passed in 10.8 real
-    seconds, with Docker restarting each container once per run. In both,
-    the restarted sensor published 980 ppm within a second of the kill,
-    13–17 ms before the restarted decision service subscribed, so the
+  - Result, 2026-10-09, at speed 1: passed in 10.8 real seconds, with
+    Docker restarting each container once. The restarted sensor published
+    980 ppm 14 ms before the restarted decision service subscribed, so the
     decision service missed that reading and opened the damper on the next
     one, 10 s later. Recovery is thus the restart time plus up to one
     reading interval: the decision service connects without a persistent
     session, so the broker keeps no readings for it while it is down; had
-    it subscribed first, it would have acted on the first reading. Replaces
-    two runs on 2026-10-06, rerun after the topics and room settings were
-    renamed. Evidence in `test/results/`: each run's output
-    (`crash_2026-10-07_run1.txt`, `crash_2026-10-07.txt`), and its stored
-    CO2 readings, commands, head counts and the two services' logs
-    (`crash_2026-10-07_run1_*`, `crash_2026-10-07_*`).
+    it subscribed first, it would have acted on the first reading. It
+    replaces two runs on 2026-10-07 with the same outcome, rerun on the
+    code of 2026-10-09. Evidence in `test/results/`: the run's output
+    (`crash_2026-10-09.txt`), and its stored CO2 readings, commands, head
+    counts and the two services' logs (`crash_2026-10-09_*`).
   - Useful for: §8.2, §10, §11.
 
 - **REG-1 held on all five days of the room-model week, 2026-11-23 to 27:

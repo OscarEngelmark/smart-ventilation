@@ -14,7 +14,7 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15l | §11 evaluation and results: first rerun the unit tests, the end-to-end test and the crash test on the current code (the crash test needs `sudo`, so the user runs it); then write §11 from `test/results/comparison_week_2026-11-23/`; the checks named "Room day" and "Comparison day" in report Tables 3 and 10 and the notes' requirements table are now a week each, so rename them | | 2 |
+| 15l | §11 evaluation and results: write §11 from `test/results/comparison_week_2026-11-23/`; the checks named "Room day" and "Comparison day" in report Tables 3 and 10 and the notes' requirements table are now a week each, so rename them | | 2 |
 | 15m | §12 dashboard, saving the dashboard screenshot (FR-7) | | 1 |
 | 15n | §13 risks and critical reflection | | 1 |
 | 15o | §1 summary, including the changes since the proposal | | 1 |

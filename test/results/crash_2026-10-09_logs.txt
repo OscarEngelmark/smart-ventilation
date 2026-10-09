@@ -1,0 +1,7 @@
+decision-1  | 2026-10-09T12:00:27.361377836Z 2026/10/09 14:00:27 deciding for level0/A125, commanding http://actuator:8080, keeping CO2 under 950 ppm over the next 1h0m0s
+decision-1  | 2026-10-09T12:00:27.361384856Z 2026/10/09 14:00:27 connected to broker, subscribing
+decision-1  | 2026-10-09T12:00:27.403385660Z 2026/10/09 14:00:27 room model from 2026-11-28: a=4.688 b0=0.008617 b1=0.04989
+decision-1  | 2026-10-09T12:00:37.354120628Z 2026/10/09 14:00:37 level0/A125: damper 1.00 at 979 ppm, unknown people
+co2-sensor-1  | 2026-10-09T12:00:27.346974684Z 2026/10/09 14:00:27 reading A125-co2 every 10s, publishing to level0/A125/co2/reading
+co2-sensor-1  | 2026-10-09T12:00:27.347536420Z 2026/10/09 14:00:27 level0/A125: 980 ppm
+co2-sensor-1  | 2026-10-09T12:00:37.352202931Z 2026/10/09 14:00:37 level0/A125: 979 ppm
