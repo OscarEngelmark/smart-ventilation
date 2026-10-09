@@ -1531,17 +1531,30 @@ Friday 2026-11-27, per room minute, for both methods
 \label{fig:meeting}
 \end{figure}
 
-\textbf{Where the numbers are weak.} The evaluation covers one simulated
-room, whose CO₂ follows the same mass balance the room model is fitted
-to (Section~\ref{sec:decision-logic}), with exact head counts and a CO₂
-sensor without noise (Section~\ref{sec:simulation}); in a real room the
-room model would fit less well, and CO₂ would pass the target more
-often, leaving the 50~ppm margin below the threshold to absorb the
-error. The baseline is the system's own
-fallback rather than the ventilation a building would otherwise run,
-such as a fixed schedule, and the damper level stands in for fan
-energy, which is not modelled. The five days repeat one weekly
-schedule. \req{FR-7}, \req{NFR-3} and \req{NFR-4} are not yet measured.
+\textbf{Where the numbers are weak.} The comparison has four limits:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{The test room is easier than a real one.} Its CO₂ follows the
+  same mass balance equation the room model is fitted to
+  (Section~\ref{sec:decision-logic}), the head counts are exact, and the
+  CO₂ sensor has no noise (Section~\ref{sec:simulation}). In a real room
+  the room model would fit less well, and CO₂ would pass the target more
+  often, leaving the 50~ppm margin below the threshold to absorb the
+  error.
+\item
+  \textbf{Only one simpler method was compared.} The saving holds against
+  the CO₂-only switch. A different simple method was not
+  tested and might match or beat the room model.
+\item
+  \textbf{The saving is in damper level, not energy.} The simulation does
+  not model the fan's energy use.
+\item
+  \textbf{The five days repeat one weekly schedule,} so the narrow ranges
+  in Table~\ref{tab:comparison} say little about how the result would
+  vary over other weeks.
+\end{itemize}
 
 \section{Dashboard}\label{sec:dashboard}
 
