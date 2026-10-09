@@ -1,0 +1,7 @@
+level0/A125, 2026-11-27: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.152
+  12:00-13:00, before meeting: 0.118
+  13:00-14:00, meeting: 1.000
+peak CO2: 951 ppm at 09:18

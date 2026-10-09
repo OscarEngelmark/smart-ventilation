@@ -1486,29 +1486,34 @@ _(nothing yet)_
   leaves two places to keep in step for one claim. Decided 2026-10-06.
   - Useful for: §3, §10.
 
-- **Decided: tests run at speed 1; the day-long evaluation runs at any
-  faster speed.** A test checks how fast something happens (the end-to-end
+- **Decided: tests run at speed 1; the day-long evaluation runs faster,
+  at a speed checked to keep every reading 10 s apart.** A test checks how fast something happens (the end-to-end
   test, the crash test, the fault tests, the delay measurement), and its
   limits are in room time, so room time and real time must run on one
   clock. The evaluation runs (REG-1's peak CO2, NFR-2's damper comparison)
   only read the CO2 and damper levels stamped in room time, which the
   physical model computes exactly at any speed (§6); a faster speed only
-  stretches millisecond processing delays in room time, and a room day
-  takes 2.4 real hours at speed 10 and 24 minutes at speed 60. Each test
+  stretches millisecond processing delays in room time, until at some
+  speed they reach seconds (see the measurement below). A room day takes
+  24 real minutes at speed 60 and about 6 at speed 250. Each test
   refuses to run at any speed but 1. Rejected: speed 1 for everything,
   which costs about three of the days left before submission on three room
   days. Decided 2026-10-06.
-  - **Measured: speed 1000 gives the same room day as speed 60.** The same
-    Monday, 2026-11-23, run from the same stored history at both speeds:
-    peak CO2 943 ppm at 13:42 in both, mean damper level 0.141 over the
-    day and 0.896 in the meeting hour in both, and the same 21 damper
-    levels in the same order, each within 4 minutes of room time. The
-    per-minute CO2 differed by 0.3 ppm on average and 2.4 ppm at most. At
-    speed 1000 the containers' start took 29 room minutes, so the first
-    stored reading came at 00:29; a session starts an hour before the
-    first evaluated day. Evidence in `test/results/`:
-    `pilot_speed1000_2026-11-23*` and `pilot_speed60_2026-11-23*`.
-    Measured 2026-10-09.
+  - **Measured: evaluation weeks run at speed 250, the fastest speed at
+    which every reading kept its 10 s spacing.** The same Monday,
+    2026-11-23, run from the same stored history at speeds 1000 and 60
+    gave the same day: peak CO2 943 ppm at 13:42, mean damper level 0.141
+    over the day and 0.896 in the meeting hour, and the same 21 damper
+    levels in the same order. But over a whole CO2-only week, about 15
+    readings a day at speed 1000, and up to 6 at speed 500, arrived 2–3 s
+    of room time late (gaps of 7–13 s and 8–12 s); none was lost, and the
+    day summaries matched speed 250's to within 0.003. At speed 250 every
+    gap was 9–11 s on all ten days. `eval/save_day.sh` checks each saved
+    day for 8640 readings 9–11 s apart and 1440 head counts. At speed 1000
+    the containers' start took 29 room minutes, so a session starts an
+    hour before the first evaluated day. Evidence in `test/results/`:
+    `pilot_speed{1000,60}_2026-11-23*`; the speed-1000 and speed-500
+    weeks were not kept. Measured 2026-10-09.
   - Useful for: §10, §11.
 
 - **Decided: the end-to-end test writes 980 ppm into BuildSim and checks the
@@ -1590,21 +1595,20 @@ _(nothing yet)_
     (`crash_2026-10-07_run1_*`, `crash_2026-10-07_*`).
   - Useful for: §8.2, §10, §11.
 
-- **REG-1 held on Thursday 2026-10-22: the peak CO2 was 937 ppm, at 13:48
-  during the meeting.** The day ran at speed 60 on the current code, the
-  first full weekday of that session; Wednesday 2026-10-21 was left out
-  because its peak, 980 ppm at 04:13, was written into BuildSim by a test.
-  The mean damper level was 0.132 over the day and 0.772 in the meeting
-  hour. Evidence in `test/results/`: `day_model_2026-10-22.txt` (the
-  output of `eval/day_summary.py`) and the day's stored CO2 readings,
-  commands and head counts (`day_model_2026-10-22_*.json`). Measured
-  2026-10-06.
-  - The same day verifies FR-1: 8640 CO2 readings are stored, one for
-    every 10 s, and 1440 head counts, one for every room minute
-    (`day_model_2026-10-22_co2.json` and `_occupancy.json`).
+- **REG-1 held on all five days of the room-model week, 2026-11-23 to 27:
+  the peak CO2 was 938–943 ppm.** The week ran at speed 250 on the code of
+  2026-10-09 (see *Decided: the comparison runs both methods on the same
+  five weekdays…*, §11). Evidence in
+  `test/results/comparison_week_2026-11-23/`: `day_model_2026-11-2*`
+  (each day's summary from `eval/day_summary.py` and its stored CO2
+  readings, commands and head counts). Measured 2026-10-09.
+  - The same days verify FR-1: each holds 8640 CO2 readings, 9–11 s apart,
+    and 1440 head counts, as `eval/save_day.sh` checks.
     Rejected: the end-to-end test, which shows one reading stored where
     the day shows all of them, and would wait up to a minute at speed 1
     for the occupancy sensor's next count. Decided 2026-10-06.
+  - Replaces the same check on Thursday 2026-10-22 alone (peak 937 ppm),
+    run on older code.
   - Useful for: §10, §11.
 
 - **Decided: failure testing covers a sensor giving bad readings, a component
@@ -1642,54 +1646,51 @@ _(nothing yet)_
   departure times shift by up to ±20 minutes, seeded by the date, so two
   different days have different occupancy, and only the same date gives
   both methods the same people at the same times. One week runs with the
-  room model, then the History store is restored to its state before
-  that week (`eval/snapshot.sh`) and the same week runs with the CO2-only
-  switch, both at speed 1000 (see *Decided: tests run at speed 1…*, §10).
+  CO2-only switch, then the History store is restored to its state before
+  that week (`eval/snapshot.sh`) and the same week runs with the room
+  model, both at speed 250 (see *Decided: tests run at speed 1…*, §10).
+  The room model runs last so the stored history continues with it.
   Rejected: one day per method on different dates, which needs the
   person-minute scaling below to compare them; five days per method on
   different dates, which averages the occupancy difference out but does
   not remove it. Trade-off: a backup and restore between the two weeks,
   and the stored history afterwards continues from whichever week ran
-  last. Decided 2026-10-09; runs pending.
+  last. Decided and run 2026-10-09.
+  - **Result: NFR-2 holds on every day; the room model used 0.137 of
+    damper level over the day on average, against the switch's 0.153.**
+    Means over Monday to Friday 2026-11-23 to 27, per-day figures in
+    `test/results/comparison_week_2026-11-23/comparison_week_2026-11-23.txt`
+    (from `eval/compare_week.py`), beside each day's saved data:
+
+    | | Room model | CO2-only switch |
+    |---|---|---|
+    | Mean damper level, whole day | 0.137 (0.134–0.141) | 0.153 (0.149–0.157) |
+    | Mean damper level, 13:00–14:00 (meeting) | 0.845 (0.773–0.896) | 1.000 |
+    | Peak CO2 | 941 ppm (938–943) | 951 ppm (951–952) |
+
+    The switch holds the damper fully open through every meeting, and
+    crosses the 950 ppm target because it opens only once a reading
+    reaches it. The comparison script also checks that both weeks saw the
+    same people: the Occupancy sensor counts at a different second of the
+    minute in each session, so every count of one week must lie between
+    the other week's counts just before and after it.
   - Useful for: §10, §11.
 
-- **Decided: the CO2-only day runs on the normal stack, with a setting that
-  makes the decision service ignore room models.** With
-  `IGNORE_ROOM_MODEL: "true"` in `docker-compose.yml`, the decision service
-  never subscribes to the room-model topic, so it has no model and runs the
+- **Decided: the CO2-only week runs on the normal stack, with a setting
+  that makes the decision service ignore room models.** Started with
+  `IGNORE_ROOM_MODEL=true ./start.sh …` (`docker-compose.yml` takes the
+  value from the shell, false by default), the decision service never
+  subscribes to the room-model topic, so it has no model and runs the
   CO2-only switch (FR-6), the same code a new system runs before its first
-  fit. Thursday 2026-10-22 (the REG-1 day) is the room-model day, and
-  Tuesday 2026-10-27 the switch day, both at speed 60. Rejected: stopping
-  the room-model service, deleting its retained model from the broker and
-  restarting the decision service by hand, which needs no code but is
-  three manual steps to get right and undo. Trade-off: as in the forecast
-  comparison (§7), arrivals differ by up to ±20 minutes per person between
-  the days, so a second pair of days is added if the result is borderline.
-  Decided and implemented 2026-10-06.
-  - **Result: NFR-2 holds; the room model used 0.132 of damper level over
-    the day against the switch's 0.152.**
-
-    | | Room model, Thu 2026-10-22 | CO2-only switch, Tue 2026-10-27 |
-    |---|---|---|
-    | Mean damper level, whole day | 0.132 | 0.152 |
-    | Mean damper level, 12:00–13:00 | 0.107 | 0.143 |
-    | Mean damper level, 13:00–14:00 (meeting) | 0.772 | 1.000 |
-    | Peak CO2 | 937 ppm at 13:48 | 951 ppm at 09:28 |
-    | Person-minutes over the day | 1558 | 1642 |
-    | Minutes with the room full (6) | 35 | 48 |
-    | Distinct damper levels commanded | 11 | 2 (0 and 1) |
-
-    The meeting hour shows the difference most directly: with six people
-    in both rooms, the switch held the damper fully open while the room
-    model held it at about 0.77. Tuesday had 5% more person-minutes, which
-    raises its damper use; scaling Tuesday's mean down by that share gives
-    0.144 (derived, assumes damper use grows in step with people), still
-    above Thursday's, so the result was judged not borderline and no
-    second pair was run. The switch also crossed the 950 ppm target, as it
-    only opens once a reading reaches it; both days stayed under 1000 ppm.
-    Evidence in `test/results/`: `day_model_2026-10-22*` and `day_switch_2026-10-27*`
-    (the day summaries and each day's stored readings, commands and head
-    counts). Measured 2026-10-06.
+  fit. Rejected: stopping the room-model service, deleting its retained
+  model from the broker and restarting the decision service by hand, which
+  needs no code but is three manual steps to get right and undo. Decided
+  and implemented 2026-10-06; set from the shell since 2026-10-09.
+  - Replaces a comparison of one day per method on different dates,
+    Thursday 2026-10-22 (room model, 0.132) against Tuesday 2026-10-27
+    (switch, 0.152), at speed 60. Tuesday had 5% more person-minutes, so
+    the result rested on scaling by person-minutes, and both days ran on
+    older code (`day_model_2026-10-22*`, `day_switch_2026-10-27*`).
   - Useful for: §7.1, §10, §11.
 
 ## 12. Dashboard

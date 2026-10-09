@@ -1,0 +1,14 @@
+day         method  damper day  damper meeting  peak CO2  same people
+2026-11-23  model        0.141           0.896    943 ppm  yes
+2026-11-23  switch       0.153           1.000    951 ppm  yes
+2026-11-24  model        0.134           0.773    941 ppm  yes
+2026-11-24  switch       0.154           1.000    951 ppm  yes
+2026-11-25  model        0.140           0.887    943 ppm  yes
+2026-11-25  switch       0.157           1.000    951 ppm  yes
+2026-11-26  model        0.135           0.829    938 ppm  yes
+2026-11-26  switch       0.149           1.000    952 ppm  yes
+2026-11-27  model        0.136           0.842    943 ppm  yes
+2026-11-27  switch       0.152           1.000    951 ppm  yes
+mean over 5 days:
+  model        0.137           0.845    941 ppm
+  switch       0.153           1.000    951 ppm

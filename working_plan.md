@@ -14,7 +14,7 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15l | §11 evaluation and results: first run Monday to Friday 2026-11-23 to 27 twice from the `before` snapshot (`eval/snapshot.sh`), once with the CO2-only switch and then with the room model, at speed 1000, starting each session an hour before Monday; save each day with `eval/save_day.sh`; the old pair (`day_model_2026-10-22*`, `day_switch_2026-10-27*`) ran on older code and is replaced | | 2 |
+| 15l | §11 evaluation and results: first rerun the unit tests, the end-to-end test and the crash test on the current code (the crash test needs `sudo`, so the user runs it); then write §11 from `test/results/comparison_week_2026-11-23/`; the checks named "Room day" and "Comparison day" in report Tables 3 and 10 and the notes' requirements table are now a week each, so rename them | | 2 |
 | 15m | §12 dashboard, saving the dashboard screenshot (FR-7) | | 1 |
 | 15n | §13 risks and critical reflection | | 1 |
 | 15o | §1 summary, including the changes since the proposal | | 1 |
@@ -29,6 +29,12 @@ Each result also updates report §10 and §11.
 | 17 | Stress test to a breaking point; sample each container's memory and CPU repeatedly over the run, since §9's figures rest on one `docker stats` sample | what to scale up, and what counts as broken | 1–2 |
 | 20 | The Decision service checks each message it receives against its schema, as the Storage service and the Damper actuator do; today a CO2 reading missing its `ppm` field reads as 0 ppm (Revisit in the notes' JSON Schema entry, §5) | what it does with a refused message | 1 |
 | 18 | Pipeline delay, measured from stored data and set against the sampling intervals (10 s for CO2, 1 min for the head count), which likely dominate how fast the damper reacts to a change; the history store keeps whole seconds (`internal/store/sqlite.go`), too coarse for sub-second delays | whether to store each message's receive time | 1 |
+
+## Before submission: one-command reruns
+
+| # | Part | Open decisions | Steps |
+|---|---|---|---|
+| 22 | Put the whole comparison in one script that runs unattended from a snapshot to the comparison table, saving into one run folder, so the final rerun on the submitted code is one command with no decisions on the way; then rerun it and the speed-1 tests on the final code | which settings the final rerun uses | 1 |
 
 ## 2026-10-12
 
