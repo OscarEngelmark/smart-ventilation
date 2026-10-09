@@ -14,7 +14,6 @@ decisions.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 15k | §10 test plan | | 1 |
 | 15l | §11 evaluation and results; the model-day run (`test/results/day_model_2026-10-22*`) was made with the forward-Euler plan, so rerun it with the exact one before citing it | | 1 |
 | 15m | §12 dashboard, saving the dashboard screenshot (FR-7) | | 1 |
 | 15n | §13 risks and critical reflection | | 1 |

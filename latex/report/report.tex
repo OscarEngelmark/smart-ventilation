@@ -1329,24 +1329,87 @@ night.
 
 \section{Test plan}\label{sec:testplan}
 
-\guidance{The tests that verify the requirements, including stress and failure tests
-(a sensor that lies, a process that dies, a flood of readings). Each row should trace
-back to a requirement ID from Section 3.}
+% Required points (report guide, section 3.10; template, section 10):
+% - how the system is tested and how evidence is collected, not every
+%   test case
+% - every requirement with a verification approach and a piece of evidence
+% - unit tests and at least one end-to-end test; fault-injection tests and
+%   quantitative measurements for the higher grades
+% - each check traced to a requirement ID
 
+Each requirement is verified by the kind of check that fits what it is
+about (Table~\ref{tab:tests}): unit tests for one piece of logic on its
+own, the end-to-end test for the loop's answer to one reading, fault
+tests for what happens when something breaks, and a full room day for
+what the system does over a day. Checks that time how fast something
+happens run with room time at the pace of the wall clock (i.e. 1:1 speed), so that their
+limits, set in room time, hold in real time as well; they refuse to run
+otherwise. A room day runs faster, since the Physical model computes the
+same CO₂ at any pace (Section~\ref{sec:simulation}). Every check saves
+its raw output and the stored readings, commands and head counts of its
+time window in \texttt{test/results/}; Section~\ref{sec:evaluation}
+reports the results.
+
+{\small
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.16}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.40}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.19}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}@{}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.15}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.39}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.16}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.18}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.12}}@{}}
+\caption{Each check, the requirements it verifies, and its
+evidence.}\label{tab:tests}\\
 \toprule
-\textbf{ID} & \textbf{Test} & \textbf{Requirement} & \textbf{Expected result} \\
+\textbf{Check} & \textbf{How it runs} & \textbf{Requirements}
+& \textbf{Evidence} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Check} & \textbf{How it runs} & \textbf{Requirements}
+& \textbf{Evidence} & \textbf{Status} \\
 \midrule
 \endhead
-T-1 & & & \\
-T-2 & & & \\
-T-3 (stress) & & & \\
+Unit tests & \texttt{go test ./...} checks the History store's queries,
+the room-model fit, the plan, the Storage service's checks on messages,
+the occupancy schedule and the mass balance, each without the running
+system & FR-4, FR-5, FR-6, FR-8, FR-9, FR-10 & Test output & Run \\
+\midrule
+End-to-end test & Writes 980~ppm into BuildSim on the running system and
+checks that the reading is stored, a command to open the damper fully is
+stored within 2~min of it, BuildSim holds the damper open, and CO₂ falls
+& FR-2, FR-3 & Test output; stored data & Run \\
+\midrule
+Crash test & Kills the CO₂ sensor and the Decision service, writes
+980~ppm into BuildSim while both are down, and times how long until
+BuildSim holds the damper fully open & NFR-1 & Test output; stored data;
+both containers' logs & Run \\
+\midrule
+Room day & Runs a full weekday with the room model; \texttt{eval/\allowbreak
+day\_summary.py} reports the peak CO₂ and the number of stored readings
+& REG-1, FR-1 & Day summary; stored data & Run \\
+\midrule
+Comparison day & Runs a full weekday with the Decision service ignoring
+room models, so it uses the CO₂-only switch, and compares its
+time-weighted mean damper level with the room day's & NFR-2 & Day
+summary; stored data & Run \\
+\midrule
+Delay measurement & Takes the time from each stored reading to the
+command that followed it, over the room day & NFR-4 & Stored data & Not
+yet run \\
+\midrule
+Fault tests & Freezes the CO₂ sensor at one value, and separately stops
+the Message broker, on the running system & NFR-3 & Test output; stored
+data & Not yet run \\
+\midrule
+Screenshot & Captures the Dashboard during a session & FR-7 & Screenshot
+(Section~\ref{sec:dashboard}) & Not yet run \\
+\midrule
+Stress test & Raises the load step by step until the system stops
+keeping up, to find its breaking point & None & Measurements & Not yet
+run \\
 \bottomrule
 \end{longtable}
+}
 
 \section{Evaluation and results}\label{sec:evaluation}
 
