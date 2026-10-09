@@ -76,62 +76,28 @@
 \usepackage{pdfcomment}
 
 % --- requirement IDs ---------------------------------------------------------
-% \reqtarget{ID} marks an ID's row in the requirements table; \req{ID} prints the
-% ID as a link to that row, with the requirement and its criterion on hover.
-% The hover texts are plain text and must match the requirements table.
+% \req{ID} prints the ID as a link to its row in the requirements table, with
+% the requirement and its criterion on hover; \reqrow{ID} prints that row.
 \makeatletter
-\newcommand{\defreq}[2]{\expandafter\def\csname req@#1\endcsname{#2}}
-\newcommand{\reqtarget}[1]{\hypertarget{req:#1}{#1}}
-\newcommand{\req}[1]{\pdftooltip{\hyperlink{req:#1}{#1}}{#1: \csname req@#1\endcsname}}
+\newcommand{\defreq}[6]{%
+  \expandafter\def\csname req@#1@type\endcsname{#2}%
+  \expandafter\def\csname req@#1@text\endcsname{#3}%
+  \expandafter\def\csname req@#1@priority\endcsname{#4}%
+  \expandafter\def\csname req@#1@criterion\endcsname{#5}%
+  \expandafter\def\csname req@#1@verified\endcsname{#6}}
+\newcommand{\reqfield}[2]{\csname req@#1@#2\endcsname}
+\newcommand{\reqrow}[1]{%
+  \mbox{\hypertarget{req:#1}{#1}} & \reqfield{#1}{type} & \reqfield{#1}{text}
+  & \reqfield{#1}{priority} & \reqfield{#1}{criterion}
+  & \reqfield{#1}{verified} \\}
+\newcommand{\req}[1]{\pdftooltip{\hyperlink{req:#1}{#1}}%
+  {#1: \reqfield{#1}{text}. Criterion: \reqfield{#1}{criterion}.}}
 \makeatother
-\defreq{FR-1}{CO2 readings and head counts are saved in the history store.
-  Criterion: a full simulated weekday has a stored CO2 reading for every 10 s
-  and a head count for every room minute.}
-\defreq{FR-2}{The decision service sets the damper in BuildSim from the CO2
-  readings, in time to hold the threshold. Criterion: after a reading above the
-  950 ppm target, a command to open the damper fully is stored, and BuildSim
-  holds the damper fully open within 2 min of room time of the reading.}
-\defreq{FR-3}{A damper change shows in the CO2 readings that follow.
-  Criterion: after the damper opens, the third CO2 reading is lower than the
-  first.}
-\defreq{FR-4}{Other components can fetch a room's stored readings and
-  commands from a given time on. Criterion: a request for one room from a
-  given time returns exactly that room's rows from that time on, oldest first;
-  commands are led by the one in force at that time.}
-\defreq{FR-5}{The room-model service fits the room model to the stored
-  history. Criterion: the fit recovers the rates of a simulated room, and gives
-  no room model when the history can't separate the rates.}
-\defreq{FR-6}{Without a room model, the damper opens and closes on CO2 alone.
-  Criterion: with no room model, the damper opens fully at 950 ppm, closes
-  below 800 ppm, and keeps its level in between.}
-\defreq{FR-7}{The dashboard shows CO2, head count and damper level.
-  Criterion: all three are shown over recent room time.}
-\defreq{FR-8}{The storage service keeps bad messages out of the history
-  store. Criterion: a message that fails its schema, a reading for another room
-  than its topic names, and a second copy of a stored reading are not stored.}
-\defreq{FR-9}{The occupancy simulator fills the room on a weekday schedule.
-  Criterion: nobody at night or at weekends, 3 people mid-morning and
-  mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity.}
-\defreq{FR-10}{The physical model's CO2 follows the people and the damper.
-  Criterion: with the damper closed, a full room settles at about 3640 ppm and
-  one person at about 957 ppm; fully open, a full room settles at about
-  903 ppm; an empty room returns to the outdoor 420 ppm.}
-\defreq{REG-1}{CO2 stays under 1000 ppm. Criterion: the peak CO2 over a full
-  simulated weekday, meeting included, is under 1000 ppm.}
-\defreq{NFR-1}{A killed container recovers without help. Criterion: Docker
-  restarts it, a sensor or the damper actuator registers its device with
-  BuildSim again, and after a reading above the target, BuildSim holds the
-  damper fully open within 2 min of the kill, with room time running as fast
-  as the wall clock.}
-\defreq{NFR-2}{The ventilation runs as low as it can. Criterion: the
-  time-weighted mean damper level over a room day is lower than under the
-  CO2-only switch of FR-6.}
-\defreq{NFR-3}{A faulty CO2 sensor or a stopped broker does not let CO2
-  through the threshold. Criterion: with the CO2 sensor frozen at one value, or
-  the message broker stopped, CO2 stays under 1000 ppm.}
-\defreq{NFR-4}{A command follows its reading in time to hold the threshold.
-  Criterion: the time from a reading to its command stays under 2 min of room
-  time.}
+% the hover text is plain text: section references become their numbers
+\pdfstringdefDisableCommands{%
+  \def\ref#1{\getrefnumber{#1}}%
+  \def\req#1{#1}}
+\input{requirements}
 % ---------------------------------------------------------------------------
 
 % --- template helpers -------------------------------------------------------
@@ -335,80 +301,35 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 & \textbf{Acceptance criterion} & \textbf{Verified by} \\
 \midrule
 \endhead
-\reqtarget{FR-1} & Functional & CO₂ readings and head counts are saved in the
-history store & Must & A full simulated weekday has a stored CO₂
-reading for every 10~s and a head count for every room minute & Comparison
-week \\
+\reqrow{FR-1}
 \midrule
-\reqtarget{FR-2} & Functional & The decision service sets the damper in BuildSim
-from the CO₂ readings, in time to hold the threshold & Must
-& After a reading above the 950 ppm target (Section~\ref{sec:decision-logic}), a command to
-open the damper fully is stored, and BuildSim holds the damper fully open
-within 2 min of room time of the reading & End-to-end test \\
+\reqrow{FR-2}
 \midrule
-\reqtarget{FR-3} & Functional & A damper change shows in the CO₂ readings that follow
-& Must & After the damper opens, the third CO₂ reading is lower than the
-first & End-to-end test \\
+\reqrow{FR-3}
 \midrule
-\reqtarget{FR-4} & Functional & Other components can fetch a room's stored
-readings and commands from a given time on & Must & A request for one
-room from a given time returns exactly that room's rows from that time
-on, oldest first; commands are led by the one in force at that time & Unit tests, \texttt{internal/store} \\
+\reqrow{FR-4}
 \midrule
-\reqtarget{FR-5} & Functional & The room-model service fits the room model to the
-stored history & Must & The fit recovers the rates of a simulated room,
-and gives no room model when the history can't separate the rates
-(Section~\ref{sec:decision-logic}) & Unit tests,
-\texttt{internal/roommodel} \\
+\reqrow{FR-5}
 \midrule
-\reqtarget{FR-6} & Functional & Without a room model, the damper opens and closes on
-CO₂ alone & Must & With no room model, the damper opens fully at 950 ppm,
-closes below 800 ppm, and keeps its level in between & Unit tests,
-\texttt{internal/planner} \\
+\reqrow{FR-6}
 \midrule
-\reqtarget{FR-7} & Functional & The dashboard shows CO₂, head count and damper level
-& Should & All three are shown over recent room time & Screenshot
-(Section~\ref{sec:dashboard}) \\
+\reqrow{FR-7}
 \midrule
-\reqtarget{FR-8} & Functional & The storage service keeps bad messages out of the
-history store & Must & A message that fails its schema, a reading for
-another room than its topic names, and a second copy of a stored reading
-are not stored & Unit tests, \texttt{cmd/\allowbreak storage-service}
-and \texttt{internal/store} \\
+\reqrow{FR-8}
 \midrule
-\reqtarget{FR-9} & Functional & The occupancy simulator fills the room on a weekday
-schedule & Must & Nobody at night or at weekends, 3 people mid-morning
-and mid-afternoon, empty at 12:00, full (6) at 13:30, never over
-capacity & Unit tests, \texttt{internal/\allowbreak occupancy} \\
+\reqrow{FR-9}
 \midrule
-\reqtarget{FR-10} & Functional & The physical model's CO₂ follows the people and
-the damper & Must & With the damper closed, a full room settles at about
-3640 ppm and one person at about 957 ppm; fully open, a full room
-settles at about 903 ppm; an empty room returns to the outdoor 420 ppm
-& Unit tests, \texttt{internal/co2} \\
+\reqrow{FR-10}
 \midrule
-\mbox{\reqtarget{REG-1}} & Regulatory & CO₂ stays under 1000 ppm & Must & The peak CO₂ over
-a full simulated weekday, meeting included, is under 1000 ppm & Comparison
-week \\
+\reqrow{REG-1}
 \midrule
-\reqtarget{NFR-1} & Non-functional & A killed container recovers without help & Must
-& Docker restarts it, a sensor or the damper actuator registers its
-device with BuildSim again, and after a reading above the target,
-BuildSim holds the damper fully open within 2 min of the kill, with
-room time running as fast as the wall clock & Crash test, \texttt{test/crash/crash.sh} \\
+\reqrow{NFR-1}
 \midrule
-\reqtarget{NFR-2} & Non-functional & The ventilation runs as low as it can & Should &
-The time-weighted mean damper level over a room day is lower than under
-the CO₂-only switch of \req{FR-6} & Comparison week \\
+\reqrow{NFR-2}
 \midrule
-\reqtarget{NFR-3} & Non-functional & A faulty CO₂ sensor or a stopped broker does
-not let CO₂ through the threshold & Should & With the CO₂ sensor frozen
-at one value, or the message broker stopped, CO₂ stays under 1000 ppm &
-Fault tests \\
+\reqrow{NFR-3}
 \midrule
-\reqtarget{NFR-4} & Non-functional & A command follows its reading in time to hold
-the threshold & Could & The time from a reading to its command stays
-under 2 min of room time & Delay measurement \\
+\reqrow{NFR-4}
 \bottomrule
 \end{longtable}
 }
