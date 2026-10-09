@@ -381,11 +381,11 @@ _(nothing yet)_
   only. Rejected: one instance for all rooms — fewer containers, and the
   natural place for anything rooms must share, but one crash stops every
   room's decisions, and nothing is shared between rooms here. Trade-off:
-  containers grow with the room count. Each small Go service uses about
-  12–15 MB of memory (measured with `docker stats` on 2026-10-07), so 1000
-  rooms at five per-room services is about 5000 containers and 65 GB
-  (derived) — possible on a server, but too many to configure by hand in
-  `docker-compose.yml`. The path to that scale is grouping rooms, e.g. one decision process per floor
+  containers grow with the room count. The five per-room services use
+  about 57 MiB of memory together, the Decision service about 9 MiB of it
+  (`test/results/resources_2026-10-09.txt`), so 1000 rooms is about 5000
+  containers and 55 GiB (derived) — possible on a server, but too many to
+  configure by hand in `docker-compose.yml`. The path to that scale is grouping rooms, e.g. one decision process per floor
   subscribing to `level0/+/co2/reading`, which fails per floor instead of
   per room.
   Decided and implemented 2026-09-26 (`cmd/decision`).
@@ -1445,6 +1445,28 @@ _(nothing yet)_
   default. Decided and implemented 2026-09-17; every service has been
   added to it since.
   - Useful for: §4.2, §9.
+
+- **Decided: in a real building every container runs on a computer in the
+  building (the edge), the Room-model service included.** The loop from
+  the sensors through the Message broker and the Decision service to the
+  Damper actuator has to keep working while the building's internet
+  connection is down. The Room-model service is the only container that
+  could move to external compute such as a cloud server: it fits once per
+  room day, off the per-reading path, and the Decision service keeps its
+  last room model when no new one arrives. Rejected: running it on
+  external compute — the fit is a small least-squares problem over seven
+  days of history (§7), so it gains nothing and would mean sending the
+  history out of the building every night. A heavier learned model would
+  change that. Decided 2026-10-09.
+  - Useful for: §9, §13.
+
+- **Measured: all eleven containers use 175 MiB of memory together and
+  under 0.2 % of one CPU each at speed 1.** BuildSim and the Storage
+  service use about 42 MiB each, every other container 7–19 MiB; no
+  container has a resource limit. Sampled once with `docker stats`, 91 s
+  after start and between room-model fits
+  (`test/results/resources_2026-10-09.txt`). Measured 2026-10-09.
+  - Useful for: §9, §11.
 
 ## 10. Test plan
 

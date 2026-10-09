@@ -553,7 +553,7 @@ program & A crash in one container leaves the others running (NFR-1)
 \midrule
 Decision services & One per room & One for all rooms & A crash stops one
 room's decisions only (NFR-1) & Containers grow with the number of
-rooms, about 12 MB of memory each \\
+rooms, about 9~MiB of memory each \\
 \midrule
 Moving readings & A message broker & REST from each sensor to each
 reader & Several services need every reading; the sensor publishes once,
@@ -1265,12 +1265,66 @@ its code; the dashed box holds the states in which the process runs.}
 
 \section{Deployment and component view}\label{sec:deployment}
 
-\guidance{Where each process runs (edge nodes, a server, BuildSim) and how they are
-connected. Note where computation belongs and why.}
+% Required points (report guide, sections 2.5 and 3.9; template, section 9):
+% - a deployment diagram: each process and where it runs
+% - latency, fault isolation, resource requirements, maintainability and
+%   operational considerations
+% - why each component is deployed separately, and what merging would lose
+% - which components belong at the edge, which could move to external
+%   compute, and why
 
-\diagramslot{Deployment diagram}
+Every process runs as a Docker container on one laptop
+(Figure~\ref{fig:deployment}). One \texttt{docker-compose.yml} starts all
+eleven, BuildSim included, which is built from its repository at a pinned
+commit~\cite{buildsim} to maintain consistent behavior. The containers 
+reach each other by service name on the Compose network. Only the ports the
+Operator or a test needs are published to the laptop, and only on 127.0.0.1, 
+except the Message broker's, which is published on all of the laptop's network 
+interfaces.
 
-\fillin{Narrative for the deployment view.}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/deployment.pdf}
+\caption{Deployment diagram. Box names are those of
+Figure~\ref{fig:container}, with the Compose service in brackets.
+Arrows between containers are left out; they are those of
+Figure~\ref{fig:container}.}
+\label{fig:deployment}
+\end{figure}
+
+\textbf{Fault isolation and maintainability.} Each container is one
+process with one job, and Table~\ref{tab:responsibilities} gives what
+merging it into another would lose. When a container exits with an
+error, Docker restarts that container alone, and a changed container is
+rebuilt and restarted without stopping the others. The History store lives
+on a Docker volume, so it survives a restart or rebuild of the Storage
+service.
+
+\textbf{Resources.} Measured with all eleven containers running, they
+use 175~MiB of memory together and well under 1\,\% of one CPU each
+(\texttt{test/results/\allowbreak resources\_2026-10-09.txt}). BuildSim
+and the Storage service use about 42~MiB each, and every other container
+7--19~MiB. No container has a resource limit, since the laptop has
+memory to spare; separate processes would allow one to be set per
+container.
+
+\textbf{Latency.} All messages stay on the laptop, passing through
+Docker's virtual network instead of a physical one. This delay has not
+been measured; it is expected to be small next to the sampling intervals
+of 10~s for CO₂ and 1~min for the head count, which set how soon the
+damper reacts to a change (Section~\ref{sec:dynamic}).
+
+\textbf{Edge and external compute.} In a real building, every container
+inside the Smart Ventilation boundary would run on a computer in the
+building, so that the damper keeps being controlled while the internet
+connection is down. The Room-model service is the only container that
+could move to external compute: it fits once per room day, away from the
+per-reading decisions, and if it cannot be reached the Decision service
+keeps its last room model (Section~\ref{sec:state}). It stays in the
+building because the fit is a small least-squares problem over seven days
+of history (Equation~\ref{eq:fit}), so external compute would gain
+nothing and would mean sending the history out of the building every
+night.
 
 \section{Test plan}\label{sec:testplan}
 

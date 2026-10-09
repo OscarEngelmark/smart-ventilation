@@ -1,0 +1,91 @@
+# Deployment diagram: every process, the machine it runs on, and how it is
+# reached. Mirrors docker-compose.yml; box names follow container.d2 and
+# context.d2. Containers on the Compose network reach each other by service
+# name, so the only arrows drawn are those that cross the laptop's boundary
+# or touch the disk; the arrows between containers are in container.d2.
+direction: down
+
+classes: {
+  cell: {
+    style.stroke-width: 0
+    style.fill: transparent
+  }
+  box: {
+    style.font-size: 30
+  }
+  group: {
+    style.stroke-dash: 4
+    style.fill: transparent
+    style.font-size: 32
+  }
+}
+
+laptop: "Laptop  [Linux, Docker Engine]" {
+  style.font-size: 32
+  grid-rows: 2
+  grid-columns: 2
+  horizontal-gap: 140
+  vertical-gap: 40
+
+  above: "" {
+    class: cell
+    browser: "Web browser\n[used by the Operator]" {
+      class: box
+    }
+  }
+  corner: "" {
+    class: cell
+  }
+
+  net: "Compose network  [restart: on-failure for every container]" {
+    class: group
+    label.near: bottom-center
+    grid-columns: 2
+    horizontal-gap: 80
+
+    room: "" {
+      class: cell
+      grid-columns: 1
+      vertical-gap: 60
+
+      bs: "BuildSim\n[buildsim, built from the\nBuildSim repository\nat a pinned commit]\nport 9090, published\non 127.0.0.1" {class: box}
+
+      world: "Simulated room" {
+        class: group
+        grid-columns: 1
+        vertical-gap: 30
+
+        occ: "Occupancy simulator\n[occupancy]" {class: box}
+        model: "Physical model\n[physical-model]" {class: box}
+      }
+    }
+
+    sys: "Smart Ventilation" {
+      class: group
+      grid-columns: 2
+      horizontal-gap: 30
+      vertical-gap: 30
+
+      dash: "Dashboard\n[dashboard]\nport 8082, published\non 127.0.0.1" {class: box}
+      actuator: "Damper actuator\n[actuator]\nport 8080, published\non 127.0.0.1" {class: box}
+      co2sensor: "CO2 sensor\n[co2-sensor]" {class: box}
+      occsensor: "Occupancy sensor\n[occupancy-sensor]" {class: box}
+      storage: "Storage service\n[storage-service]\nport 8081, published\non 127.0.0.1" {class: box}
+      decision: "Decision service\n[decision]" {class: box}
+      roommodel: "Room-model service\n[room-model]" {class: box}
+      broker: "Message broker\n[mosquitto]\nport 1883, published on\nall interfaces" {class: box}
+    }
+  }
+
+  disk: "" {
+    class: cell
+    vol: "storage-data\n[Docker volume]\nHistory store\n(SQLite file)" {
+      shape: cylinder
+      class: box
+    }
+  }
+}
+
+laptop.above.browser -> laptop.net.sys.dash: "web page\n[HTTP, 127.0.0.1:8082]" {style.font-size: 26}
+laptop.above.browser -> laptop.net.room.bs: "3D view\n[HTTP, 127.0.0.1:9090]" {style.font-size: 26}
+laptop.net.sys.storage -> laptop.disk.vol: "reads and writes\n[file]" {style.font-size: 26}

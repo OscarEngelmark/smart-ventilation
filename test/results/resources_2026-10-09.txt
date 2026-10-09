@@ -1,0 +1,31 @@
+docker stats --no-stream, 2026-10-09T06:52:59Z, every container running for 91 real s at speed 1
+host: 24 CPU threads, 30 GiB memory
+sampled between fits: the room-model fits once per room day, at room midnight
+
+NAME                                   CPU %     MEM USAGE
+smart-ventilation-decision-1           0.00%     8.871MiB
+smart-ventilation-occupancy-sensor-1   0.00%     8.625MiB
+smart-ventilation-occupancy-1          0.00%     10.68MiB
+smart-ventilation-actuator-1           0.00%     11.16MiB
+smart-ventilation-dashboard-1          0.00%     7.344MiB
+smart-ventilation-room-model-1         0.00%     18.93MiB
+smart-ventilation-co2-sensor-1         0.00%     8.934MiB
+smart-ventilation-physical-model-1     0.00%     12.15MiB
+smart-ventilation-buildsim-1           0.00%     41.55MiB
+smart-ventilation-storage-service-1    0.00%     43.32MiB
+smart-ventilation-mosquitto-1          0.03%     11.32MiB
+
+total memory: 175.0 MiB
+
+image sizes (docker compose images)
+smart-ventilation-actuator-1 6.57MB
+smart-ventilation-buildsim-1 9.61MB
+smart-ventilation-co2-sensor-1 5.87MB
+smart-ventilation-dashboard-1 5.95MB
+smart-ventilation-decision-1 5.98MB
+smart-ventilation-mosquitto-1 10MB
+smart-ventilation-occupancy-1 5.65MB
+smart-ventilation-occupancy-sensor-1 5.87MB
+smart-ventilation-physical-model-1 5.55MB
+smart-ventilation-room-model-1 5.97MB
+smart-ventilation-storage-service-1 10.3MB
