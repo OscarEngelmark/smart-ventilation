@@ -1225,8 +1225,10 @@ reading.
 
 When the connection to the broker drops, no readings arrive, so no
 decisions are made and the damper keeps its last level. The Decision
-service tries to reconnect by itself, doubling the wait after each failed
-attempt up to 10~minutes (the MQTT library's default). Once reconnected,
+service tries to reconnect by itself. After each failed try it waits
+twice as long before the next, up to 10~minutes (the MQTT library's
+default), so a broker that returns during a wait is noticed only when
+that wait ends. Once reconnected,
 it subscribes again and
 returns to the state it left, keeping any room model it holds.
 
@@ -1640,8 +1642,8 @@ under 1000~ppm (\req{NFR-3}) \\
 The Message broker stopped & No decisions, and the damper keeps its last
 level. A full A125 at $d = 0.4$, the level for three people, settles at
 $C_\text{steady} \approx 1400$~ppm (derived from
-Table~\ref{tab:simparams}). After a long stop, reconnecting can take up
-to 10~minutes (Section~\ref{sec:state}) & The fault test (\req{NFR-3});
+Table~\ref{tab:simparams}). Once the broker is back, a service can take
+up to 10~minutes to notice (Section~\ref{sec:state}) & The fault test (\req{NFR-3});
 if it fails, the Damper actuator could open fully when no command has
 arrived for a set time \\
 \midrule
