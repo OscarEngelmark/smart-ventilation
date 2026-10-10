@@ -1612,6 +1612,9 @@ stopped Message broker and a restarted BuildSim
 (Table~\ref{tab:risks}) each take that safeguard away as well.
 The simulated room is also easier to predict than a real one, which
 favors the room model in the comparison (Section~\ref{sec:evaluation}).
+When BuildSim restarts, the room's CO₂ jumps to the outdoor level, and
+the fit counts that jump as fast clearing for the next seven days, so the
+plan chooses lower levels than the room needs, by an amount not measured.
 
 {\small
 \begin{longtable}[]{@{}
@@ -1656,9 +1659,7 @@ service does \\
 \midrule
 BuildSim restarted while the system runs & Its devices are lost, so every
 sensor read fails and no readings arrive until the sensors and the
-Physical model are restarted by hand; the room's CO₂ also jumps to the
-outdoor level, and the fit counts that jump as fast clearing for the
-next seven days, by an amount not measured & A device process could
+Physical model are restarted by hand & A device process could
 register again when a read finds its device missing \\
 \midrule
 The room changes, such as a fan losing capacity & The room model learns
