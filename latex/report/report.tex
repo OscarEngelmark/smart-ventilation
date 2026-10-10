@@ -1647,8 +1647,10 @@ up to 10~minutes to notice (Section~\ref{sec:state}) & The fault test (\req{NFR-
 if it fails, the Damper actuator could open fully when no command has
 arrived for a set time \\
 \midrule
-A CO₂ reading without its \texttt{ppm} field & Read as 0~ppm, so the
-damper is lowered or closed (Section~\ref{sec:decision-logic}) & Check
+A message with a missing field & Read as 0. A head count or room model
+read this way gives too low a level, which the full opening at the
+target still catches. A CO₂ reading read as 0~ppm also removes that
+safeguard (Section~\ref{sec:decision-logic}) & Check
 each message against its schema in the Decision service, as the Storage
 service does \\
 \midrule
