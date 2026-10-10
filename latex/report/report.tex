@@ -1597,12 +1597,89 @@ internet connection.
 
 \section{Risks and critical reflection}\label{sec:risks}
 
-\guidance{An honest account of weaknesses, trade-offs, and what would be done with
-more time. Critical thinking is graded here: naming a real limitation scores better
-than claiming there are none.}
+% Required points (report guide, section 3.12; template, section 13):
+% - the things that could undermine the system
+% - the assumptions the design depends on
+% - an honest account of its limitations and what would be done next
 
-\fillin{Reflect critically on the design here: limitations, trade-offs, and next
-steps.}
+The plan rests on two assumptions: the head count is right, and the room
+model predicts the room well. When either fails, the one safeguard left
+is the full opening at the target, and that safeguard depends on CO₂
+readings that are right and that keep arriving. A frozen CO₂ sensor, a
+stopped Message broker and a restarted BuildSim
+(Table~\ref{tab:risks}) each take that safeguard away as well.
+The simulated room is also easier to predict than a real one, which
+favors the room model in the comparison (Section~\ref{sec:evaluation}).
+
+{\small
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.26}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.42}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.32}}@{}}
+\caption{Risks to the system, what each would do, and what is done or
+planned about it.}\label{tab:risks}\\
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Mitigation or next step} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Mitigation or next step} \\
+\midrule
+\endhead
+A wrong or stale head count, or a wrong room model & The plan chooses
+too low a level, and CO₂ rises until a reading at $C_\text{target}$ opens
+the damper fully; or too high a level, running the fan harder than
+needed & The full opening at the target; an age limit on the head count
+was not added, since that opening already covers it \\
+\midrule
+A CO₂ sensor frozen at a plausible value & The damper still follows the
+head count, but no reading reaches $C_\text{target}$, so the full
+opening doesn't happen & Not detected; the fault test checks whether CO₂ stays
+under 1000~ppm (\req{NFR-3}) \\
+\midrule
+The Message broker stopped & No decisions, and the damper keeps its last
+level. A full A125 at $d = 0.4$, the level for three people, settles at
+$C_\text{steady} \approx 1400$~ppm (derived from
+Table~\ref{tab:simparams}). After a long stop, reconnecting can take up
+to 10~minutes (Section~\ref{sec:state}) & The fault test (\req{NFR-3});
+if it fails, the Damper actuator could open fully when no command has
+arrived for a set time \\
+\midrule
+A CO₂ reading without its \texttt{ppm} field & Read as 0~ppm, so the
+damper is lowered or closed (Section~\ref{sec:decision-logic}) & Check
+each message against its schema in the Decision service, as the Storage
+service does \\
+\midrule
+BuildSim restarted while the system runs & Its devices are lost, so every
+sensor read fails and no readings arrive until the sensors and the
+Physical model are restarted by hand; the room's CO₂ also jumps to the
+outdoor level, and the fit counts that jump as fast clearing for the
+next seven days, by an amount not measured & A device process could
+register again when a read finds its device missing \\
+\midrule
+The room changes, such as a fan losing capacity & The room model learns
+from seven days of history, so it stays wrong for days, and only the
+full opening at the target catches the shortfall & A room model that
+adapts over hours, fitted more often on a shorter window \\
+\midrule
+Only one room has been run & Running more rooms, with one Decision
+service, sensors and actuator per room, is designed but not built; the
+History store is less suited to many rooms (Table~\ref{tab:decisions})
+& The stress test, to find where the system stops keeping up \\
+\bottomrule
+\end{longtable}
+}
+
+\textbf{What would be done next.} The 950~ppm target and the one-hour
+horizon are untuned defaults. A target nearer 1000~ppm or a shorter
+horizon would let the damper run lower, at the cost of less margin for a
+wrong head count or room model, so the room model might save more than
+Table~\ref{tab:comparison} shows. The room model could also be used in
+more advanced ways: a plan that sets a level for every minute ahead to
+use the least fan in total, rejected as harder to test and explain
+(Table~\ref{tab:decisions}), or a decision policy trained in the
+simulator by reinforcement learning, which learns a decision rule from
+trial and error against the simulated room.
 
 \begin{thebibliography}{9}
 

@@ -1717,7 +1717,18 @@ _(nothing yet)_
 
 ## 13. Risks and critical reflection
 
-_(nothing yet)_
+- **Idea, not yet evaluated: the room model could save more, through
+  tuned plan settings or a more advanced way of using it.** The 950 ppm
+  target and the 60-minute horizon are untuned defaults (see *Decided: on
+  every CO2 reading, the decision service picks the lowest damper
+  level…*, §7); a higher target or a shorter horizon lets lower levels
+  pass the plan's check, at the cost of less margin for a wrong head
+  count or room model. Beyond tuning, the room model could drive the
+  rejected plan with a level for every minute ahead, or a decision policy
+  trained in the simulator by reinforcement learning. Neither was tried;
+  both are harder to test and explain than the current plan. Noted
+  2026-10-09.
+  - Useful for: §13.
 
 ## Where AI advice was wrong
 
