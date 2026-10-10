@@ -1627,15 +1627,14 @@ planned about it.}\label{tab:risks}\\
 \textbf{Risk} & \textbf{Impact} & \textbf{Mitigation or next step} \\
 \midrule
 \endhead
-A wrong or stale head count, or a wrong room model & The plan chooses
-too low a level, and CO₂ rises until a reading at $C_\text{target}$ opens
-the damper fully; or too high a level, running the fan harder than
-needed & The full opening at the target; an age limit on the head count
-was not added, since that opening already covers it \\
+A wrong or stale head count, or a wrong room model & The Decision
+service chooses too low a level, and CO₂ rises until a reading at
+$C_\text{target}$ opens the damper fully; or too high a level, running
+the fan harder than needed & The full opening at the target \\
 \midrule
 A CO₂ sensor frozen at a plausible value & The damper still follows the
 head count, but no reading reaches $C_\text{target}$, so the full
-opening doesn't happen & Not detected; the fault test checks whether CO₂ stays
+opening doesn't happen & None yet; the fault test checks whether CO₂ stays
 under 1000~ppm (\req{NFR-3}) \\
 \midrule
 The Message broker stopped & No decisions, and the damper keeps its last
@@ -1643,19 +1642,21 @@ level. A full A125 at $d = 0.4$, the level for three people, settles at
 $C_\text{steady} \approx 1400$~ppm (derived from
 Table~\ref{tab:simparams}). Once the broker is back, a service can take
 up to 10~minutes to notice (Section~\ref{sec:state}) & The fault test (\req{NFR-3});
-if it fails, the Damper actuator could open fully when no command has
+if CO₂ passes 1000~ppm in it, the Damper actuator could open fully when no command has
 arrived for a set time \\
 \midrule
-A message with a missing field & Read as 0. A head count or room model
+A message with a missing field & The Decision service reads the
+missing field as 0. A head count or room model
 read this way gives too low a level, which the full opening at the
 target still catches. A CO₂ reading read as 0~ppm also removes that
 safeguard (Section~\ref{sec:decision-logic}) & Check
 each message against its schema in the Decision service, as the Storage
 service does \\
 \midrule
-BuildSim restarted while the system runs & Its devices are lost, so the
-sensors' and the Damper actuator's calls to it fail, and no readings
-arrive, until they are restarted by hand & A device process could
+BuildSim restarted while the system runs & BuildSim forgets every
+registered device. The sensors and the Damper actuator keep running, but
+every call they make to BuildSim fails until they are restarted by hand,
+so no readings arrive and the damper keeps its level & A device process could
 register again when a read finds its device missing \\
 \midrule
 The room changes, such as a fan losing capacity & The room model learns
@@ -1663,9 +1664,9 @@ from seven days of history, so it stays wrong for days, and only the
 full opening at the target catches the shortfall & A room model that
 adapts over hours, fitted more often on a shorter window \\
 \midrule
-Only one room has been run & Running more rooms, with one Decision
-service, sensors and actuator per room, is designed but not built; the
-History store is less suited to many rooms (Table~\ref{tab:decisions})
+Only one room has been run & How the system behaves with more rooms is
+unknown: one Decision service, sensors and actuator per room is designed
+but not built, and the History store is less suited to many rooms (Table~\ref{tab:decisions})
 & The stress test, to find where the system stops keeping up \\
 \bottomrule
 \end{longtable}
