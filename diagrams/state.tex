@@ -25,7 +25,7 @@
   \draw[->] (conn) -- node[lbl, above] {subscribed} (sw);
   \draw (sw) edge[loop above] node[lbl, above] {CO₂ reading:\\open or close} (sw);
   \draw[->] (sw) -- node[lbl, above] {room model arrives} (plan);
-  \draw (plan) edge[loop above] node[lbl, above] {CO₂ reading: plan;\\not applied: retry\\on the next reading} (plan);
+  \draw (plan) edge[loop above] node[lbl, above] {CO₂ reading: plan,\\send if it differs from\\the last applied level} (plan);
 
   \draw[->] ([xshift=-4mm]sw.south) -- node[lbl, left] {connection lost} ([xshift=-4mm]sw.south |- wait.north);
   \draw[<-] ([xshift=4mm]sw.south) -- node[lbl, right] {reconnected,\\no room model} ([xshift=4mm]sw.south |- wait.north);
