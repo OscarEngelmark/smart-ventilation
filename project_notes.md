@@ -1444,7 +1444,9 @@ _(nothing yet)_
   it is down. Rejected: the 10-minute default; and 1 s, which gains little
   when readings arrive every 10 s. The wait is in real seconds, so at speed
   250 it spans about 42 room minutes; no test restarts the broker at that
-  speed. Decided and implemented 2026-10-11.
+  speed. Decided and implemented 2026-10-11. Verified at speed 1 by
+  stopping the broker for 2 minutes: the decision and storage services
+  reconnected 4.7 s after it returned, and CO2 readings were stored again.
   - Useful for: §8.2, §13.
 
 ## 9. Deployment and component view
