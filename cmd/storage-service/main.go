@@ -50,9 +50,9 @@ func main() {
 	defer db.Close()
 
 	sch := payloadSchemas{
-		reading:   mustLoadSchema("co2_reading.schema.json"),
-		occupancy: mustLoadSchema("occupancy_reading.schema.json"),
-		command:   mustLoadSchema("ventilation_command.schema.json"),
+		reading:   schemas.MustLoad("co2_reading.schema.json"),
+		occupancy: schemas.MustLoad("occupancy_reading.schema.json"),
+		command:   schemas.MustLoad("ventilation_command.schema.json"),
 	}
 
 	handlers := storeHandlers(db, sch) // topic -> the function that saves a message from it
@@ -312,12 +312,8 @@ func saveCommand(db store.Store, sch *jsonschema.Schema, topic string, payload [
 // room it names, read from roomID once decoded, is the one in topic. It logs
 // under kind and returns false for a message that fails any check.
 func accept(kind string, sch *jsonschema.Schema, topic string, payload []byte, out any, roomID *string) bool {
-	if err := schemas.Validate(sch, payload); err != nil {
+	if err := schemas.Decode(sch, payload, out); err != nil {
 		log.Printf("%s: invalid payload: %v", kind, err)
-		return false
-	}
-	if err := json.Unmarshal(payload, out); err != nil {
-		log.Printf("%s: bad payload: %v", kind, err)
 		return false
 	}
 	if !roomMatchesTopic(*roomID, topic) {
@@ -341,14 +337,4 @@ func subscribe(client mqtt.Client, topic string) {
 // the room roomID ("level0/A125"), which every topic starts with.
 func roomMatchesTopic(roomID, topic string) bool {
 	return strings.HasPrefix(topic, roomID+"/")
-}
-
-// mustLoadSchema exits the process if a schema can't be loaded, so the
-// service never runs without checking messages.
-func mustLoadSchema(name string) *jsonschema.Schema {
-	sch, err := schemas.Load(name)
-	if err != nil {
-		log.Fatalf("load schema: %v", err)
-	}
-	return sch
 }

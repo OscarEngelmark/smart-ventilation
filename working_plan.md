@@ -13,7 +13,6 @@ table.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 20 | The Decision service checks each message it receives against its schema, as the Storage service and the Damper actuator do; today a CO2 reading missing its `ppm` field reads as 0 ppm (Revisit in the notes' JSON Schema entry, §5); then update the report where it says the Decision service does not check: §7.1 and §7.2 | what it does with a refused message | 1 |
 | 18 | Pipeline delay, measured from stored data and set against the sampling intervals (10 s for CO2, 1 min for the head count), which likely dominate how fast the damper reacts to a change; the history store keeps whole seconds (`internal/store/sqlite.go`), too coarse for sub-second delays | whether to store each message's receive time | 1 |
 | 16 | Fixes for the two faults that failed NFR-3 (`test/fault/frozen.sh`, `test/fault/broker.sh`), then rerun both and update §11 and §13: a fail-safe such as the Damper actuator opening fully when no command arrives for a set time (the Decision service sends a command only when the level changes, so a steady level must not trigger it), and a way to catch a frozen CO2 sensor; if there is no time, §13 names them as next steps | whether to add each fix, and how | 1–2 |
 

@@ -1144,11 +1144,11 @@ with the room model than with the CO₂-only switch; Section~\ref{sec:evaluation
   Decision service that restarts after a broker restart has no room
   model and opens or closes the damper on CO₂ alone until the next fit.
 \item
-  \textbf{A malformed message.} The Decision service does not check the
-  messages it receives against their schemas, so a CO₂ reading missing
-  its \texttt{ppm} field would be read as 0~ppm, a room far below the
-  target, and the damper would be lowered or closed.
-  The Storage service and the Damper actuator do check theirs.
+  \textbf{A malformed message.} The Decision service checks each
+  message it receives against its schema, as the Storage service and
+  the Damper actuator do, and drops one that fails. A CO₂ reading
+  missing its \texttt{ppm} field is therefore logged and ignored, and
+  the next reading, 10~s later, is decided on as usual.
 \end{itemize}
 
 \subsection{The data pipeline}\label{sec:pipeline}
@@ -1215,8 +1215,8 @@ retained message (Section~\ref{sec:decision-logic}).
 \item
   \textbf{Invalid.} The Storage service checks each message against its
   schema and drops one that fails, or whose room differs from its
-  topic's. The Decision service does not check
-  (Section~\ref{sec:decision-logic}).
+  topic's. The Decision service also drops a message that fails its
+  schema (Section~\ref{sec:decision-logic}).
 \item
   \textbf{Stale.} The Decision service uses the latest head count
   however old. If the Occupancy sensor stops, a count left too low lets
@@ -1405,7 +1405,7 @@ evidence.}\label{tab:tests}\\
 \midrule
 \endhead
 Unit tests & \texttt{go test ./...} checks the History store's queries,
-the room-model fit, the Decision service's choice of level, the Storage service's checks on messages,
+the room-model fit, the Decision service's choice of level, the Storage service's and the Decision service's checks on messages,
 the occupancy schedule and the mass balance, each without the running
 system & \req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & Test output & Run \\
 \midrule
@@ -1492,7 +1492,7 @@ open & Met \\
 \req{FR-3} & The third reading after the command was 963.1~ppm, lower than the
 first at 973.8~ppm & Met \\
 \midrule
-\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 67 unit tests and subtests
+\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 69 unit tests and subtests
 pass & Met \\
 \midrule
 \req{FR-7} & CO₂, head count and damper level shown over the last
@@ -1782,14 +1782,6 @@ level. In the stopped-broker test, CO₂ was at or
 above 1000~ppm for 10.5 hours of the day (\req{NFR-3},
 Section~\ref{sec:evaluation}) & None yet; the Damper actuator could open
 fully when no command has arrived for a set time \\
-\midrule
-A message with a missing field & The Decision service reads the
-missing field as 0. A head count or room model
-read this way gives too low a level, which the full opening at the
-target still catches. A CO₂ reading read as 0~ppm also removes that
-safeguard (Section~\ref{sec:decision-logic}) & Check
-each message against its schema in the Decision service, as the Storage
-service does \\
 \midrule
 BuildSim restarted while the system runs & BuildSim forgets every
 registered device. The sensors and the Damper actuator keep running, but

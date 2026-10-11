@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -49,10 +48,7 @@ func main() {
 		log.Fatalf("register %s: %v", damperID, err)
 	}
 
-	schema, err := schemas.Load("ventilation_command.schema.json")
-	if err != nil {
-		log.Fatalf("load schema: %v", err)
-	}
+	schema := schemas.MustLoad("ventilation_command.schema.json")
 
 	c := &commands{
 		client:   client,
@@ -76,13 +72,9 @@ func (c *commands) serve(w http.ResponseWriter, r *http.Request) {
 		c.reject(w, http.StatusBadRequest, "read command: %v", err)
 		return
 	}
-	if err := schemas.Validate(c.schema, payload); err != nil {
-		c.reject(w, http.StatusBadRequest, "invalid command: %v", err)
-		return
-	}
 	var cmd message.VentilationCommand
-	if err := json.Unmarshal(payload, &cmd); err != nil {
-		c.reject(w, http.StatusBadRequest, "bad command: %v", err)
+	if err := schemas.Decode(c.schema, payload, &cmd); err != nil {
+		c.reject(w, http.StatusBadRequest, "invalid command: %v", err)
 		return
 	}
 	if cmd.RoomID != c.roomID {

@@ -19,6 +19,7 @@ import (
 	_ "time/tzdata"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/message"
@@ -27,6 +28,7 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/roommodel"
 	"github.com/OscarEngelmark/smart-ventilation/internal/roomtime"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
+	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
 
 // inputs is the latest of each message the decision is made from. A nil
@@ -37,11 +39,20 @@ type inputs struct {
 	model  *message.RoomModel
 }
 
+// inputSchemas holds the schema each incoming message is checked against
+// before it is used.
+type inputSchemas struct {
+	co2    *jsonschema.Schema
+	people *jsonschema.Schema
+	model  *jsonschema.Schema
+}
+
 // latest holds the inputs as the broker delivers them. The broker's handlers
 // write it and the decision loop reads it, so every access goes through mu.
 type latest struct {
-	mu sync.Mutex
-	in inputs
+	mu  sync.Mutex
+	in  inputs
+	sch inputSchemas
 }
 
 // snapshot returns a copy of the inputs as they are now.
@@ -71,7 +82,7 @@ func main() {
 	ignoreModel := env.Bool("IGNORE_ROOM_MODEL") // true runs the CO2-only switch all the time
 
 	clock := roomtime.FromEnv()
-	state := &latest{}
+	state := &latest{sch: loadInputSchemas()}
 	readings := make(chan message.CO2Reading, 10) // CO2 readings waiting for a decision
 
 	// Runs on every connect, since the broker forgets subscriptions on disconnect.
@@ -100,6 +111,15 @@ func main() {
 	}
 
 	decide(readings, state, settings, c)
+}
+
+// loadInputSchemas loads the schemas of the three messages the decision is made from.
+func loadInputSchemas() inputSchemas {
+	return inputSchemas{
+		co2:    schemas.MustLoad("co2_reading.schema.json"),
+		people: schemas.MustLoad("occupancy_reading.schema.json"),
+		model:  schemas.MustLoad("room_model.schema.json"),
+	}
 }
 
 // planSettings reads the planner's settings from the environment.
@@ -217,10 +237,10 @@ func subscribeAll(
 }
 
 // keepCO2 stores a CO2 reading as the latest and returns it, or reports false
-// if the payload can't be read.
+// if the payload fails its schema or can't be read.
 func (l *latest) keepCO2(payload []byte) (message.CO2Reading, bool) {
 	var r message.CO2Reading
-	if !decode("CO2 reading", payload, &r) {
+	if !decode("CO2 reading", l.sch.co2, payload, &r) {
 		return r, false
 	}
 	l.mu.Lock()
@@ -233,7 +253,7 @@ func (l *latest) keepCO2(payload []byte) (message.CO2Reading, bool) {
 // from the one before.
 func (l *latest) keepHeadCount(payload []byte) {
 	var r message.OccupancyReading
-	if !decode("head count", payload, &r) {
+	if !decode("head count", l.sch.people, payload, &r) {
 		return
 	}
 	l.mu.Lock()
@@ -248,7 +268,7 @@ func (l *latest) keepHeadCount(payload []byte) {
 // keepModel stores a room model as the latest and logs its rates.
 func (l *latest) keepModel(payload []byte) {
 	var m message.RoomModel
-	if !decode("room model", payload, &m) {
+	if !decode("room model", l.sch.model, payload, &m) {
 		return
 	}
 	l.mu.Lock()
@@ -267,11 +287,11 @@ func subscribe(client mqtt.Client, topic string, handle func(payload []byte)) {
 	}
 }
 
-// decode reads a JSON message into out, logging and reporting false when it
-// can't.
-func decode(kind string, payload []byte, out any) bool {
-	if err := json.Unmarshal(payload, out); err != nil {
-		log.Printf("%s: bad payload: %v", kind, err)
+// decode checks a JSON message against its schema and reads it into out,
+// logging and reporting false when it fails either, so the message is dropped.
+func decode(kind string, sch *jsonschema.Schema, payload []byte, out any) bool {
+	if err := schemas.Decode(sch, payload, out); err != nil {
+		log.Printf("%s: invalid payload, dropped: %v", kind, err)
 		return false
 	}
 	return true

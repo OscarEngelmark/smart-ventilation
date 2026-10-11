@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/store"
+	"github.com/OscarEngelmark/smart-ventilation/schemas"
 )
 
 func TestRoomMatchesTopic(t *testing.T) {
@@ -32,7 +33,7 @@ func TestReadingOnAnotherRoomsTopicIsNotSaved(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	sch := payloadSchemas{reading: mustLoadSchema("co2_reading.schema.json")}
+	sch := payloadSchemas{reading: schemas.MustLoad("co2_reading.schema.json")}
 	save := storeHandlers(db, sch)["+/+/co2/reading"]
 
 	save("level0/A125/co2/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))
@@ -55,7 +56,7 @@ func TestReadingFailingItsSchemaIsNotSaved(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	sch := payloadSchemas{reading: mustLoadSchema("co2_reading.schema.json")}
+	sch := payloadSchemas{reading: schemas.MustLoad("co2_reading.schema.json")}
 	save := storeHandlers(db, sch)["+/+/co2/reading"]
 
 	save("level0/A125/co2/reading", []byte(`{"room_id": "level0/A125", "ppm": 500, "ts": "2026-10-09T12:00:00Z"}`))

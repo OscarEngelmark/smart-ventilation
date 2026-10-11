@@ -7,7 +7,9 @@ package schemas
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -37,6 +39,25 @@ func Load(name string) (*jsonschema.Schema, error) {
 		return nil, fmt.Errorf("add schema %s: %w", name, err)
 	}
 	return c.Compile(url)
+}
+
+// MustLoad is Load, but exits the process if the schema can't be loaded, so a
+// service never runs without checking messages.
+func MustLoad(name string) *jsonschema.Schema {
+	sch, err := Load(name)
+	if err != nil {
+		log.Fatalf("load schema: %v", err)
+	}
+	return sch
+}
+
+// Decode checks a raw JSON message against a schema and, if it passes, reads
+// it into out.
+func Decode(sch *jsonschema.Schema, payload []byte, out any) error {
+	if err := Validate(sch, payload); err != nil {
+		return err
+	}
+	return json.Unmarshal(payload, out)
 }
 
 // Validate checks a raw JSON message against a schema.

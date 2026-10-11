@@ -462,14 +462,18 @@ _(nothing yet)_
     settled to match the damper state in BuildSim (see *Decided: room A125's
     devices in BuildSim...*, below).
   - Runtime validation against the schemas is implemented in the
-    storage-service (2026-09-17, `schemas/schemas.go`) and in the actuator,
-    which checks every command before writing the damper (2026-09-23).
-    - **Revisit:** the decision service was written without the check: it
-      reads CO2 readings, head counts and room models with `json.Unmarshal`
-      alone (`decode` in `cmd/decision/main.go`), so a reading missing its
-      `ppm` field reads as 0 ppm. The room-model service goes without it:
-      its history comes from the storage-service, which checked each
-      message before saving.
+    storage-service (2026-09-17, `schemas/schemas.go`), in the actuator,
+    which checks every command before writing the damper (2026-09-23), and
+    in the decision service (`decode` in `cmd/decision/main.go`,
+    2026-10-11). The room-model service goes without it: its history comes
+    from the storage-service, which checked each message before saving.
+    - **Decided: the decision service logs and drops a message that fails
+      its schema**, and decides on the next reading, 10 s later. Before,
+      a CO2 reading missing its `ppm` field read as 0 ppm and could close
+      the damper. Rejected: opening the damper fully on a refused message,
+      which would run the ventilation at full on one malformed message; a
+      fail-safe of that kind is working plan row 16. Decided and
+      implemented 2026-10-11; tested in `cmd/decision/main_test.go`.
   - Only received messages are validated, not published ones: a publisher
     fills a Go struct whose fields are the schema's fields, so its own output
     can't fail the check, while a receiver is handed bytes another process
@@ -1564,13 +1568,14 @@ _(nothing yet)_
     window (`e2e_2026-10-09_*.json`).
   - Useful for: §10, §11.
 
-- **All 67 unit tests and subtests passed on 2026-10-09**, among them
+- **All 69 unit tests and subtests passed on 2026-10-11**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
-  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-09.txt`, the
-  output of `go test -v -count=1 ./...`. It replaces passes on 2026-10-07
-  and 2026-10-08, rerun on the code of 2026-10-09.
+  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-11.txt`, the
+  output of `go test -v -count=1 ./...`. It replaces passes on 2026-10-07,
+  2026-10-08 and 2026-10-09, rerun on the code of 2026-10-11, which adds
+  the decision service's schema checks (`cmd/decision`).
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
