@@ -410,7 +410,7 @@ a safety net when the decision service has no room model to choose with.
 % - every arrow directed, labelled with its purpose and protocol
 % - the system boundary: what is built here and what is outside it
 
-Figure~\ref{fig:context} fixes the system boundary: the box holds
+Figure~\ref{fig:context} fixes the system boundary: the system's box holds
 everything this project builds that a real building would install, and
 Section~\ref{sec:container} opens it up.
 
@@ -586,7 +586,7 @@ room's decisions only (\req{NFR-1}) & Containers grow with the number of
 rooms, about 10~MiB of memory each \\
 \midrule
 Moving readings & A message broker & REST from each sensor to each
-reader & Several services need every reading; the sensor publishes once,
+reader & Several services need every reading; a sensor publishes once,
 and a new reader just subscribes (\req{FR-1}, \req{FR-2}) & A broker to run; while it
 is stopped no reading reaches anyone \\
 \midrule
@@ -607,7 +607,7 @@ whether each command was applied, which every REST call provides and
 MQTT would need a reply topic for (\req{FR-2}) & The Decision service must know the actuator's address
 \\
 \midrule
-History store & SQLite behind the storage interface & InfluxDB & Enough
+History store & SQLite behind a storage interface & InfluxDB & Enough
 for one room, and runs inside the Storage service with no extra
 container (\req{FR-1}, \req{FR-4}) & Less suited to many rooms; the interface limits
 a move to InfluxDB to one new implementation \\
@@ -615,7 +615,7 @@ a move to InfluxDB to one new implementation \\
 Choosing the damper level & The lowest level the learned room model
 predicts will keep CO₂ under the target for the next hour, for the
 people counted now & Opening
-fully at the threshold; planning a level for every minute ahead & The
+fully at the target; planning a level for every minute ahead & The
 damper opens only as far as the people counted need to keep CO₂ under
 the target (\req{REG-1}, \req{NFR-2}); simpler than planning every minute & Assumes
 the people counted now stay the hour; a wrong count or room model
@@ -693,8 +693,8 @@ model (Section~\ref{sec:decision-logic}) \\
 \textbf{Messages.} Each message is a JSON object holding
 \texttt{room\_id} and its own fields in Table~\ref{tab:fields}, and no
 others. Each message has its own JSON Schema in the repository's
-\texttt{schemas/} folder, such as \texttt{co2\_reading.schema.json},
-which is the full contract.
+\texttt{schemas/} folder, such as \texttt{co2\_reading.schema.json}.
+The schemas are the full contract.
 
 {\small
 \begin{longtable}[]{@{}
@@ -874,7 +874,7 @@ room, and $C_\text{out}$ the outdoor concentration. $C$ is a fraction of
 the air (1~ppm is $10^{-6}$), and $V$, $G$ and $Q$ share one volume unit.
 Every 10~s of room time ($\Delta t$), the Physical model reads $N$, the
 damper level and $C$ from BuildSim, holds $N$ and the damper fixed over
-the step, and writes back the exact solution
+each step, and writes back the exact solution
 of~(\ref{eq:massbalance}):
 \begin{equation}\label{eq:step}
   C(t+\Delta t) = C_\text{steady}
@@ -915,7 +915,7 @@ with the symbols and values in Table~\ref{tab:simparams}.
 By~(\ref{eq:step}), a full room settles exactly at the threshold when
 $Q = G\,N_\text{max}/(C_\text{threshold} - C_\text{out})$. $Q_\text{max}$
 is 1.2 times that airflow, so a fully open damper holds a full room under
-the threshold with some reserve, while the fan stays no larger than a
+the threshold with some reserve, while the ventilation's maximum airflow stays no larger than a
 full room needs. The factor 1.2 is a judgment, not a sourced figure. For
 a full A125, $C_\text{steady} \approx 903$~ppm at $d = 1$, and
 $C_\text{steady} = 1000$~ppm at $d \approx 0.8$.
@@ -1032,7 +1032,7 @@ $d \in [0, 1]$, sent to the Damper actuator over REST (Section~\ref{sec:interfac
 
 \textbf{Threshold and target.} CO₂ must stay under
 $C_\text{threshold} = 1000$~ppm (\req{REG-1}, Section~\ref{sec:requirements}).
-The plan aims lower, at $C_\text{target} = 950$~ppm, so that
+The Decision service aims lower, at $C_\text{target} = 950$~ppm, so that
 a small error in the head count or the room model does not carry a room
 held at the target over the threshold. With the damper closed, a full
 room covers those 50~ppm in about two minutes
@@ -1047,7 +1047,7 @@ airflow~(\ref{eq:airflow}) put in:
   b_1 = \frac{Q_\text{max} - Q_\text{min}}{V}.
 \end{equation}
 It is never given $G$, $V$ or the airflows. The Room-model service learns
-$a$, $b_0$ and $b_1$ from the stored data instead, which can determine
+the three rates $a$, $b_0$ and $b_1$ from the stored data instead, which can determine
 only these ratios. It fits them by least squares over the last 7 days of
 stored readings, head counts and commands, at its start and at each
 room-time midnight. Each pair of consecutive CO₂ readings $C_i$ and
@@ -1063,14 +1063,14 @@ out. The rates
 are published as a retained message, so a restarted Decision service gets
 the last ones at once. When the history cannot tell the three rates
 apart, because nobody was present or the damper never moved, the fit
-gives no room model and nothing is published. Because the Decision
-service learns the room rather than being told it, the same logic would
+gives no room model and nothing is published. Because the system
+learns $a$, $b_0$ and $b_1$ from data rather than being given them, the same logic would
 carry over to a real room that provides the same three data streams.
 
 \textbf{The plan.} For each damper level $d \in \{0, 0.05, \dots, 0.95\}$,
 the Decision service predicts CO₂ over the next hour, $0 \leq t \leq
 1$~h, starting from the current reading $C_0$ and holding $d$ and the
-head count $N$ counted now fixed. The prediction is the exact solution
+current head count $N$ fixed. The prediction is the exact solution
 of~(\ref{eq:roommodel}), of the same form as~(\ref{eq:step}):
 \begin{equation}\label{eq:plan}
   C(t) = C_\text{steady}
@@ -1113,15 +1113,15 @@ Choosing the damper level for one reading thus takes at most about
 bench\_planner\_2026-10-08.txt}).
 
 \textbf{Evaluation.} \req{REG-1} checks that a full weekday stays under
-1000~ppm, and \req{NFR-2} that the plan runs the damper lower over the day
-than the CO₂-only switch does; Section~\ref{sec:evaluation} reports both.
+1000~ppm, and \req{NFR-2} that the Decision service runs the damper lower over the day
+with the room model than with the CO₂-only switch; Section~\ref{sec:evaluation} reports both.
 
 \textbf{Failure and safety.}
 \begin{itemize}
 \tightlist
 \item
   \textbf{A wrong head count or room model.} A reading
-  $C \geq C_\text{target}$ sets $d = 1$, whatever the plan predicted.
+  $C \geq C_\text{target}$ sets $d = 1$, whatever the room model predicted.
 \item
   \textbf{The Decision service unavailable.} The damper keeps its last
   level in BuildSim. After a restart, the Decision service gets the last
@@ -1173,7 +1173,7 @@ backlog would make it decide on CO₂ from minutes before.
 \textbf{Storage.} The History store is one SQLite file inside the
 Storage service, holding every reading, head count and command
 (Table~\ref{tab:decisions}). There is no separate store for recent and
-for older data: every reader asks for a time window of the same tables,
+for older data: every reader asks for a time window of the same file,
 and 90 room days of one room take about 120~MB. No other container
 touches the file; they ask the Storage service over REST
 (Table~\ref{tab:endpoints}).
@@ -1188,7 +1188,7 @@ available for evaluation.
 \textbf{Processing and serving.} The Room-model service is the
 pipeline's processing step. At each fit it asks the Storage service for
 the last 7 days of CO₂ readings, head counts and commands, the commands
-led by the one in force when the window starts, so the damper level is
+led by the one in force when the 7 days start, so the damper level is
 known from the first reading. It turns them into one equation per pair
 of readings~(\ref{eq:fit}) and publishes the fitted rates. When a read
 fails, it tries again every 5~s of real time. The Dashboard reads the
@@ -1219,7 +1219,7 @@ retained message (Section~\ref{sec:decision-logic}).
   \textbf{Stale.} The Decision service uses the latest head count
   however old. If the Occupancy sensor stops, a count left too low lets
   CO₂ rise until a reading at $C_\text{target}$ opens the damper fully; a
-  count left too high only runs the fan harder than needed. A CO₂ sensor
+  count left too high only runs the ventilation harder than needed. A CO₂ sensor
   stuck at a plausible value is not detected.
 \end{itemize}
 
@@ -1239,7 +1239,7 @@ Four people are in the room and the damper is at 0.55. The Occupancy
 simulator moves a fifth person in (1), and the Occupancy sensor's next
 count reports 5 (2--3). The Decision service only keeps the count (4):
 a decision waits for a CO₂ reading. The next one reads 853.5~ppm
-(6--10). Planned with five people, it needs
+(6--10). With five people, the Decision service chooses
 $d = 0.75$ (11), which the Damper actuator applies in BuildSim (12--13),
 and the Decision service publishes the applied command for storage
 (14--15). The Physical model's next step uses the new level (16).
@@ -1275,8 +1275,8 @@ reading.
 When the connection to the broker drops, no readings arrive, so no
 decisions are made and the damper keeps its last level. The Decision
 service tries to reconnect by itself. After each failed try it waits
-twice as long before the next, up to 10~minutes (the MQTT library's
-default), so a broker that returns during a wait is noticed only when
+twice as long before the next, up to 10~minutes (the default of
+Eclipse Paho, the MQTT library the services use), so a broker that returns during a wait is noticed only when
 that wait ends. Once reconnected,
 it subscribes again and
 returns to the state it left, keeping any room model it holds.
@@ -1307,9 +1307,9 @@ its code; the dashed box holds the states in which the process runs.}
 
 Every process runs as a Docker container on one computer
 (Figure~\ref{fig:deployment}). One \texttt{docker-compose.yml} starts all
-eleven, BuildSim included, which is built from its repository at a pinned
+eleven containers, BuildSim included, which is built from its repository at a pinned
 commit~\cite{buildsim} to maintain consistent behavior. The containers 
-reach each other by service name on the Compose network. The ports the
+reach each other by service name on a network that Compose creates. The ports the
 Operator, the tests and manual checks use are published to the computer,
 and only on 127.0.0.1, so no other machine can reach a container.
 
@@ -1342,14 +1342,14 @@ memory to spare; separate processes would allow one to be set per
 container.
 
 \textbf{Latency.} All messages stay on the computer, passing through
-Docker's virtual network instead of a physical one. This delay has not
+Docker's virtual network instead of a physical one. The delay this network adds has not
 been measured; it is expected to be small next to the sampling intervals
 of 10~s for CO₂ and 1~min for the head count, which set how soon the
 damper reacts to a change (Section~\ref{sec:dynamic}).
 
 \textbf{Edge and external compute.} In a real building, every container
 inside the Smart Ventilation boundary would run on a computer in the
-building, so that the damper keeps being controlled while the internet
+building, so that the damper keeps being controlled while the building's internet
 connection is down. The Room-model service is the only container that
 could move to external compute: it fits once per room day, away from the
 per-reading decisions, and if it cannot be reached the Decision service
@@ -1402,13 +1402,13 @@ evidence.}\label{tab:tests}\\
 \midrule
 \endhead
 Unit tests & \texttt{go test ./...} checks the History store's queries,
-the room-model fit, the plan, the Storage service's checks on messages,
+the room-model fit, the Decision service's choice of level, the Storage service's checks on messages,
 the occupancy schedule and the mass balance, each without the running
 system & \req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & Test output & Run \\
 \midrule
 End-to-end test & Writes 980~ppm into BuildSim on the running system and
-checks that the reading is stored, that a command to open the damper fully
-is stored and BuildSim holds the damper fully open within 2~min of it, and
+checks that the CO₂ sensor's next reading is stored, that a command to open the damper fully
+is stored and BuildSim holds the damper fully open within 2~min of that reading, and
 that the third reading after the command is lower than the first
 & \req{FR-2}, \req{FR-3} & Test output; stored data & Run \\
 \midrule
@@ -1437,7 +1437,7 @@ data & Not yet run \\
 Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
 (Section~\ref{sec:dashboard}) & Run \\
 \midrule
-Stress test & Raises the load step by step until the system stops
+Stress test & Raises the load on the system step by step until the system stops
 keeping up, to find its breaking point & None & Measurements & Not yet
 run \\
 \bottomrule
@@ -1471,7 +1471,7 @@ Table~\ref{tab:requirements}.}\label{tab:results}\\
 \textbf{ID} & \textbf{Measured} & \textbf{Result} \\
 \midrule
 \endhead
-\req{FR-1} & On each of the ten weekdays, 8640 stored CO₂ readings, each 9--11~s
+\req{FR-1} & On each of the five weekdays, in both runs of the comparison week, 8640 stored CO₂ readings, each 9--11~s
 after the one before, and 1440 head counts, one for every room minute & Met \\
 \midrule
 \req{FR-2} & After a 979~ppm reading, a command to open the damper fully was
@@ -1540,14 +1540,14 @@ Peak CO₂ & 941~ppm (938--943) & 951~ppm (951--952) \\
 }
 
 The difference is largest in the meeting, shown in
-Figure~\ref{fig:meeting} for Friday, the day closest to the mean. The
-room model raises the damper as the head count grows, in steps from
+Figure~\ref{fig:meeting} for Friday, the day closest to the mean. With the
+room model, the Decision service raises the damper as the head count grows, in steps from
 0.15 to 0.90, and lowers it as people leave; CO₂ stays under the
-950~ppm target throughout. The CO₂-only switch stays closed until a
-reading reaches the target, then holds the damper fully open until CO₂
+950~ppm target throughout. With the CO₂-only switch, the Decision service keeps the damper closed until a
+reading reaches the target, then holds it fully open until CO₂
 falls below 800~ppm, so it ventilates harder than six people need and
-then cycles between closed and fully open with three. Both stay under
-the 1000~ppm threshold. The room model thus runs the damper about 10\,\%
+then cycles the damper between closed and fully open with three. Both stay under
+the 1000~ppm threshold. With the room model, the Decision service thus runs the damper about 10\,\%
 lower over a day, and about 15\,\% lower in the meeting hour.
 
 \begin{figure}[H]
@@ -1588,7 +1588,7 @@ Friday 2026-11-27, per room minute, for both methods
 \begin{itemize}
 \tightlist
 \item
-  \textbf{The test room is easier than a real one.} Its CO₂ follows the
+  \textbf{The simulated room is easier to predict than a real one.} Its CO₂ follows the
   same mass balance equation the room model is fitted to
   (Section~\ref{sec:decision-logic}), the head counts are exact, and the
   CO₂ sensor has no noise (Section~\ref{sec:simulation}). In a real room
@@ -1601,7 +1601,7 @@ Friday 2026-11-27, per room minute, for both methods
   tested and might match or beat the room model.
 \item
   \textbf{The saving is in damper level, not energy.} The simulation does
-  not model the fan's energy use.
+  not model the ventilation's energy use.
 \item
   \textbf{The five days follow one weekday schedule,} differing only by
   each person's shift of up to $\pm$20 minutes
@@ -1653,7 +1653,7 @@ internet connection.
 % - the assumptions the design depends on
 % - an honest account of its limitations and what would be done next
 
-The plan rests on two assumptions: the head count is right, and the room
+The Decision service's choice of level rests on two assumptions: the head count is right, and the room
 model predicts the room well. When either fails, the one safeguard left
 is the full opening at the target, and that safeguard depends on CO₂
 readings that are right and that keep arriving. A frozen CO₂ sensor, a
@@ -1679,7 +1679,7 @@ planned about it.}\label{tab:risks}\\
 A wrong or stale head count, or a wrong room model & The Decision
 service chooses too low a level, and CO₂ rises until a reading at
 $C_\text{target}$ opens the damper fully; or too high a level, running
-the fan harder than needed & The full opening at the target acts as a safeguard for both cases \\
+the ventilation harder than needed & The full opening at the target catches too low a level; too high a level only costs ventilation \\
 \midrule
 A CO₂ sensor frozen at a plausible value & The damper still follows the
 head count, but no reading reaches $C_\text{target}$, so the full
@@ -1722,14 +1722,14 @@ but not built, and the History store is less suited to many rooms (Table~\ref{ta
 }
 
 \textbf{What would be done next.} The 950~ppm target and the one-hour
-horizon are untuned defaults. A target nearer 1000~ppm or a shorter
+horizon of the Decision service's predictions are untuned defaults. A target nearer 1000~ppm or a shorter
 horizon would let the damper run lower, at the cost of less margin for a
 wrong head count or room model, so the room model might save more than
 Table~\ref{tab:comparison} shows. The room model could also be used in
 more advanced ways: a plan that sets a level for every minute ahead to
-use the least fan in total, rejected as harder to test and explain
+use the least ventilation in total, rejected as harder to test and explain
 (Table~\ref{tab:decisions}), or a decision policy trained in the
-simulator by reinforcement learning, which learns a decision rule from
+simulation by reinforcement learning, which learns a decision rule from
 trial and error against the simulated room.
 
 \begin{thebibliography}{9}
