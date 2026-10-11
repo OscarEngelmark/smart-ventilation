@@ -1427,10 +1427,9 @@ people. \texttt{eval/\allowbreak compare\_week.py} compares their
 damper levels and peak CO₂ & \req{FR-1}, \req{REG-1}, \req{NFR-2} & Comparison table;
 stored data & Run \\
 \midrule
-Delay measurement & Takes the time from each stored reading to the
-command that followed it, over the room-model days of the comparison
-week & \req{NFR-4} & Stored data & Not
-yet run \\
+Delay measurement & Takes the time from each stored command back to the
+CO₂ reading before it, over both methods' days of the comparison week
+(\texttt{eval/\allowbreak delay.py}) & \req{NFR-4} & Stored data & Run \\
 \midrule
 Frozen-sensor test & Runs one weekday with the CO₂ sensor repeating its
 first reading, 420~ppm in the empty room, and judges it by the room's
@@ -1512,7 +1511,8 @@ CO₂ was at or above 1000~ppm for 7.5 hours of the day, peaking at
 1180~ppm; with the Message broker stopped, for 10.5 hours, peaking at
 2329~ppm & Not met \\
 \midrule
-\req{NFR-4} & Not yet measured & Open \\
+\req{NFR-4} & All 221 commands of the comparison week came under 2~s
+of room time after the reading before them & Met \\
 \bottomrule
 \end{longtable}
 }
@@ -1618,6 +1618,16 @@ stayed closed, the level it had set for the empty room. The first person
 came in at 06:45, and the room's real CO₂ reached 1000~ppm 96 minutes
 later, at 08:21. It stayed at or above 1000~ppm until 18:51, 10.5 hours
 in all, peaking at 2329~ppm at 14:17.
+
+\textbf{Delay.} Over the comparison week, each of the 221 commands
+came under 2~s of room time after the CO₂ reading before it; times are
+stored in whole seconds, so no finer figure is available
+(\texttt{test/results/\allowbreak comparison\_week\_2026-11-23/\allowbreak delay.txt}).
+With room time running 250 times as fast as the wall clock, that is
+under 8~ms of real time. How fast the damper answers a change in the
+room is set instead by how often it is sampled: an arrival reaches the
+Decision service with the next head count, up to a minute later, and
+is acted on at the next CO₂ reading, up to 10~s after that.
 
 \textbf{Breaking point.} The stress test loaded only the two containers that
 every room shares and that a real building would also run: the Message

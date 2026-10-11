@@ -1,0 +1,4 @@
+method  commands    median    longest
+model         95         0 s        0 s
+switch       126         0 s        1 s
+both         221         0 s        1 s

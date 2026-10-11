@@ -1508,7 +1508,7 @@ _(nothing yet)_
 
 - **Decided: tests run at speed 1; the day-long evaluation runs faster,
   at a speed checked to keep every reading 10 s apart.** A test checks how fast something happens (the end-to-end
-  test, the crash test, the delay measurement), and its
+  test, the crash test), and its
   limits are in room time, so room time and real time must run on one
   clock. The evaluation runs (REG-1's peak CO2, NFR-2's damper comparison)
   only read the CO2 and damper levels stamped in room time, which the
@@ -1774,6 +1774,23 @@ _(nothing yet)_
     same people: the Occupancy sensor counts at a different second of the
     minute in each session, so every count of one week must lie between
     the other week's counts just before and after it.
+  - Useful for: §10, §11.
+
+- **Measured: every command came under 2 s of room time after the CO2
+  reading before it, so NFR-4 (§3) is met.** `eval/delay.py` takes, for
+  each stored command of the comparison week, the time back to the latest
+  reading at or before it: 221 commands over both methods' five days,
+  median 0 s, longest 1 s between stamps in whole seconds, so under 2 s.
+  Decided to measure on the comparison week, run at speed 250, rather
+  than on a new run at speed 1: speed stretches a real delay 250 times in
+  room time, so passing at 250 passes at 1 with room to spare, and a
+  speed-1 run would take hours for a day's commands. Storing each
+  message's receive time to get below whole seconds was rejected as
+  unneeded against a 2-minute limit. The sampling intervals, 1 min for
+  the head count and 10 s for CO2, set how fast the damper answers a
+  change in the room, not this delay. Evidence:
+  `test/results/comparison_week_2026-11-23/delay.txt`. Decided and
+  measured 2026-10-11.
   - Useful for: §10, §11.
 
 - **Measured: the storage service stores about 195 CO2 readings a second,
