@@ -27,6 +27,8 @@ type publisher struct {
 	sensorID string
 	roomID   string
 	topic    string
+	freeze   bool     // true to repeat the first value read, as a stuck sensor would
+	held     *float64 // the value repeated while frozen, nil until the first read
 }
 
 func main() {
@@ -41,6 +43,7 @@ func main() {
 	}
 	sensorID := env.String("CO2_SENSOR_ID")
 	interval := env.Duration("SENSOR_INTERVAL")
+	freeze := env.Bool("FREEZE_CO2")
 
 	clock := roomtime.FromEnv()
 	client := buildsim.New(baseURL) // this program's link to BuildSim
@@ -63,6 +66,7 @@ func main() {
 		sensorID: sensorID,
 		roomID:   roomID,
 		topic:    roomID + "/co2/reading",
+		freeze:   freeze,
 	}
 	log.Printf("reading %s every %s, publishing to %s", sensorID, interval, p.topic)
 
@@ -77,10 +81,9 @@ func main() {
 	}
 }
 
-// publish reads the sensor's current value from BuildSim and sends it on as
-// one reading.
+// publish reads the sensor's value and sends it on as one reading.
 func (p *publisher) publish(ctx context.Context) error {
-	ppm, err := p.client.SensorValue(ctx, p.sensorID)
+	ppm, err := p.read(ctx)
 	if err != nil {
 		return err
 	}
@@ -95,6 +98,23 @@ func (p *publisher) publish(ctx context.Context) error {
 	}
 	log.Printf("%s: %.0f ppm", p.roomID, ppm)
 	return nil
+}
+
+// read returns the sensor's current value from BuildSim, or, when frozen, the
+// first value it read.
+func (p *publisher) read(ctx context.Context) (float64, error) {
+	if p.held != nil {
+		return *p.held, nil
+	}
+	ppm, err := p.client.SensorValue(ctx, p.sensorID)
+	if err != nil {
+		return 0, err
+	}
+	if p.freeze {
+		p.held = &ppm // every later read returns this value
+		log.Printf("frozen at %.0f ppm", ppm)
+	}
+	return ppm, nil
 }
 
 // equipment is the device record this process registers: one equipment record

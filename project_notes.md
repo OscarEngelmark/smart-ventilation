@@ -1488,14 +1488,14 @@ _(nothing yet)_
 
 - **Decided: tests run at speed 1; the day-long evaluation runs faster,
   at a speed checked to keep every reading 10 s apart.** A test checks how fast something happens (the end-to-end
-  test, the crash test, the fault tests, the delay measurement), and its
+  test, the crash test, the stopped-broker test, the delay measurement), and its
   limits are in room time, so room time and real time must run on one
   clock. The evaluation runs (REG-1's peak CO2, NFR-2's damper comparison)
   only read the CO2 and damper levels stamped in room time, which the
   physical model computes exactly at any speed (§6); a faster speed only
   stretches millisecond processing delays in room time, until at some
   speed they reach seconds (see the measurement below). A room day takes
-  24 real minutes at speed 60 and about 6 at speed 250. Each test
+  24 real minutes at speed 60 and about 6 at speed 250. Each of these tests
   refuses to run at any speed but 1. Rejected: speed 1 for everything,
   which costs about three of the days left before submission on three room
   days. Decided 2026-10-06.
@@ -1612,9 +1612,41 @@ _(nothing yet)_
   going down, and delayed or dropped communication.** These are the failure
   modes named in proposal sections 6 and 7. The crash test covers a
   component going down (see *Decided: the crash test kills the CO2 sensor
-  and the decision service together…*, above); a frozen CO2 sensor and a
-  stopped broker are not yet tested, and delay only as a measurement
-  (NFR-4). Proposal, 2026-09-04.
+  and the decision service together…*, above), and the frozen-sensor test
+  a sensor giving bad readings (below); a stopped broker is not yet tested,
+  and delay only as a measurement (NFR-4). Proposal, 2026-09-04.
+  - Useful for: §10, §11, §13.
+
+- **Decided: the frozen-sensor test runs one weekday with the CO2 sensor
+  stuck at its first reading, and passes if the room's real CO2 stays under
+  1000 ppm.** `test/fault/frozen.sh` verifies the frozen half of NFR-3
+  (§3). Started with `FREEZE_CO2=true`, the CO2 sensor publishes the first
+  value it reads for the rest of the session (`cmd/co2-sensor`), while the
+  physical model keeps updating the room's real CO2 in BuildSim. The
+  session starts at 23:00 the evening before, with the room empty at
+  outdoor level, so the sensor freezes there: the lowest plausible value,
+  and one that never reaches the target. The stored readings then hold only
+  the frozen value, so the test reads the room's real CO2 from the physical
+  model's log, which records every step. It runs at speed 250, like the
+  evaluation weeks, since it checks a CO2 level stamped in room time, not
+  how fast something happens (see *Decided: tests run at speed 1…*,
+  above). It runs on a snapshot of the history store, restored afterwards,
+  so later room-model fits never learn from frozen readings. Rejected:
+  writing a fixed value into BuildSim, which changes the room's real CO2
+  rather than the reading, and which the physical model overwrites on its
+  next step; a second publisher on the sensor's topic, which leaves the real
+  sensor publishing too, so the decision service sees two alternating
+  values. Decided and implemented 2026-10-11.
+  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: failed. The
+    sensor froze at 420 ppm. The decision service kept choosing levels
+    with the room model from the head count, but each prediction started
+    from 420 ppm, so the levels were too low (mean 0.094 over the day,
+    against 0.137 in the comparison week), and no reading reached the
+    target to open the damper fully. The room's real CO2 was at or above
+    1000 ppm for 7.4 hours between 08:48 and 17:52, peaking at 1184 ppm at
+    16:32 with one person in the room and the damper closed. Evidence in
+    `test/results/frozen_2026-12-02/`: the test's output (`test.txt`), the
+    day's stored data (`day*`) and the real CO2 per step (`real_co2.json`).
   - Useful for: §10, §11, §13.
 
 - **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a

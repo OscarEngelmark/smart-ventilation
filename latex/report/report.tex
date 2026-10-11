@@ -1376,7 +1376,7 @@ tests for what happens when something breaks, and the comparison week
 for what the system does over whole days. Checks that time how fast something
 happens run with room time at the pace of the wall clock, so that their
 limits, set in room time, hold in real time as well; they refuse to run
-otherwise. The comparison week runs faster, since the Physical model
+otherwise. The comparison week and the frozen-sensor test run faster, since the Physical model
 computes the same CO₂ at any pace (Section~\ref{sec:simulation}). Every check saves
 its raw output and the stored readings, commands and head counts of its
 time window in \texttt{test/results/}; Section~\ref{sec:evaluation}
@@ -1430,9 +1430,14 @@ command that followed it, over the room-model days of the comparison
 week & \req{NFR-4} & Stored data & Not
 yet run \\
 \midrule
-Fault tests & Freezes the CO₂ sensor at one value, and separately stops
-the Message broker, on the running system & \req{NFR-3} & Test output; stored
-data & Not yet run \\
+Frozen-sensor test & Runs one weekday with the CO₂ sensor repeating its
+first reading, 420~ppm in the empty room, and judges it by the room's
+actual CO₂, taken from the Physical model's log since every stored
+reading is 420~ppm
+& \req{NFR-3} & Test output; stored data; real CO₂ & Run \\
+\midrule
+Stopped-broker test & Stops the Message broker on the running system
+& \req{NFR-3} & Test output; stored data & Not yet run \\
 \midrule
 Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
 (Section~\ref{sec:dashboard}) & Run \\
@@ -1497,7 +1502,9 @@ open 10.8~s after the kill & Met \\
 \req{NFR-2} & Mean damper level over a room day 0.137 with the room model,
 0.153 with the CO₂-only switch; lower on every day & Met \\
 \midrule
-\req{NFR-3} & Not yet measured & Open \\
+\req{NFR-3} & With the CO₂ sensor frozen at 420~ppm, the room's real
+CO₂ was at or above 1000~ppm for 7.4 hours of the day, peaking at
+1184~ppm; the stopped broker not yet measured & Not met \\
 \midrule
 \req{NFR-4} & Not yet measured & Open \\
 \bottomrule
@@ -1582,6 +1589,19 @@ Friday 2026-11-27, per room minute, for both methods
 (\texttt{eval/\allowbreak meeting\_series.py}).}
 \label{fig:meeting}
 \end{figure}
+
+\textbf{A frozen CO₂ sensor.} The frozen-sensor test ran Wednesday
+2026-12-02 at the same speed as the comparison week, with the CO₂ sensor
+repeating its first reading, 420~ppm, all day
+(\texttt{test/results/\allowbreak frozen\_2026-12-02/}). The Decision
+service went on choosing levels with the room model from the head count,
+but each prediction started from 420~ppm, far below the room's real CO₂,
+so the levels it chose were too low: their mean over the day was 0.094,
+against 0.137 in the comparison week. No reading reached the target, so
+the damper never opened fully. The room's real CO₂ first reached
+1000~ppm at 08:48 and was at or above it for 7.4 hours in all until
+17:52, peaking at 1184~ppm at 16:32, with one person in the room and the
+damper closed.
 
 \textbf{Where the numbers are weak.} Limits of the comparison include:
 
@@ -1683,14 +1703,15 @@ the ventilation harder than needed & The full opening at the target catches too 
 \midrule
 A CO₂ sensor frozen at a plausible value & The damper still follows the
 head count, but no reading reaches $C_\text{target}$, so the full
-opening doesn't happen & None yet; the fault test checks whether CO₂ stays
-under 1000~ppm (\req{NFR-3}) \\
+opening doesn't happen & None yet. In the frozen-sensor test, CO₂ was at
+or above 1000~ppm for 7.4 hours of the day (\req{NFR-3},
+Section~\ref{sec:evaluation}) \\
 \midrule
 The Message broker stopped & No decisions, and the damper keeps its last
 level. A full A125 at $d = 0.4$, the level for three people, settles at
 $C_\text{steady} \approx 1400$~ppm (derived from
 Table~\ref{tab:simparams}). Once the broker is back, a service can take
-up to 10~minutes to notice (Section~\ref{sec:state}) & The fault test (\req{NFR-3});
+up to 10~minutes to notice (Section~\ref{sec:state}) & The stopped-broker test (\req{NFR-3});
 if CO₂ passes 1000~ppm in it, the Damper actuator could open fully when no command has
 arrived for a set time \\
 \midrule

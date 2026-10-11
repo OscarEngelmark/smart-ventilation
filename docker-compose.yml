@@ -59,6 +59,8 @@ services:
       BUILDSIM_URL: *buildsim-url
       MQTT_BROKER_URL: *broker-url
       SENSOR_INTERVAL: 10s
+      # "true" only for the frozen-sensor fault test: FREEZE_CO2=true ./start.sh ...
+      FREEZE_CO2: ${FREEZE_CO2:-false}
     depends_on:
       - buildsim
       - mosquitto
