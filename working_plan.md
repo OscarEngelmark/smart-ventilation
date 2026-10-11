@@ -13,7 +13,6 @@ table.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 24 | Cap the MQTT library's wait between reconnect attempts, now its default of up to 10 minutes (`MaxReconnectInterval` in `internal/mqttclient`), so a service notices a returning broker within seconds; then update the report where it says 10 minutes: §8.2 and the stopped-broker row of §13 | the cap | 1 |
 | 16 | Fixes for the two faults that failed NFR-3 (`test/fault/frozen.sh`, `test/fault/broker.sh`), then rerun both and update §11 and §13: a fail-safe such as the Damper actuator opening fully when no command arrives for a set time (the Decision service sends a command only when the level changes, so a steady level must not trigger it), and a way to catch a frozen CO2 sensor; if there is no time, §13 names them as next steps | whether to add each fix, and how | 1–2 |
 | 17 | Stress test to a breaking point; sample each container's memory and CPU repeatedly over the run, since §9's figures rest on one `docker stats` sample | what to scale up, and what counts as broken | 1–2 |
 | 20 | The Decision service checks each message it receives against its schema, as the Storage service and the Damper actuator do; today a CO2 reading missing its `ppm` field reads as 0 ppm (Revisit in the notes' JSON Schema entry, §5); then update the report where it says the Decision service does not check: §7.1 and §7.2 | what it does with a refused message | 1 |

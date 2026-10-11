@@ -1433,6 +1433,20 @@ _(nothing yet)_
     the time.
   - Useful for: §8.1, §10, §11.
 
+- **Decided: services wait at most 10 s between attempts to reconnect to
+  the broker** (`MaxReconnectWait` in `internal/mqttclient`, used by every
+  service). The MQTT library, Eclipse Paho, doubles its wait after each
+  failed attempt up to a limit that defaults to 10 minutes, so after a
+  long outage a returning broker could go unnoticed for that long, beyond
+  NFR-1's 2 minutes for the loop to resume after a restart. 10 s is one
+  CO2 reading interval, so about one reading is lost after the broker
+  returns, at the cost of a few failed connection attempts a minute while
+  it is down. Rejected: the 10-minute default; and 1 s, which gains little
+  when readings arrive every 10 s. The wait is in real seconds, so at speed
+  250 it spans about 42 room minutes; no test restarts the broker at that
+  speed. Decided and implemented 2026-10-11.
+  - Useful for: §8.2, §13.
+
 ## 9. Deployment and component view
 
 - **Decided: one `docker-compose.yml` starts the whole system, BuildSim
@@ -1488,7 +1502,7 @@ _(nothing yet)_
 
 - **Decided: tests run at speed 1; the day-long evaluation runs faster,
   at a speed checked to keep every reading 10 s apart.** A test checks how fast something happens (the end-to-end
-  test, the crash test, the stopped-broker test, the delay measurement), and its
+  test, the crash test, the delay measurement), and its
   limits are in room time, so room time and real time must run on one
   clock. The evaluation runs (REG-1's peak CO2, NFR-2's damper comparison)
   only read the CO2 and damper levels stamped in room time, which the
@@ -1663,8 +1677,8 @@ _(nothing yet)_
   outage the room tolerates at its worst moment and, at speed 1, how long
   services take to reconnect after short and long outages, which needs
   NFR-3 reworded around an outage length. The slow reconnect after a long
-  outage is removed instead by capping the MQTT library's wait
-  (`working_plan.md`). Decided and implemented 2026-10-11.
+  outage is removed instead (see *Decided: services wait at most 10 s
+  between attempts to reconnect to the broker*, §8). Decided and implemented 2026-10-11.
   - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: failed. The
     broker stopped at 23:08 the evening before, with the damper closed for
     the empty room; no decision was made and no reading stored after

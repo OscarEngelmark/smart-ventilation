@@ -1275,9 +1275,8 @@ reading.
 When the connection to the broker drops, no readings arrive, so no
 decisions are made and the damper keeps its last level. The Decision
 service tries to reconnect by itself. After each failed try it waits
-twice as long before the next, up to 10~minutes (the default of
-Eclipse Paho, the MQTT library the services use), so a broker that returns during a wait is noticed only when
-that wait ends. Once reconnected,
+twice as long before the next, up to 10~seconds, so a broker that
+returns is noticed within 10~seconds. Once reconnected,
 it subscribes again and
 returns to the state it left, keeping any room model it holds.
 
@@ -1723,7 +1722,7 @@ The Message broker stopped & No decisions, and the damper keeps its last
 level. A full A125 at $d = 0.4$, the level for three people, settles at
 $C_\text{steady} \approx 1400$~ppm (derived from
 Table~\ref{tab:simparams}). Once the broker is back, a service can take
-up to 10~minutes to notice (Section~\ref{sec:state}) & None yet. In the
+up to 10~seconds to notice (Section~\ref{sec:state}) & None yet. In the
 stopped-broker test, CO₂ was at or above 1000~ppm for 10.5 hours of the
 day (\req{NFR-3}, Section~\ref{sec:evaluation}); the Damper actuator
 could open fully when no command has arrived for a set time \\

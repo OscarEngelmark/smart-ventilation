@@ -5,9 +5,13 @@ package mqttclient
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
+
+// MaxReconnectWait is the longest wait between attempts to reconnect to the broker.
+const MaxReconnectWait = 10 * time.Second
 
 // Connect opens a link to the broker at brokerURL under clientID. The client
 // reconnects on its own, and onConnect, unless nil, runs on every connect.
@@ -19,6 +23,7 @@ func Connect(brokerURL, clientID string, onConnect mqtt.OnConnectHandler) (mqtt.
 	opts := mqtt.NewClientOptions().
 		AddBroker(brokerURL).
 		SetClientID(clientID).
+		SetMaxReconnectInterval(MaxReconnectWait).
 		SetOnConnectHandler(onConnect).
 		SetConnectionLostHandler(onConnectionLost)
 	client := mqtt.NewClient(opts)

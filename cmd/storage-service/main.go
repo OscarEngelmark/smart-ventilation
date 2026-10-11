@@ -19,6 +19,7 @@ import (
 
 	"github.com/OscarEngelmark/smart-ventilation/internal/env"
 	"github.com/OscarEngelmark/smart-ventilation/internal/message"
+	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 	"github.com/OscarEngelmark/smart-ventilation/internal/shutdown"
 	"github.com/OscarEngelmark/smart-ventilation/internal/store"
 	"github.com/OscarEngelmark/smart-ventilation/schemas"
@@ -111,6 +112,7 @@ func connectBroker(brokerURL string, handlers map[string]func(topic string, payl
 		AddBroker(brokerURL).
 		SetClientID("storage-service").
 		SetCleanSession(false). // the broker keeps QoS 1 messages for this client ID while it is away
+		SetMaxReconnectInterval(mqttclient.MaxReconnectWait).
 		SetOnConnectHandler(onConnect).
 		SetConnectionLostHandler(onConnectionLost)
 	client := mqtt.NewClient(opts)
