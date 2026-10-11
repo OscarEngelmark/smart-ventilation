@@ -598,8 +598,8 @@ readings, and none across a broker restart \\
 Message delivery & QoS~1: each message delivered at least once & QoS~0:
 at most once; QoS~2: exactly once & Messages for the Storage service are
 kept while it restarts, unlike QoS~0; QoS~2 would still need a duplicate
-check, since a restart can repeat a message (\req{FR-1}) & A message can arrive twice, so the
-History store refuses a second copy \\
+check, since a restart can repeat a message (\req{FR-1}) & A message can arrive twice, so every
+receiver must handle a second copy \\
 \midrule
 Moving commands & REST from the Decision service to the Damper
 actuator & Commands over MQTT & The Decision service is told
@@ -609,17 +609,17 @@ MQTT would need a reply topic for (\req{FR-2}) & The Decision service must know 
 \midrule
 History store & SQLite behind a storage interface & InfluxDB & Enough
 for one room, and runs inside the Storage service with no extra
-container (\req{FR-1}, \req{FR-4}) & Limits one Storage service to
+container (\req{FR-1}, \req{FR-4}); the interface limits a move to
+InfluxDB to one new implementation & Limits one Storage service to
 about 1670 rooms, about 1.7 times BuildSim's building
-(Section~\ref{sec:evaluation}); the interface limits a move to InfluxDB
-to one new implementation \\
+(Section~\ref{sec:evaluation}) \\
 \midrule
 Choosing the damper level & The lowest level the learned room model
 predicts will keep CO₂ under the target for the next hour, for the
 people counted now & Opening
-fully at the target; planning a level for every minute ahead & The
-damper opens only as far as the people counted need to keep CO₂ under
-the target (\req{REG-1}, \req{NFR-2}); simpler than planning every minute & Assumes
+fully at the target; planning a level for every minute ahead & Keeps
+CO₂ under the target with the damper open no further than needed
+(\req{REG-1}, \req{NFR-2}). Simpler than planning every minute & Assumes
 the people counted now stay the hour; a wrong count or room model
 leaves only the full opening at the target \\
 \midrule
@@ -1771,18 +1771,17 @@ the ventilation harder than needed & The full opening at the target catches too 
 \midrule
 A CO₂ sensor frozen at a plausible value & The damper still follows the
 head count, but no reading reaches $C_\text{target}$, so the full
-opening doesn't happen & None yet. In the frozen-sensor test, CO₂ was at
-or above 1000~ppm for 7.5 hours of the day (\req{NFR-3},
-Section~\ref{sec:evaluation}) \\
+opening doesn't happen. In the frozen-sensor test, CO₂ was at or above
+1000~ppm for 7.5 hours of the day (\req{NFR-3},
+Section~\ref{sec:evaluation}) & None yet; the Decision service could
+treat a reading that stays the same while people are in the room as a
+fault, and open the damper fully \\
 \midrule
 The Message broker stopped & No decisions, and the damper keeps its last
-level. A full A125 at $d = 0.4$, the level for three people, settles at
-$C_\text{steady} \approx 1400$~ppm (derived from
-Table~\ref{tab:simparams}). Once the broker is back, a service can take
-up to 10~seconds to notice (Section~\ref{sec:state}) & None yet. In the
-stopped-broker test, CO₂ was at or above 1000~ppm for 10.5 hours of the
-day (\req{NFR-3}, Section~\ref{sec:evaluation}); the Damper actuator
-could open fully when no command has arrived for a set time \\
+level. In the stopped-broker test, CO₂ was at or
+above 1000~ppm for 10.5 hours of the day (\req{NFR-3},
+Section~\ref{sec:evaluation}) & None yet; the Damper actuator could open
+fully when no command has arrived for a set time \\
 \midrule
 A message with a missing field & The Decision service reads the
 missing field as 0. A head count or room model
