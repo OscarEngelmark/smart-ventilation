@@ -1698,8 +1698,9 @@ _(nothing yet)_
   the history store, and `test/stress/main.go` publishes readings for 1000
   made-up rooms, spread evenly over each second, in rising steps of 30 s;
   60 s after each step it counts the readings stored. Broken means a step
-  loses readings (FR-1, §3). One room reads every 10 s, so a rate of X
-  readings per second is the load of 10·X rooms. Only these two containers
+  loses readings (FR-1, §3). One room sends a CO2 reading every 10 s
+  and a head count every minute, each saved as one write, so a rate of X
+  readings per second is the load of X / 0.117 rooms. Only these two containers
   are loaded because they are the only shared ones in the system's own
   path: BuildSim, the physical model and the occupancy simulator stand in
   for the building, which a real building's sensors would measure
@@ -1771,7 +1772,12 @@ _(nothing yet)_
   - Useful for: §10, §11.
 
 - **Measured: the storage service stores about 195 CO2 readings a second,
-  the load of about 1950 rooms; above that the broker drops readings.**
+  the load of about 1670 rooms; above that the broker drops readings.**
+  A room's head count is saved the same way as its CO2 reading, so each
+  room needs 0.1 + 1/60 ≈ 0.117 saves a second; this is reasoned from
+  `SaveOccupancy` being the same single insert, not measured. That is
+  about 1.7 times BuildSim's building, whose floor plans list 970 rooms
+  (322, 358 and 290 under `rooms` in each level's `floorplan_data.json`).
   Result of the stress test (see *Decided: the stress test raises the rate
   of CO2 readings…*, §10), 2026-10-11: every reading was stored at 10, 50,
   100, 125, 150 and 200 a second; at 300, 500 and 1000 a second 2109, 8656
@@ -1785,16 +1791,20 @@ _(nothing yet)_
   broker held. The storage service peaked at 4.5 % of one CPU and 21 MiB,
   the broker at 1.4 % and 5 MiB, so neither was short of CPU or memory.
   Readings are lost rather than late because Mosquitto keeps at most 1000
-  messages waiting for a subscriber (`max_queued_messages`, its default)
-  and drops the rest. Evidence in `test/results/stress_2026-10-11/`: the
+  messages waiting for a subscriber, above the 20 in flight
+  (`max_queued_messages`, its default; Mosquitto's `mosquitto.conf(5)`
+  manual page, https://mosquitto.org/man/mosquitto-conf-5.html), and drops
+  the rest. Evidence in `test/results/stress_2026-10-11/`: the
   test's output (`test.txt`), CPU and memory every 3 s (`stats.txt`) and
   the broker's log line (`broker_dropped.txt`).
   - **Known caveat —** reasoned, not measured: the test spreads readings
     evenly, as a real building's sensors are. Each sensor here counts its
     10 s from its own start, so after everything restarts at once all
     rooms publish together, until restarts and clock drift spread them
-    out again; a burst from more than about 1000 rooms then overflows the
-    broker's queue for the storage service and loses readings.
+    out again; every 10 s a burst of CO2 readings from more than about
+    1000 rooms then overflows the broker's queue for the storage service
+    and loses readings, and once a minute, when each room's head count
+    arrives with its reading, a burst from more than about 500 rooms does.
   - Saving readings in batches, one write per batch, would spread the
     5.1 ms over many readings; a store built for time series is the
     other way (see *Decided: CO2 readings, occupancy counts, and commands are
