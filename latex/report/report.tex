@@ -1105,7 +1105,7 @@ Besides keeping the room safe, this moves the damper between
 closed and fully open, which is the history the first fit needs.
 
 \textbf{Latency.} A command must follow its reading within 2~minutes of
-room time (\req{FR-2}), and a new reading arrives every 10~s. The Decision
+room time (\req{NFR-4}), and a new reading arrives every 10~s. The Decision
 service predicts the hour once for the current $d$, then for
 $d = 0, 0.05, \dots$ until one holds, so it makes at most 21 predictions.
 Choosing the damper level for one reading thus takes at most about
@@ -1344,9 +1344,10 @@ memory to spare; separate processes would allow one to be set per
 container.
 
 \textbf{Latency.} All messages stay on the computer, passing through
-Docker's virtual network instead of a physical one. The delay this network adds has not
-been measured; it is expected to be small next to the sampling intervals
-of 10~s for CO₂ and 1~min for the head count, which set how soon the
+Docker's virtual network instead of a physical one. The delay this
+network adds is part of the delay from reading to command, under 8~ms of
+real time (Section~\ref{sec:evaluation}), small next to the sampling
+intervals of 10~s for CO₂ and 1~min for the head count, which set how soon the
 damper reacts to a change (Section~\ref{sec:dynamic}).
 
 \textbf{Edge and external compute.} In a real building, every container
