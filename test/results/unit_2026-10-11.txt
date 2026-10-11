@@ -2,13 +2,15 @@
 ?   	github.com/OscarEngelmark/smart-ventilation/cmd/co2-sensor	[no test files]
 ?   	github.com/OscarEngelmark/smart-ventilation/cmd/dashboard	[no test files]
 === RUN   TestCO2ReadingWithoutPPMIsDropped
-2026/10/11 21:10:01 CO2 reading: invalid payload, dropped: jsonschema validation failed with 'https://smart-ventilation.local/schemas/co2_reading.schema.json#'
+2026/10/11 21:58:57 CO2 reading: invalid payload, dropped: jsonschema validation failed with 'https://smart-ventilation.local/schemas/co2_reading.schema.json#'
 - at '': missing property 'ppm'
 --- PASS: TestCO2ReadingWithoutPPMIsDropped (0.00s)
 === RUN   TestValidCO2ReadingIsKept
 --- PASS: TestValidCO2ReadingIsKept (0.00s)
 === RUN   TestNoReadingOpensDamperFully
 --- PASS: TestNoReadingOpensDamperFully (0.01s)
+=== RUN   TestUnchangedReadingLooksFrozenOnlyWithPeople
+--- PASS: TestUnchangedReadingLooksFrozenOnlyWithPeople (0.00s)
 PASS
 ok  	github.com/OscarEngelmark/smart-ventilation/cmd/decision	0.015s
 ?   	github.com/OscarEngelmark/smart-ventilation/cmd/occupancy	[no test files]
@@ -18,14 +20,14 @@ ok  	github.com/OscarEngelmark/smart-ventilation/cmd/decision	0.015s
 === RUN   TestRoomMatchesTopic
 --- PASS: TestRoomMatchesTopic (0.00s)
 === RUN   TestReadingOnAnotherRoomsTopicIsNotSaved
-2026/10/11 21:10:01 reading: room "level0/B200" doesn't match topic level0/A125/co2/reading
---- PASS: TestReadingOnAnotherRoomsTopicIsNotSaved (0.11s)
+2026/10/11 21:58:57 reading: room "level0/B200" doesn't match topic level0/A125/co2/reading
+--- PASS: TestReadingOnAnotherRoomsTopicIsNotSaved (0.12s)
 === RUN   TestReadingFailingItsSchemaIsNotSaved
-2026/10/11 21:10:01 reading: invalid payload: jsonschema validation failed with 'https://smart-ventilation.local/schemas/co2_reading.schema.json#'
+2026/10/11 21:58:57 reading: invalid payload: jsonschema validation failed with 'https://smart-ventilation.local/schemas/co2_reading.schema.json#'
 - at '/ppm': minimum: got -5, want 0
 --- PASS: TestReadingFailingItsSchemaIsNotSaved (0.12s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/cmd/storage-service	0.234s
+ok  	github.com/OscarEngelmark/smart-ventilation/cmd/storage-service	0.245s
 ?   	github.com/OscarEngelmark/smart-ventilation/internal/buildsim	[no test files]
 === RUN   TestFullRoomFullyOpenSettlesBelowThreshold
 --- PASS: TestFullRoomFullyOpenSettlesBelowThreshold (0.00s)
@@ -100,7 +102,7 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/occupancy	0.002s
 === RUN   TestSwitchKeepsTheLevelInBetween
 --- PASS: TestSwitchKeepsTheLevelInBetween (0.00s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	0.002s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/planner	0.001s
 ?   	github.com/OscarEngelmark/smart-ventilation/internal/room	[no test files]
 === RUN   TestFitRecoversTheRoom
 --- PASS: TestFitRecoversTheRoom (0.00s)
@@ -131,12 +133,12 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/roommodel	0.004s
 === RUN   TestFromEnvReadsTheSession
 --- PASS: TestFromEnvReadsTheSession (0.00s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/roomtime	0.001s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/roomtime	0.002s
 ?   	github.com/OscarEngelmark/smart-ventilation/internal/shutdown	[no test files]
 === RUN   TestReadingExactlyAtSinceIsIncluded
---- PASS: TestReadingExactlyAtSinceIsIncluded (0.12s)
+--- PASS: TestReadingExactlyAtSinceIsIncluded (0.11s)
 === RUN   TestReadingBeforeSinceIsLeftOut
---- PASS: TestReadingBeforeSinceIsLeftOut (0.12s)
+--- PASS: TestReadingBeforeSinceIsLeftOut (0.13s)
 === RUN   TestReadingsComeBackOldestFirst
 --- PASS: TestReadingsComeBackOldestFirst (0.07s)
 === RUN   TestOtherRoomsAreLeftOut
@@ -174,6 +176,6 @@ ok  	github.com/OscarEngelmark/smart-ventilation/internal/roomtime	0.001s
 === RUN   TestSavesAndReadsAtTheSameTimeAllSucceed
 --- PASS: TestSavesAndReadsAtTheSameTimeAllSucceed (2.11s)
 PASS
-ok  	github.com/OscarEngelmark/smart-ventilation/internal/store	3.524s
+ok  	github.com/OscarEngelmark/smart-ventilation/internal/store	3.531s
 ?   	github.com/OscarEngelmark/smart-ventilation/schemas	[no test files]
 ?   	github.com/OscarEngelmark/smart-ventilation/test/stress	[no test files]

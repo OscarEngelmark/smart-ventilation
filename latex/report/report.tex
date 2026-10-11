@@ -1144,6 +1144,12 @@ with the room model than with the CO₂-only switch; Section~\ref{sec:evaluation
   Decision service that restarts after a broker restart has no room
   model and opens or closes the damper on CO₂ alone until the next fit.
 \item
+  \textbf{The CO₂ sensor frozen.} The sensor keeps sending the same
+  value, whatever the room's CO₂. With people in the room, CO₂ keeps
+  changing, so a value that stays the same for 5~minutes with at least 
+  one person present is treated as a frozen sensor. The Decision service then
+  sets $d = 1$ until the value changes or the room empties.
+\item
   \textbf{A malformed message.} The Decision service checks each
   message it receives against its schema, as the Storage service and
   the Damper actuator do, and drops one that fails. A CO₂ reading
@@ -1221,8 +1227,9 @@ retained message (Section~\ref{sec:decision-logic}).
   \textbf{Stale.} The Decision service uses the latest head count
   however old. If the Occupancy sensor stops, a count left too low lets
   CO₂ rise until a reading at $C_\text{target}$ opens the damper fully; a
-  count left too high only runs the ventilation harder than needed. A CO₂ sensor
-  stuck at a plausible value is not detected.
+  count left too high only runs the ventilation harder than needed. A
+  CO₂ value that stays the same while at least one person is present is treated as
+  a frozen sensor (Section~\ref{sec:decision-logic}).
 \end{itemize}
 
 \section{Behaviour}\label{sec:behavior}
@@ -1493,7 +1500,7 @@ open & Met \\
 \req{FR-3} & The third reading after the command was 963.1~ppm, lower than the
 first at 973.8~ppm & Met \\
 \midrule
-\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 70 unit tests and subtests
+\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 71 unit tests and subtests
 pass & Met \\
 \midrule
 \req{FR-7} & CO₂, head count and damper level shown over the last
@@ -1509,10 +1516,9 @@ open 10.8~s after the kill & Met \\
 \req{NFR-2} & Mean damper level over a room day 0.137 with the room model,
 0.153 with the CO₂-only switch; lower on every day & Met \\
 \midrule
-\req{NFR-3} & With the CO₂ sensor frozen at 420~ppm, the room's real
-CO₂ was at or above 1000~ppm for 7.5 hours of the day, peaking at
-1180~ppm; with the Message broker stopped, it stayed under 1000~ppm,
-peaking at 878~ppm & Not met \\
+\req{NFR-3} & The room's real CO₂ stayed under 1000~ppm, peaking at
+879~ppm with the CO₂ sensor frozen at 420~ppm, and at 878~ppm with the
+Message broker stopped & Met \\
 \midrule
 \req{NFR-4} & All 221 commands of the comparison week came under 2~s
 of room time after the reading before them & Met \\
@@ -1603,15 +1609,16 @@ Friday 2026-11-27, per room minute, for both methods
 2026-12-02 at the same speed as the comparison week (250 $\times$ the wall
 clock), with the CO₂ sensor
 repeating its first reading, 420~ppm, all day
-(\texttt{test/results/\allowbreak frozen\_2026-12-02/}). The Decision
-service went on choosing damper levels with the room model from the head count,
-but each prediction started from 420~ppm, far below the room's real CO₂,
-so the levels it chose were too low: their mean over the day was 0.094,
-against 0.137 in the comparison week. No reading reached the target, so
-the damper never opened fully. The room's real CO₂ first reached
-1000~ppm at 08:48 and was at or above it for 7.5 hours in all until
-17:52, peaking at 1180~ppm at 16:32, with one person in the room and the
-damper closed.
+(\texttt{test/results/\allowbreak frozen\_2026-12-02/}). When the
+first person came in at 06:45, the Decision service treated the
+unchanging value as a frozen sensor and opened the damper fully
+(Section~\ref{sec:decision-logic}); it closed it while the room was
+empty over lunch and from 17:37 onwards. The mean damper level over the day was
+0.431, against 0.137 in the comparison week, and the room's real CO₂
+peaked at 879~ppm at 13:45. [In a run of the frozen-sensor test before
+the frozen sensor was detected, the Decision service planned from
+420~ppm, so the levels it chose were too low, and CO₂ was at or above
+1000~ppm for 7.5 hours, peaking at 1180~ppm.]
 
 \textbf{A stopped Message broker.} The stopped-broker test ran the same
 Wednesday at the same speed (250 $\times$ the wall
@@ -1760,13 +1767,18 @@ internet connection.
 % - an honest account of its limitations and what would be done next
 
 The Decision service's choice of level rests on two assumptions: the head count is right, and the room
-model predicts the room well. When either fails, the one safeguard left
-is the full opening at the target, and that safeguard depends on CO₂
-readings that are right and that keep arriving. When readings stop, as
-with a stopped Message broker, the Decision service opens the damper
-fully instead (Section~\ref{sec:decision-logic}). A frozen CO₂ sensor
-and a restarted BuildSim (Table~\ref{tab:risks}) still take both
-safeguards away.
+model predicts the room well. When either fails, the safeguard is the
+full opening at the target, which depends on CO₂ readings that are
+right and that keep arriving. A second safeguard covers readings that
+stop, as with a stopped Message broker, or that keep the same value
+while people are in the room, as with a frozen CO₂ sensor: the Decision
+service then opens the damper fully
+(Section~\ref{sec:decision-logic}). Neither safeguard covers a
+restarted BuildSim (Table~\ref{tab:risks}), after which the Damper
+actuator can't set the damper. Nor does either cover a CO₂ sensor that
+reads too low: its readings still change, so it doesn't look frozen,
+and they can stay under the target while the room's real CO₂ is over
+1000~ppm.
 The simulated room is also easier to predict than a real one, which
 favors the room model in the comparison (Section~\ref{sec:evaluation}).
 {\small
@@ -1789,13 +1801,11 @@ service chooses too low a level, and CO₂ rises until a reading at
 $C_\text{target}$ opens the damper fully; or too high a level, running
 the ventilation harder than needed & The full opening at the target catches too low a level; too high a level only costs ventilation \\
 \midrule
-A CO₂ sensor frozen at a plausible value & The damper still follows the
-head count, but no reading reaches $C_\text{target}$, so the full
-opening doesn't happen. In the frozen-sensor test, CO₂ was at or above
-1000~ppm for 7.5 hours of the day (\req{NFR-3},
-Section~\ref{sec:evaluation}) & None yet; the Decision service could
-treat a reading that stays the same while people are in the room as a
-fault, and open the damper fully \\
+A CO₂ sensor frozen at a plausible value & The Decision service plans
+from the wrong CO₂, and no reading reaches $C_\text{target}$ & When the
+value stays the same for 5~minutes while people are counted, the
+Decision service opens the damper fully. In the frozen-sensor test, CO₂
+peaked at 879~ppm (\req{NFR-3}, Section~\ref{sec:evaluation}) \\
 \midrule
 The Message broker stopped & No readings reach the Decision service, so
 it can't choose a level & After 5~minutes without a reading, the

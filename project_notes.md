@@ -1414,8 +1414,11 @@ _(nothing yet)_
   age limit, treating a count older than a few minutes as unknown and
   falling back to the CO2-only switch — it adds a rule and a test to the
   decision service for a case the full opening at the target already
-  covers. A CO2 sensor stuck at a plausible value is likewise not detected.
-  Decided 2026-10-08.
+  covers. Decided 2026-10-08.
+  - It used to say a CO2 sensor stuck at a plausible value is likewise not
+    detected; it now is while people are counted (see *Decided: a CO2
+    value unchanged for 5 room minutes while people are counted…*,
+    below).
   - Useful for: §7.2, §13.
 
 - **Decided: when no CO2 reading has reached the decision service for 5
@@ -1429,7 +1432,7 @@ _(nothing yet)_
   `cmd/decision/main.go`; 5 minutes is 30 missed readings, and short
   against the 96 minutes the test took to reach 1000 ppm
   from an empty room. It also covers a stopped CO2 sensor, but not a frozen
-  one, which keeps sending readings. Rejected: the actuator opening fully
+  one, which keeps sending readings (see the next entry). Rejected: the actuator opening fully
   when no command has arrived for a set time, which would also cover a
   stopped decision service, but the decision service sends a command only
   when the level changes, so it would have to resend the level on every
@@ -1444,6 +1447,30 @@ _(nothing yet)_
   store gets it once the broker returns. Decided and implemented
   2026-10-11.
   - Useful for: §4.4, §7.1, §11, §13.
+
+- **Decided: a CO2 value unchanged for 5 room minutes while people are
+  counted is treated as a frozen sensor, and the decision service opens
+  the damper fully.** A frozen sensor keeps sending readings, so the full
+  opening when readings stop never comes, and the frozen-sensor test
+  showed the levels planned from a frozen value leave CO2 over 1000 ppm
+  for hours (see *Decided: the frozen-sensor test…*, §10). With people in
+  the room, CO2 keeps changing, and the simulated readings carry no noise
+  or rounding, so the same value 30 readings in a row doesn't happen in
+  normal operation; a real sensor's noise makes the same hold for it. The
+  rule is `frozen` in `cmd/decision/main.go`, timed by the readings' own
+  timestamps, and reuses the 5 minutes of `READING_TIMEOUT`, so a value
+  that doesn't change is handled like a reading that doesn't arrive. It
+  ends when the value changes or the room empties. Rejected: flagging a
+  fault when readings stay far below what the room model predicts for the
+  people counted, which would also catch a sensor stuck high or drifting,
+  but relies on the room model being right, which the full opening is
+  there to back up, and adds a threshold to tune; and the same rule
+  without the people condition, since an empty room settles at the
+  outdoor level, where the value could stop changing and open the damper
+  at night for nothing. Limit: a sensor that freezes while nobody is
+  counted is caught only once someone arrives, and one that drifts
+  rather than freezes is not caught. Decided and implemented 2026-10-11.
+  - Useful for: §4.4, §7.1, §7.2, §11, §13.
 
 ## 8. Behaviour
 
@@ -1595,15 +1622,15 @@ _(nothing yet)_
     window (`e2e_2026-10-09_*.json`).
   - Useful for: §10, §11.
 
-- **All 70 unit tests and subtests passed on 2026-10-11**, among them
+- **All 71 unit tests and subtests passed on 2026-10-11**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
   (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-11.txt`, the
   output of `go test -v -count=1 ./...`. It replaces passes on 2026-10-07,
   2026-10-08 and 2026-10-09, rerun on the code of 2026-10-11, which adds
-  the decision service's schema checks and its full opening when no
-  reading arrives (`cmd/decision`).
+  the decision service's schema checks and its full opening when readings
+  stop or look frozen (`cmd/decision`).
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
@@ -1687,16 +1714,20 @@ _(nothing yet)_
   next step; a second publisher on the sensor's topic, which leaves the real
   sensor publishing too, so the decision service sees two alternating
   values. Decided and implemented 2026-10-11.
-  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: failed. The
-    sensor froze at 420 ppm. The decision service kept choosing levels
-    with the room model from the head count, but each prediction started
-    from 420 ppm, so the levels were too low (mean 0.094 over the day,
-    against 0.137 in the comparison week), and no reading reached the
-    target to open the damper fully. The room's real CO2 was at or above
-    1000 ppm for 7.5 hours between 08:48 and 17:52, peaking at 1180 ppm at
-    16:32 with one person in the room and the damper closed. Evidence in
-    `test/results/frozen_2026-12-02/`: the test's output (`test.txt`), the
-    day's stored data (`day*`) and the real CO2 per step (`real_co2.json`).
+  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: passed. The
+    sensor froze at 420 ppm. When the first person came in at 06:45, the
+    decision service treated the unchanged value as a frozen sensor and
+    opened the damper fully (see *Decided: a CO2 value unchanged for 5
+    room minutes…*, §7); it closed it while the room was empty over lunch
+    and from 17:37. The mean level over the day was 0.431, against 0.137
+    in the comparison week, and the room's real CO2 peaked at 879 ppm at
+    13:45. Evidence in `test/results/frozen_2026-12-02/`: the test's
+    output (`test.txt`), the day's stored data (`day*`) and the real CO2
+    per step (`real_co2.json`).
+    - It replaces a failed run on the same day before the rule existed:
+      the levels planned from 420 ppm were too low (mean 0.094), no
+      reading reached the target, and the room's real CO2 was at or above
+      1000 ppm for 7.5 hours, peaking at 1180 ppm.
   - Useful for: §10, §11, §13.
 
 - **Decided: the stopped-broker test stops the broker before anyone arrives

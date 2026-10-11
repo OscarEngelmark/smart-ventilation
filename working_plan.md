@@ -6,15 +6,6 @@ themselves go in `project_notes.md`. Final submission: 2026-10-12, 23:59.
 Phase 1 reaches every pass requirement and a complete report. Phase 2 adds
 the evaluation that lifts the grade, and starts only once phase 1 is done.
 
-## Phase 2: higher grade (2026-10-11, and any time left)
-
-Each result also updates report §10 and §11, and its row in §13's risk
-table.
-
-| # | Part | Open decisions | Steps |
-|---|---|---|---|
-| 16 | A fix for the fault that still fails NFR-3, a frozen CO2 sensor (`test/fault/frozen.sh`), such as a check that the reading's value hasn't changed for a set time while people are in the room; then rerun it and update §7.1, §11 and §13; if there is no time, §13 names it as a next step | whether to add the fix, and how | 1 |
-
 ## Before submission: one-command reruns
 
 | # | Part | Open decisions | Steps |

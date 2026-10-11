@@ -1,7 +1,7 @@
 // decision chooses the damper level for one room. It keeps the latest CO2
 // reading, head count and room model from the broker,
 // chooses a level on every CO2 reading, opens the damper fully when readings
-// stop, and commands the actuator whenever the level changes, publishing a
+// stop or look frozen, and commands the actuator whenever the level changes, publishing a
 // copy of each command for storage.
 // Reasoning: project_notes.md §4 and §7.
 package main
@@ -35,9 +35,10 @@ import (
 // inputs is the latest of each message the decision is made from. A nil
 // field has not arrived yet.
 type inputs struct {
-	co2    *message.CO2Reading
-	people *message.OccupancyReading
-	model  *message.RoomModel
+	co2       *message.CO2Reading
+	people    *message.OccupancyReading
+	model     *message.RoomModel
+	sameSince time.Time // room time of the first CO2 reading with the latest value
 }
 
 // inputSchemas holds the schema each incoming message is checked against
@@ -81,7 +82,7 @@ func main() {
 	roomID := env.String("ROOM_ID")
 	settings := planSettings()
 	ignoreModel := env.Bool("IGNORE_ROOM_MODEL") // true runs the CO2-only switch all the time
-	timeout := env.Duration("READING_TIMEOUT")   // room time without a reading before a full opening
+	timeout := env.Duration("READING_TIMEOUT")   // room time without a new CO2 value before a full opening
 
 	clock := roomtime.FromEnv()
 	state := &latest{sch: loadInputSchemas()}
@@ -136,14 +137,15 @@ func planSettings() planner.Settings {
 }
 
 // decide chooses a level on every CO2 reading, or a full opening when no
-// reading has arrived for timeout of room time, and sends it to the actuator
+// reading has arrived for timeout of room time or the readings look frozen
+// (see frozen), and sends it to the actuator
 // whenever it differs from the last level the actuator accepted. A level the
 // actuator doesn't accept is tried again on the next reading.
 func decide(readings <-chan message.CO2Reading, state *latest, s planner.Settings, c *commander, timeout time.Duration) {
 	var sent bool    // whether a level has been accepted by the actuator yet
 	var last float64 // the last level the actuator accepted
 	for {
-		chosen, from := nextLevel(readings, c.clock.Wall(timeout), state, s, last)
+		chosen, from := nextLevel(readings, timeout, c.clock.Wall(timeout), state, s, last)
 		if sent && chosen == last {
 			continue
 		}
@@ -157,20 +159,34 @@ func decide(readings <-chan message.CO2Reading, state *latest, s planner.Setting
 }
 
 // nextLevel waits for the next CO2 reading and returns the level chosen from
-// the inputs then, with what it was chosen from. If wait, in wall time, passes
-// first, it returns 1, fully open.
+// the inputs then, with what it was chosen from, or 1, fully open, when the
+// readings look frozen for timeout of room time. If wait, in wall time,
+// passes first, it returns 1 too.
 func nextLevel(
-	readings <-chan message.CO2Reading, wait time.Duration,
+	readings <-chan message.CO2Reading, timeout, wait time.Duration,
 	state *latest, s planner.Settings, current float64,
 ) (float64, string) {
 	select { // whichever comes first
 	case <-readings:
 		in := state.snapshot()
+		if frozen(in, timeout) {
+			return 1, fmt.Sprintf("after %.0f ppm unchanged with %s people", in.co2.PPM, headCount(in.people))
+		}
 		from := fmt.Sprintf("at %.0f ppm, %s people", in.co2.PPM, headCount(in.people))
 		return choose(in, s, current), from
 	case <-time.After(wait):
 		return 1, "after no CO2 reading"
 	}
+}
+
+// frozen reports whether the latest CO2 reading has kept the same value for at
+// least timeout of room time while people are counted in the room.
+func frozen(in inputs, timeout time.Duration) bool {
+	if in.people == nil || in.people.Count == 0 {
+		return false
+	}
+	unchanged := in.co2.Ts.Sub(in.sameSince)
+	return unchanged >= timeout
 }
 
 // choose returns the damper level, 0 (closed) to 1 (fully open), for the
@@ -254,14 +270,18 @@ func subscribeAll(
 	}
 }
 
-// keepCO2 stores a CO2 reading as the latest and returns it, or reports false
-// if the payload fails its schema or can't be read.
+// keepCO2 stores a CO2 reading as the latest, noting when its value last
+// changed, and returns it, or reports false if the payload fails its schema or
+// can't be read.
 func (l *latest) keepCO2(payload []byte) (message.CO2Reading, bool) {
 	var r message.CO2Reading
 	if !decode("CO2 reading", l.sch.co2, payload, &r) {
 		return r, false
 	}
 	l.mu.Lock()
+	if l.in.co2 == nil || l.in.co2.PPM != r.PPM {
+		l.in.sameSince = r.Ts
+	}
 	l.in.co2 = &r
 	l.mu.Unlock()
 	return r, true
