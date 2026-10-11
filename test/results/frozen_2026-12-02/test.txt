@@ -9,68 +9,70 @@ test day 2026-12-02, frozen CO2 sensor, speed 250
  Container smart-ventilation-buildsim-1  Recreated
  Container smart-ventilation-occupancy-sensor-1  Recreate
  Container smart-ventilation-co2-sensor-1  Recreate
- Container smart-ventilation-actuator-1  Recreate
- Container smart-ventilation-occupancy-1  Recreate
  Container smart-ventilation-physical-model-1  Recreate
- Container smart-ventilation-room-model-1  Recreated
+ Container smart-ventilation-occupancy-1  Recreate
+ Container smart-ventilation-actuator-1  Recreate
  Container smart-ventilation-dashboard-1  Recreated
- Container smart-ventilation-occupancy-1  Recreated
+ Container smart-ventilation-room-model-1  Recreated
+ Container smart-ventilation-physical-model-1  Recreated
  Container smart-ventilation-co2-sensor-1  Recreated
  Container smart-ventilation-occupancy-sensor-1  Recreated
- Container smart-ventilation-physical-model-1  Recreated
  Container smart-ventilation-actuator-1  Recreated
  Container smart-ventilation-decision-1  Recreate
+ Container smart-ventilation-occupancy-1  Recreated
  Container smart-ventilation-decision-1  Recreated
- Container smart-ventilation-room-model-1  Starting
  Container smart-ventilation-buildsim-1  Starting
  Container smart-ventilation-dashboard-1  Starting
+ Container smart-ventilation-room-model-1  Starting
  Container smart-ventilation-buildsim-1  Started
- Container smart-ventilation-occupancy-1  Starting
- Container smart-ventilation-occupancy-sensor-1  Starting
  Container smart-ventilation-co2-sensor-1  Starting
+ Container smart-ventilation-occupancy-sensor-1  Starting
  Container smart-ventilation-physical-model-1  Starting
+ Container smart-ventilation-occupancy-1  Starting
  Container smart-ventilation-actuator-1  Starting
  Container smart-ventilation-room-model-1  Started
  Container smart-ventilation-dashboard-1  Started
  Container smart-ventilation-co2-sensor-1  Started
- Container smart-ventilation-physical-model-1  Started
  Container smart-ventilation-occupancy-sensor-1  Started
  Container smart-ventilation-actuator-1  Started
  Container smart-ventilation-decision-1  Starting
+ Container smart-ventilation-physical-model-1  Started
  Container smart-ventilation-occupancy-1  Started
  Container smart-ventilation-decision-1  Started
 session started at room time 2026-12-01T23:00:00+01:00, speed 250
-2026/10/11 12:23:39 frozen at 420 ppm
+2026/10/11 13:25:45 frozen at 420 ppm
 level0/A125, 2026-12-02: 8640 readings
   from 00:00 to 23:59
 mean damper level:
   whole day: 0.094
-  12:00-13:00, before meeting: 0.105
-  13:00-14:00, meeting: 0.796
+  12:00-13:00, before meeting: 0.099
+  13:00-14:00, meeting: 0.794
 peak CO2: 420 ppm at 00:00
 co2: 8640 rows in test/results/frozen_2026-12-02/day_co2.json
 occupancy: 1440 rows in test/results/frozen_2026-12-02/day_occupancy.json
 commands: 11 rows in test/results/frozen_2026-12-02/day_commands.json
 check: complete, 8640 readings 10-10 s apart, 1440 head counts
 stored CO2 readings over the day: [420] ppm
-real CO2 over the day: 8640 steps, peak 1184 ppm at 16:32, 442.5 room minutes at or above 1000 ppm
-FAIL: the room's real CO2 reached 1184 ppm
- Container smart-ventilation-occupancy-1  Stopping
- Container smart-ventilation-occupancy-sensor-1  Stopping
- Container smart-ventilation-co2-sensor-1  Stopping
+real CO2 over the day: 8640 steps, peak 1180 ppm at 16:32, 447.3333333333333 room minutes at or above 1000 ppm
+first person in at 06:45
+real CO2 first at or above 1000 ppm at 08:48, 122 room minutes after the first person came in
+FAIL: the room's real CO2 reached 1180 ppm
  Container smart-ventilation-physical-model-1  Stopping
- Container smart-ventilation-room-model-1  Stopping
  Container smart-ventilation-decision-1  Stopping
  Container smart-ventilation-dashboard-1  Stopping
- Container smart-ventilation-room-model-1  Stopped
- Container smart-ventilation-occupancy-1  Stopped
+ Container smart-ventilation-occupancy-1  Stopping
+ Container smart-ventilation-room-model-1  Stopping
+ Container smart-ventilation-co2-sensor-1  Stopping
+ Container smart-ventilation-occupancy-sensor-1  Stopping
+ Container smart-ventilation-physical-model-1  Stopped
  Container smart-ventilation-occupancy-sensor-1  Stopped
+ Container smart-ventilation-occupancy-1  Stopped
  Container smart-ventilation-co2-sensor-1  Stopped
  Container smart-ventilation-decision-1  Stopped
  Container smart-ventilation-actuator-1  Stopping
+ Container smart-ventilation-room-model-1  Stopped
  Container smart-ventilation-dashboard-1  Stopped
  Container smart-ventilation-storage-service-1  Stopping
- Container smart-ventilation-physical-model-1  Stopped
  Container smart-ventilation-actuator-1  Stopped
  Container smart-ventilation-buildsim-1  Stopping
  Container smart-ventilation-storage-service-1  Stopped

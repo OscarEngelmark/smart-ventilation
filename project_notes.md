@@ -1613,8 +1613,9 @@ _(nothing yet)_
   modes named in proposal sections 6 and 7. The crash test covers a
   component going down (see *Decided: the crash test kills the CO2 sensor
   and the decision service together…*, above), and the frozen-sensor test
-  a sensor giving bad readings (below); a stopped broker is not yet tested,
-  and delay only as a measurement (NFR-4). Proposal, 2026-09-04.
+  a sensor giving bad readings, and the stopped-broker test dropped
+  communication (both below); delay is covered only as a measurement
+  (NFR-4). Proposal, 2026-09-04.
   - Useful for: §10, §11, §13.
 
 - **Decided: the frozen-sensor test runs one weekday with the CO2 sensor
@@ -1643,10 +1644,36 @@ _(nothing yet)_
     from 420 ppm, so the levels were too low (mean 0.094 over the day,
     against 0.137 in the comparison week), and no reading reached the
     target to open the damper fully. The room's real CO2 was at or above
-    1000 ppm for 7.4 hours between 08:48 and 17:52, peaking at 1184 ppm at
+    1000 ppm for 7.5 hours between 08:48 and 17:52, peaking at 1180 ppm at
     16:32 with one person in the room and the damper closed. Evidence in
     `test/results/frozen_2026-12-02/`: the test's output (`test.txt`), the
     day's stored data (`day*`) and the real CO2 per step (`real_co2.json`).
+  - Useful for: §10, §11, §13.
+
+- **Decided: the stopped-broker test stops the broker before anyone arrives
+  and keeps it down for the whole weekday, shaped like the frozen-sensor
+  test.** `test/fault/broker.sh` verifies the broker half of NFR-3 (§3) at
+  speed 250, on a snapshot of the history store, judging the room's real CO2
+  from the physical model's log; the two tests share `test/fault/lib.sh`.
+  While the broker is down no reading reaches the decision service, so the
+  damper keeps its last level and the run shows how long after the first
+  arrival CO2 reaches 1000 ppm. Rejected: a fixed outage, such as 60 minutes
+  from 07:00, whose pass or fail depends only on the length chosen, with no
+  source for a realistic one; and a two-part test, measuring how long an
+  outage the room tolerates at its worst moment and, at speed 1, how long
+  services take to reconnect after short and long outages, which needs
+  NFR-3 reworded around an outage length. The slow reconnect after a long
+  outage is removed instead by capping the MQTT library's wait
+  (`working_plan.md`). Decided and implemented 2026-10-11.
+  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: failed. The
+    broker stopped at 23:08 the evening before, with the damper closed for
+    the empty room; no decision was made and no reading stored after
+    that, so the damper stayed closed all day. The first person came in at
+    06:45, and the room's real CO2 reached 1000 ppm 96 minutes later, at
+    08:21, stayed at or above it until 18:51 (10.5 hours) and peaked at
+    2329 ppm at 14:17. Evidence in `test/results/broker_2026-12-02/`: the
+    test's output (`test.txt`), the data stored in the session
+    (`stored_*`) and the real CO2 per step (`real_co2.json`).
   - Useful for: §10, §11, §13.
 
 - **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a
