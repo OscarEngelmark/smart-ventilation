@@ -1,7 +1,8 @@
 // decision chooses the damper level for one room. It keeps the latest CO2
 // reading, head count and room model from the broker,
-// chooses a level on every CO2 reading, and commands the actuator whenever
-// the level changes, publishing a copy of each command for storage.
+// chooses a level on every CO2 reading, opens the damper fully when readings
+// stop, and commands the actuator whenever the level changes, publishing a
+// copy of each command for storage.
 // Reasoning: project_notes.md §4 and §7.
 package main
 
@@ -80,6 +81,7 @@ func main() {
 	roomID := env.String("ROOM_ID")
 	settings := planSettings()
 	ignoreModel := env.Bool("IGNORE_ROOM_MODEL") // true runs the CO2-only switch all the time
+	timeout := env.Duration("READING_TIMEOUT")   // room time without a reading before a full opening
 
 	clock := roomtime.FromEnv()
 	state := &latest{sch: loadInputSchemas()}
@@ -110,7 +112,7 @@ func main() {
 		log.Printf("IGNORE_ROOM_MODEL is set: no room model is used, the damper switches on CO2 alone")
 	}
 
-	decide(readings, state, settings, c)
+	decide(readings, state, settings, c, timeout)
 }
 
 // loadInputSchemas loads the schemas of the three messages the decision is made from.
@@ -133,15 +135,15 @@ func planSettings() planner.Settings {
 	}
 }
 
-// decide chooses a level on every CO2 reading and sends it to the actuator
+// decide chooses a level on every CO2 reading, or a full opening when no
+// reading has arrived for timeout of room time, and sends it to the actuator
 // whenever it differs from the last level the actuator accepted. A level the
 // actuator doesn't accept is tried again on the next reading.
-func decide(readings <-chan message.CO2Reading, state *latest, s planner.Settings, c *commander) {
-	var sent bool        // whether a level has been accepted by the actuator yet
-	var last float64     // the last level the actuator accepted
-	for range readings { // wait for each CO2 reading in turn
-		in := state.snapshot()
-		chosen := choose(in, s, last)
+func decide(readings <-chan message.CO2Reading, state *latest, s planner.Settings, c *commander, timeout time.Duration) {
+	var sent bool    // whether a level has been accepted by the actuator yet
+	var last float64 // the last level the actuator accepted
+	for {
+		chosen, from := nextLevel(readings, c.clock.Wall(timeout), state, s, last)
 		if sent && chosen == last {
 			continue
 		}
@@ -150,8 +152,24 @@ func decide(readings <-chan message.CO2Reading, state *latest, s planner.Setting
 			continue
 		}
 		sent, last = true, chosen
-		log.Printf("%s: damper %.2f at %.0f ppm, %s people", c.roomID, chosen,
-			in.co2.PPM, headCount(in.people))
+		log.Printf("%s: damper %.2f %s", c.roomID, chosen, from)
+	}
+}
+
+// nextLevel waits for the next CO2 reading and returns the level chosen from
+// the inputs then, with what it was chosen from. If wait, in wall time, passes
+// first, it returns 1, fully open.
+func nextLevel(
+	readings <-chan message.CO2Reading, wait time.Duration,
+	state *latest, s planner.Settings, current float64,
+) (float64, string) {
+	select { // whichever comes first
+	case <-readings:
+		in := state.snapshot()
+		from := fmt.Sprintf("at %.0f ppm, %s people", in.co2.PPM, headCount(in.people))
+		return choose(in, s, current), from
+	case <-time.After(wait):
+		return 1, "after no CO2 reading"
 	}
 }
 
@@ -213,7 +231,7 @@ func (c *commander) put(payload []byte) error {
 // publishCopy publishes an applied command on the command topic for storage,
 // logging if the broker doesn't take it.
 func (c *commander) publishCopy(cmd message.VentilationCommand) {
-	if err := mqttclient.PublishJSON(c.broker, c.topic, false, cmd); err != nil {
+	if err := mqttclient.PublishJSON(c.broker, c.topic, false, cmd, 5*time.Second); err != nil {
 		log.Printf("command applied but its copy was not published: %v", err)
 	}
 }

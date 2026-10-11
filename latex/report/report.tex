@@ -1136,9 +1136,10 @@ with the room model than with the CO₂-only switch; Section~\ref{sec:evaluation
   room model stays in use, however old, since a room's rates change
   slowly.
 \item
-  \textbf{The Message broker unavailable.} No readings arrive, so no
-  decisions are made and the damper keeps its last level. The Decision
-  service reconnects by itself and keeps the room model it holds. The
+  \textbf{The Message broker unavailable.} No readings arrive, so after
+  5~minutes without one the Decision service sets $d = 1$, which holds
+  until readings return. The Decision service reconnects by itself and
+  then decides on each reading again with the room model it holds. The
   broker keeps the retained room model only in memory, though, so a
   Decision service that restarts after a broker restart has no room
   model and opens or closes the damper on CO₂ alone until the next fit.
@@ -1273,11 +1274,11 @@ after subscribing unless the broker has restarted since the last fit
 (Section~\ref{sec:decision-logic}). From then on it plans on every
 reading.
 
-When the connection to the broker drops, no readings arrive, so no
-decisions are made and the damper keeps its last level. The Decision
-service tries to reconnect by itself. After each failed try it waits
+When the connection to the broker drops, the Decision service tries to
+reconnect by itself. After each failed try it waits
 twice as long before the next, up to 10~seconds, so a broker that
-returns is noticed within 10~seconds. Once reconnected,
+returns is noticed within 10~seconds. Meanwhile no readings arrive, and
+after 5~minutes without one it opens the damper fully. Once reconnected,
 it subscribes again and
 returns to the state it left, keeping any room model it holds.
 
@@ -1491,7 +1492,7 @@ open & Met \\
 \req{FR-3} & The third reading after the command was 963.1~ppm, lower than the
 first at 973.8~ppm & Met \\
 \midrule
-\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 69 unit tests and subtests
+\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 70 unit tests and subtests
 pass & Met \\
 \midrule
 \req{FR-7} & CO₂, head count and damper level shown over the last
@@ -1509,8 +1510,8 @@ open 10.8~s after the kill & Met \\
 \midrule
 \req{NFR-3} & With the CO₂ sensor frozen at 420~ppm, the room's real
 CO₂ was at or above 1000~ppm for 7.5 hours of the day, peaking at
-1180~ppm; with the Message broker stopped, for 10.5 hours, peaking at
-2329~ppm & Not met \\
+1180~ppm; with the Message broker stopped, it stayed under 1000~ppm,
+peaking at 878~ppm & Not met \\
 \midrule
 \req{NFR-4} & All 221 commands of the comparison week came under 2~s
 of room time after the reading before them & Met \\
@@ -1614,11 +1615,12 @@ damper closed.
 Wednesday at the same speed, with the Message broker stopped at 23:08
 the evening before and kept stopped all day
 (\texttt{test/results/\allowbreak broker\_2026-12-02/}). No reading
-reached the Decision service, so it made no decisions, and the damper
-stayed closed, the level it had set for the empty room. The first person
-came in at 06:45, and the room's real CO₂ reached 1000~ppm 96 minutes
-later, at 08:21. It stayed at or above 1000~ppm until 18:51, 10.5 hours
-in all, peaking at 2329~ppm at 14:17.
+reached the Decision service, so 5~minutes after the stop it opened the
+damper fully (Section~\ref{sec:decision-logic}), and the damper stayed
+open all day. The first person came in at 06:45, and the room's real
+CO₂ peaked at 878~ppm at 13:45. In a run on the same day before the full
+opening was added, the damper stayed closed all day, and CO₂ was at or
+above 1000~ppm for 10.5 hours, peaking at 2329~ppm.
 
 \textbf{Delay.} Over the comparison week, each of the 221 commands
 came under 2~s of room time after the CO₂ reading before it; times are
@@ -1754,9 +1756,11 @@ internet connection.
 The Decision service's choice of level rests on two assumptions: the head count is right, and the room
 model predicts the room well. When either fails, the one safeguard left
 is the full opening at the target, and that safeguard depends on CO₂
-readings that are right and that keep arriving. A frozen CO₂ sensor, a
-stopped Message broker and a restarted BuildSim
-(Table~\ref{tab:risks}) each take that safeguard away as well.
+readings that are right and that keep arriving. When readings stop, as
+with a stopped Message broker, the Decision service opens the damper
+fully instead (Section~\ref{sec:decision-logic}). A frozen CO₂ sensor
+and a restarted BuildSim (Table~\ref{tab:risks}) still take both
+safeguards away.
 The simulated room is also easier to predict than a real one, which
 favors the room model in the comparison (Section~\ref{sec:evaluation}).
 {\small
@@ -1787,11 +1791,11 @@ Section~\ref{sec:evaluation}) & None yet; the Decision service could
 treat a reading that stays the same while people are in the room as a
 fault, and open the damper fully \\
 \midrule
-The Message broker stopped & No decisions, and the damper keeps its last
-level. In the stopped-broker test, CO₂ was at or
-above 1000~ppm for 10.5 hours of the day (\req{NFR-3},
-Section~\ref{sec:evaluation}) & None yet; the Damper actuator could open
-fully when no command has arrived for a set time \\
+The Message broker stopped & No readings reach the Decision service, so
+it can't choose a level & After 5~minutes without a reading, the
+Decision service opens the damper fully, until the broker returns. In
+the stopped-broker test, CO₂ peaked at 878~ppm (\req{NFR-3},
+Section~\ref{sec:evaluation}) \\
 \midrule
 BuildSim restarted while the system runs & BuildSim forgets every
 registered device. The sensors and the Damper actuator keep running, but

@@ -13,7 +13,7 @@ table.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 16 | Fixes for the two faults that failed NFR-3 (`test/fault/frozen.sh`, `test/fault/broker.sh`), then rerun both and update §11 and §13: a fail-safe such as the Damper actuator opening fully when no command arrives for a set time (the Decision service sends a command only when the level changes, so a steady level must not trigger it), and a way to catch a frozen CO2 sensor; if there is no time, §13 names them as next steps | whether to add each fix, and how | 1–2 |
+| 16 | A fix for the fault that still fails NFR-3, a frozen CO2 sensor (`test/fault/frozen.sh`), such as a check that the reading's value hasn't changed for a set time while people are in the room; then rerun it and update §7.1, §11 and §13; if there is no time, §13 names it as a next step | whether to add the fix, and how | 1 |
 
 ## Before submission: one-command reruns
 

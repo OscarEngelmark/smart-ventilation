@@ -4,6 +4,7 @@ package mqttclient
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -33,14 +34,21 @@ func Connect(brokerURL, clientID string, onConnect mqtt.OnConnectHandler) (mqtt.
 }
 
 // PublishJSON encodes msg as JSON and publishes it on topic at QoS 1, waiting
-// until the broker has taken it. A retained message is kept by the broker and
-// handed to any later subscriber.
-func PublishJSON(client mqtt.Client, topic string, retained bool, msg any) error {
+// at most wait (real time) until the broker has taken it, or for as long as it
+// takes when wait is 0. A retained message is kept by the broker and handed to
+// any later subscriber.
+func PublishJSON(client mqtt.Client, topic string, retained bool, msg any, wait time.Duration) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
 	token := client.Publish(topic, 1, retained, payload)
-	token.Wait() // block until the broker has taken the message
+	if wait == 0 {
+		token.Wait() // block until the broker has taken the message
+		return token.Error()
+	}
+	if !token.WaitTimeout(wait) { // false when wait passed first
+		return fmt.Errorf("broker did not take the message within %v", wait)
+	}
 	return token.Error()
 }

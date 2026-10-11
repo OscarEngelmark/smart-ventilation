@@ -115,7 +115,7 @@ func (l *learner) publish(ctx context.Context, now time.Time) error {
 		B1:     fit.B1,
 	}
 	// Retained: the broker keeps this message and hands it to any later subscriber.
-	if err := mqttclient.PublishJSON(l.broker, l.topic, true, msg); err != nil {
+	if err := mqttclient.PublishJSON(l.broker, l.topic, true, msg, 0); err != nil { // 0: no time limit
 		return err
 	}
 	log.Printf("%s: model for %s from %d readings: a=%.4g b0=%.4g b1=%.4g",

@@ -94,7 +94,7 @@ func (p *publisher) publish(ctx context.Context) error {
 		Count:  count,
 		Ts:     p.clock.Now().UTC(),
 	}
-	if err := mqttclient.PublishJSON(p.broker, p.topic, false, reading); err != nil {
+	if err := mqttclient.PublishJSON(p.broker, p.topic, false, reading, 0); err != nil { // 0: no time limit
 		return err
 	}
 	log.Printf("%s: %d people", p.roomID, count)

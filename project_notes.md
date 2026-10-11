@@ -1418,6 +1418,32 @@ _(nothing yet)_
   Decided 2026-10-08.
   - Useful for: §7.2, §13.
 
+- **Decided: when no CO2 reading has reached the decision service for 5
+  room minutes, it commands the damper fully open.** Without readings it
+  has nothing to decide on, so the damper kept its last level, which the
+  stopped-broker test showed can leave CO2 over 1000 ppm all day (see
+  *Decided: the stopped-broker test…*, §10). The command reaches the
+  actuator over REST, which doesn't pass through the broker, and the next
+  reading after the outage brings back the usual choice. The wait is
+  `READING_TIMEOUT` in `docker-compose.yml`, read by `decide` in
+  `cmd/decision/main.go`; 5 minutes is 30 missed readings, and short
+  against the 96 minutes the test took to reach 1000 ppm
+  from an empty room. It also covers a stopped CO2 sensor, but not a frozen
+  one, which keeps sending readings. Rejected: the actuator opening fully
+  when no command has arrived for a set time, which would also cover a
+  stopped decision service, but the decision service sends a command only
+  when the level changes, so it would have to resend the level on every
+  reading, storing a command each time, and the actuator would need the
+  room clock. Trade-off: while the broker is down the full opening's copy
+  can't be published, so the stored command history misses it. The
+  decision service waits at most 5 s for the broker to take a copy
+  (`publishCopy`), since the stopped-broker test showed that waiting
+  without limit stalls its decisions until the broker returns; the
+  sensors and the room-model service still wait without limit
+  (`PublishJSON` in `internal/mqttclient`). Decided and implemented
+  2026-10-11.
+  - Useful for: §4.4, §7.1, §11, §13.
+
 ## 8. Behaviour
 
 - **An arrival traced through the full loop: the damper opened at the
@@ -1568,14 +1594,15 @@ _(nothing yet)_
     window (`e2e_2026-10-09_*.json`).
   - Useful for: §10, §11.
 
-- **All 69 unit tests and subtests passed on 2026-10-11**, among them
+- **All 70 unit tests and subtests passed on 2026-10-11**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
   (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-11.txt`, the
   output of `go test -v -count=1 ./...`. It replaces passes on 2026-10-07,
   2026-10-08 and 2026-10-09, rerun on the code of 2026-10-11, which adds
-  the decision service's schema checks (`cmd/decision`).
+  the decision service's schema checks and its full opening when no
+  reading arrives (`cmd/decision`).
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
@@ -1686,15 +1713,20 @@ _(nothing yet)_
   NFR-3 reworded around an outage length. The slow reconnect after a long
   outage is removed instead (see *Decided: services wait at most 10 s
   between attempts to reconnect to the broker*, §8). Decided and implemented 2026-10-11.
-  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: failed. The
+  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: passed. The
     broker stopped at 23:08 the evening before, with the damper closed for
-    the empty room; no decision was made and no reading stored after
-    that, so the damper stayed closed all day. The first person came in at
-    06:45, and the room's real CO2 reached 1000 ppm 96 minutes later, at
-    08:21, stayed at or above it until 18:51 (10.5 hours) and peaked at
-    2329 ppm at 14:17. Evidence in `test/results/broker_2026-12-02/`: the
-    test's output (`test.txt`), the data stored in the session
-    (`stored_*`) and the real CO2 per step (`real_co2.json`).
+    the empty room. No reading was stored after that, and the decision
+    service made one decision, the full opening 5 minutes later (see
+    *Decided: when no CO2 reading has reached the decision service for 5
+    room minutes…*, §7), so the damper stayed open all day. The first
+    person came in at 06:45, and the room's real CO2 peaked at 878 ppm at
+    13:45. Evidence in `test/results/broker_2026-12-02/`: the test's
+    output (`test.txt`), the data stored in the session (`stored_*`) and
+    the real CO2 per step (`real_co2.json`).
+    - It replaces a failed run on the same day before the full opening
+      existed: the damper stayed closed all day, and the room's real CO2
+      reached 1000 ppm at 08:21, 96 minutes after the first arrival,
+      stayed at or above it for 10.5 hours and peaked at 2329 ppm.
   - Useful for: §10, §11, §13.
 
 - **Decided: the stress test raises the rate of CO2 readings into the

@@ -93,7 +93,7 @@ func (p *publisher) publish(ctx context.Context) error {
 		Ts:     p.clock.Now().UTC(),
 	}
 	// Not retained, so a subscriber that connects later waits for the next reading.
-	if err := mqttclient.PublishJSON(p.broker, p.topic, false, reading); err != nil {
+	if err := mqttclient.PublishJSON(p.broker, p.topic, false, reading, 0); err != nil { // 0: no time limit
 		return err
 	}
 	log.Printf("%s: %.0f ppm", p.roomID, ppm)

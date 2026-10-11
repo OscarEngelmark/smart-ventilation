@@ -32,6 +32,8 @@
   \draw[->] ([xshift=-4mm]plan.south) -- node[lbl, left] {connection lost} ([xshift=-4mm]plan.south |- wait.north);
   \draw[<-] ([xshift=4mm]plan.south) -- node[lbl, right] {reconnected,\\room model held} ([xshift=4mm]plan.south |- wait.north);
 
+  \draw[->] ([yshift=2mm]wait.west) to[out=180, in=180, looseness=4] node[lbl, left] {5 min without a\\CO₂ reading:\\open fully} ([yshift=-2mm]wait.west);
+
   \draw[->] (stop |- 0,-4.1) -- node[lbl, left] {Docker stop: exit 0} (stop);
   \draw[->] (stop) -- (end);
 \end{tikzpicture}

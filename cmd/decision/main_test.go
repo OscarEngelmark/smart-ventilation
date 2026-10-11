@@ -1,6 +1,12 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+
+	"github.com/OscarEngelmark/smart-ventilation/internal/message"
+	"github.com/OscarEngelmark/smart-ventilation/internal/planner"
+)
 
 func TestCO2ReadingWithoutPPMIsDropped(t *testing.T) {
 	l := &latest{sch: loadInputSchemas()}
@@ -21,5 +27,13 @@ func TestValidCO2ReadingIsKept(t *testing.T) {
 	}
 	if l.snapshot().co2 == nil {
 		t.Error("a valid reading was not kept as the latest")
+	}
+}
+
+func TestNoReadingOpensDamperFully(t *testing.T) {
+	readings := make(chan message.CO2Reading) // no reading ever arrives
+	level, _ := nextLevel(readings, 10*time.Millisecond, &latest{}, planner.Settings{}, 0.2)
+	if level != 1 {
+		t.Errorf("level = %.2f with no reading; want 1, fully open", level)
 	}
 }

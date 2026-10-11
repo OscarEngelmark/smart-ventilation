@@ -116,6 +116,7 @@ services:
       PLAN_LOWER_MARGIN_PPM: 20
       PLAN_HORIZON: 60m
       FALLBACK_CLOSE_PPM: 800
+      READING_TIMEOUT: 5m
       # "true" only for the CO2-only comparison week: IGNORE_ROOM_MODEL=true ./start.sh ...
       IGNORE_ROOM_MODEL: ${IGNORE_ROOM_MODEL:-false}
     depends_on:
