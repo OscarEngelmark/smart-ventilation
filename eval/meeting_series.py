@@ -48,7 +48,9 @@ def _series(folder: Path, method: str, day: date, minutes: list[datetime]) -> li
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("folder", type=Path, help="the run's folder of saved days")
     parser.add_argument("day", type=date.fromisoformat, help="room date, YYYY-MM-DD")
     parser.add_argument("out", type=Path, help="table file to write")

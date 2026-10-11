@@ -46,7 +46,9 @@ def _summary(label: str, delays: list[float]) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("folder", type=Path, help="the run's folder of saved days")
     parser.add_argument("first", type=date.fromisoformat, help="first day, YYYY-MM-DD")
     parser.add_argument("--days", type=int, default=5)

@@ -66,7 +66,9 @@ def mean_level(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("day", type=date.fromisoformat, help="room date, YYYY-MM-DD")
     parser.add_argument("--room", default="level0/A125")
     args = parser.parse_args()
