@@ -6,16 +6,6 @@ themselves go in `project_notes.md`. Final submission: 2026-10-12, 23:59.
 Phase 1 reaches every pass requirement and a complete report. Phase 2 adds
 the evaluation that lifts the grade, and starts only once phase 1 is done.
 
-## Phase 1: pass (target 2026-10-10)
-
-Row 15 is the report, one subsection per step, in this order; §1 comes
-last because it summarizes the rest. Each step settles its own small
-decisions.
-
-| # | Part | Open decisions | Steps |
-|---|---|---|---|
-| 15o | §1 summary, including the changes since the proposal | | 1 |
-
 ## Phase 2: higher grade (2026-10-11, and any time left)
 
 Each result also updates report §10 and §11, and its row in §13's risk

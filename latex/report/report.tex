@@ -139,11 +139,22 @@
 
 \section{Summary}\label{sec:summary}
 
-\guidance{One short paragraph: what the system does and the single guiding
-principle that threads through the design. Then the summary table, and a brief note
-of what changed since the Week 2 proposal and why.}
+% Required points (report guide, section 3.1; template, section 1):
+% - one paragraph: what the system does
+% - overview table: title, team, use case, repository, version
+% - changes since the proposal, and the evidence that forced each one
 
-\fillin{Write the one-paragraph summary here.}
+The system keeps the CO₂ in one office room, A125, under 1000~ppm while
+running the room's ventilation as low as it can. The room and its devices
+live in BuildSim~\cite{buildsim}, which holds the building's shared
+state. The CO₂ sensor and the Occupancy sensor read the room's CO₂ and
+head count from BuildSim and publish them through the Message broker. On
+every CO₂ reading, the Decision service picks a damper level, and the
+Damper actuator writes it to BuildSim, where the Physical model's next
+CO₂ step responds to it. The Storage service stores the readings, head
+counts and commands in the History store. From that history the
+Room-model service learns how this room's CO₂ responds to people and to
+the damper, and the Dashboard draws it.
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.35}}
@@ -153,17 +164,60 @@ of what changed since the Week 2 proposal and why.}
 \textbf{Field} & \textbf{Value} \\
 \midrule
 \endhead
-\textbf{Project title} & \\
-\textbf{Team members} & \\
-\textbf{Use case} & \\
-\textbf{Repository} & \\
-\textbf{Version / date} & \\
+\textbf{Project title} & Indoor Air Quality (CO\textsubscript{2}) Management \\
+\textbf{Team members} & Oscar Lundqvist Engelmark (solo) \\
+\textbf{Use case} & CO\textsubscript{2} under 1000~ppm in one office room with
+the ventilation as low as possible \\
+\textbf{Repository} &
+\url{https://github.com/OscarEngelmark/smart-ventilation} \\
+\textbf{Version / date} & 1.0 / 2026-10-12 \\
 \bottomrule
 \end{longtable}
 
-\textbf{Changes since the proposal.}
-\fillin{List the design changes made since the proposal, and the evidence that
-forced each one. If nothing changed, state that and say why.}
+\textbf{Changes since the proposal.} Five parts of the design changed.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{A learned room model replaced the CO₂ forecast.} The proposal
+  forecast CO₂ from recent readings and switched on the ventilation
+  before the forecast crossed the threshold. In the simulation, acting
+  early gains almost nothing: a new damper level takes effect at the
+  Physical model's next step, and near the threshold a fully open damper
+  turns a full room's rise around at once. The CO₂-only switch, which
+  only reacts, opens the damper fully at 950~ppm and peaked at 952~ppm
+  (Table~\ref{tab:comparison}). A forecast from recent CO₂ also sees
+  people only once their CO₂ has raised the readings. The learned part
+  now sets how far the damper opens instead: the Decision service picks
+  the lowest level that its room model predicts will hold the people
+  counted now under the target for the next hour
+  (Section~\ref{sec:decision-logic}). The Occupancy sensor and the
+  Room-model service were added for it.
+\item
+  \textbf{Occupancy has its own process.} The proposal planned a
+  weekday schedule but left open where it runs. The Occupancy simulator
+  writes the people in the room to BuildSim, and the Physical model
+  reads them from there, so a new occupancy source leaves the Physical
+  model untouched (Table~\ref{tab:responsibilities}).
+\item
+  \textbf{A data pipeline and a dashboard were added.} The proposal left
+  storage and any view beyond BuildSim's own open. The room model needs
+  a history to learn from, so the Storage service keeps one and serves
+  it to the Room-model service and the Dashboard
+  (Sections~\ref{sec:pipeline} and~\ref{sec:dashboard}).
+\item
+  \textbf{Each room gets its own Decision service, and one room has been
+  run.} The proposal left open whether one Decision service serves all
+  rooms, and planned to repeat the loop across rooms once one worked.
+  Each room gets its own, so a crash stops the decisions for one room
+  only (Table~\ref{tab:decisions}), but only A125 has been run
+  (Table~\ref{tab:risks}).
+\item
+  \textbf{CO₂ rises with the room's volume.} The proposal used a fixed
+  rise of about 40~ppm per person per hour. Without ventilation, one
+  person raises CO₂ at $G/V$, which depends on the room's air volume:
+  about 282~ppm/h in A125 (Section~\ref{sec:simulation}).
+\end{itemize}
 
 \section{Use case and building context}\label{sec:usecase}
 
@@ -1630,7 +1684,7 @@ planned about it.}\label{tab:risks}\\
 A wrong or stale head count, or a wrong room model & The Decision
 service chooses too low a level, and CO₂ rises until a reading at
 $C_\text{target}$ opens the damper fully; or too high a level, running
-the fan harder than needed & The full opening at the target \\
+the fan harder than needed & The full opening at the target acts as a safeguard for both cases \\
 \midrule
 A CO₂ sensor frozen at a plausible value & The damper still follows the
 head count, but no reading reaches $C_\text{target}$, so the full
