@@ -25,4 +25,5 @@ table.
 ## 2026-10-12
 
 Check the report against the template's own "Checklist before submission",
-build, and submit.
+build, and submit. Decide whether the page header ("D7065E – Architecture
+Document") and the subtitle, which name the course, stay.

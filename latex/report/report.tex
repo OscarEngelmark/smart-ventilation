@@ -47,15 +47,11 @@
 \usepackage{newunicodechar}
 \usepackage{textcomp}
 \usepackage{amssymb}
-\newunicodechar{°}{\textdegree}
 \newunicodechar{₂}{\textsubscript{2}}
-\newunicodechar{→}{\ensuremath{\rightarrow}}
 \newunicodechar{≤}{\ensuremath{\leq}}
 \newunicodechar{≥}{\ensuremath{\geq}}
 \newunicodechar{≈}{\ensuremath{\approx}}
 \newunicodechar{✓}{\ensuremath{\checkmark}}
-\newunicodechar{–}{--}
-\newunicodechar{—}{---}
 \usepackage{etoolbox}
 \AtBeginEnvironment{longtable}{\footnotesize}
 \AtBeginEnvironment{tabular}{\footnotesize}
@@ -73,6 +69,9 @@
 \usetikzlibrary{calc}
 \pgfplotsset{compat=1.16}
 \setlength{\emergencystretch}{2em}
+\usepackage{silence} % before pdfcomment, whose own package loads trigger the two warnings below
+\WarningFilter{hyperref}{Option `pdftex' has already been used}
+\WarningFilter{soulutf8}{This package is obsolete}
 \usepackage{pdfcomment}
 
 % --- requirement IDs ---------------------------------------------------------
