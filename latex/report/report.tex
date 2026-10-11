@@ -144,17 +144,14 @@
 % - overview table: title, team, use case, repository, version
 % - changes since the proposal, and the evidence that forced each one
 
-The system keeps the CO₂ in one office room, A125, under 1000~ppm while
-running the room's ventilation as low as it can. The room and its devices
-live in BuildSim~\cite{buildsim}, which holds the building's shared
-state. The CO₂ sensor and the Occupancy sensor read the room's CO₂ and
-head count from BuildSim and publish them through the Message broker. On
-every CO₂ reading, the Decision service picks a damper level, and the
-Damper actuator writes it to BuildSim, where the Physical model's next
-CO₂ step responds to it. The Storage service stores the readings, head
-counts and commands in the History store. From that history the
-Room-model service learns how this room's CO₂ responds to people and to
-the damper, and the Dashboard draws it.
+The system keeps the CO₂ in one office room under 1000~ppm while running
+the ventilation as low as it can. It senses the room's CO₂ and the number
+of people in it, decides how far to open the ventilation damper, and sets
+the damper. It also stores what it senses and does, and learns from that
+history how this room's CO₂ responds to people and to ventilation, which
+it uses in its decisions. The room is simulated: BuildSim~\cite{buildsim}
+holds the building's shared state, and the project's own programs
+simulate the people and the room's air.
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.35}}
