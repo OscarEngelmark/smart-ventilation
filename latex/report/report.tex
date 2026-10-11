@@ -225,7 +225,7 @@ the ventilation as low as possible \\
 % - why the use case matters; what makes the decision non-trivial
 
 \textbf{The use case.} The system manages the indoor air quality of one
-office room. It keeps the room's CO₂ concentration under 1000 ppm
+office room. It keeps the room's CO₂ concentration under a threshold of 1000 ppm
 (Section~\ref{sec:decision-logic}) while running the ventilation as low as it can. CO₂ rises
 as the people in the room breathe and falls as ventilation replaces room
 air with outdoor air. The system therefore senses one variable, CO₂, and
@@ -237,7 +237,7 @@ LTU A-building as modelled in BuildSim, with a floor area of 29.8 m² and
 room for six people. BuildSim holds the shared state of the building in memory:
 its rooms and their floor areas, the devices registered in each room with
 their current values, and who is in which room. Processes read and write
-that state through its REST API, and a 3D view shows the building in a
+that state through BuildSim's REST API, and a 3D view shows the building in a
 browser. BuildSim is built from the \texttt{buildingsim} folder of its
 public repository~\cite{buildsim}, pinned to one commit, and never
 modified. The project only adds
@@ -259,8 +259,8 @@ room-model service, and the dashboard never do.
   (\texttt{PUT /api/sensors/\{id\}/value}). It is the only process that
   changes the CO₂, and its reading of the damper is what closes the loop.
 \item
-  \textbf{The CO₂ sensor} reads its sensor's value
-  (\texttt{GET /api/sensors/\{id\}}) and publishes it to the MQTT message
+  \textbf{The CO₂ sensor} reads its device's value
+  (\texttt{GET /api/sensors/\{id\}}) and publishes it to an MQTT message
   broker. Like a real sensor, it reports the room's CO₂ but does not
   produce it.
 \item
@@ -282,10 +282,10 @@ and the damper actuator each register their own device when they start
 and damper level on the dashboard (Section~\ref{sec:dashboard}), which reads the stored
 history rather than BuildSim. The \textbf{room's occupants} raise the CO₂
 by being in the room; here they are simulated from a weekday schedule
-(Section~\ref{sec:simulation}). Neither is on the control path: the loop runs without anyone
+(Section~\ref{sec:simulation}). Neither is in control: the system runs without anyone
 acting on it.
 
-\textbf{The scenario the demo shows.} For most of a weekday, three people
+\textbf{A demo scenario.} For most of a weekday, three people
 work in A125, and the damper holds them under the decision service's
 950 ppm target (Section~\ref{sec:decision-logic}) at about 0.4. At 13:00
 a meeting fills the room to its six-person maximum for an hour. Six
@@ -295,7 +295,7 @@ hold under the threshold. The occupancy sensor reports six, and the
 decision service raises the damper to the lowest level its room model
 predicts will hold six people under the target. When the meeting ends,
 the level drops back. Room time, the simulated clock all of the
-project's own programs share, can run faster than the wall clock, so the
+project's own programs share, can run faster than the wall clock, so a
 demo shows the whole
 meeting in a few minutes. Section~\ref{sec:evaluation} reports whether the threshold
 holds.
@@ -305,8 +305,8 @@ ventilation must be able to hold a full room under 1000 ppm, since a room
 can fill without warning, yet for most of the day A125 holds three people
 or none. Running the ventilation at the full-room setting all day keeps
 the air fresh at a cost in noise and energy. A fixed low setting is quiet
-but lets CO₂ pass the threshold when the meeting fills the room. The level
-that meets both depends on how many people are in the room now and on how
+but lets CO₂ pass the threshold when a meeting fills the room. The level
+that meets both goals depends on how many people are in the room now and on how
 this particular room responds to people and to ventilation. That is what
 makes the decision worth automating: the system counts the people and
 learns the room's response from its own stored data (Section~\ref{sec:decision-logic}).
@@ -325,7 +325,7 @@ learns the room's response from its own stored data (Section~\ref{sec:decision-l
 Each requirement in Table~\ref{tab:requirements} has an ID that Sections~\ref{sec:decisions}, \ref{sec:testplan} and \ref{sec:evaluation} refer to,
 an acceptance criterion that a test can check, and the test that checks
 it. Functional requirements (FR) say what the system does,
-non-functional requirements (NFR) how well it does it, and the
+non-functional requirements (NFR) how well it does it, and the one
 regulatory requirement (REG) comes from outside the project. Must marks
 what the system needs to work at all; Should and Could mark what it
 aims for beyond that. A \emph{room day} is one day of room time, which
@@ -394,10 +394,10 @@ the 50 ppm between the 950 ppm target and the threshold lasts about two
 minutes. A restart or a delay longer than that can let CO₂ through the
 threshold before the damper opens.
 
-\textbf{The tension between them.} \req{REG-1} pulls the damper up and \req{NFR-2}
+\textbf{The tension between requirements.} \req{REG-1} pulls the damper up and \req{NFR-2}
 pulls it down. The decision service meets both by choosing, on each
 reading, the lowest level that still holds CO₂ under the target; \req{FR-6} is
-the safety net when it has no room model to choose with.
+a safety net when the decision service has no room model to choose with.
 
 \section{Architecture}\label{sec:architecture}
 

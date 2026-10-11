@@ -23,6 +23,7 @@ table.
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
 | 22 | Put the whole comparison in one script that runs unattended from a snapshot to the comparison table, saving into one run folder, so the final rerun on the submitted code is one command with no decisions on the way; then rerun it and the speed-1 tests on the final code | which settings the final rerun uses | 1 |
+| 23 | Proofread report §2–§13, one section per step, for "this", "that", "it", "a" and "the" pointing to something the reader doesn't know yet | | 12 |
 
 ## 2026-10-12
 
