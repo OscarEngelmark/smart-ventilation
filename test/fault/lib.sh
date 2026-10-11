@@ -1,6 +1,6 @@
 # Shared steps of the day-long fault tests (project_notes.md §10), sourced by
-# frozen.sh and broker.sh, and by test/stress/stress.sh for history_end and
-# restore. Each fault test runs one weekday at speed 250 on a snapshot of the
+# frozen.sh and broker.sh, by reconnect.sh for save_stored and restore, and by
+# test/stress/stress.sh for history_end and restore. Each fault test runs one weekday at speed 250 on a snapshot of the
 # History store, restored at the end, and judges NFR-3 by the room's real CO2,
 # read from the physical model's log, since the fault keeps the stored readings
 # from showing it.
@@ -69,6 +69,14 @@ test_day() {
       echo "$day"
       return
     fi
+  done
+}
+
+# save_stored saves each kind of stored history since the session started in stored_<kind>.json.
+save_stored() {
+  for kind in co2 occupancy commands; do
+    curl -sfG "$STORAGE_URL/$kind" --data-urlencode "room=$ROOM" \
+      --data-urlencode "since=$(setting SIM_ROOM_START)" | jq . > "$out/stored_$kind.json"
   done
 }
 

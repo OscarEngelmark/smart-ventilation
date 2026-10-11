@@ -1,0 +1,86 @@
+ Container smart-ventilation-storage-service-1  Recreate
+ Container smart-ventilation-storage-service-1  Recreated
+ Container smart-ventilation-mosquitto-1  Starting
+ Container smart-ventilation-mosquitto-1  Started
+ Container smart-ventilation-storage-service-1  Starting
+ Container smart-ventilation-storage-service-1  Started
+ Container smart-ventilation-buildsim-1  Recreate
+ Container smart-ventilation-mosquitto-1  Running
+ Container smart-ventilation-storage-service-1  Running
+ Container smart-ventilation-room-model-1  Recreate
+ Container smart-ventilation-dashboard-1  Recreate
+ Container smart-ventilation-buildsim-1  Recreated
+ Container smart-ventilation-occupancy-1  Recreate
+ Container smart-ventilation-occupancy-sensor-1  Recreate
+ Container smart-ventilation-physical-model-1  Recreate
+ Container smart-ventilation-actuator-1  Recreate
+ Container smart-ventilation-co2-sensor-1  Recreate
+ Container smart-ventilation-room-model-1  Recreated
+ Container smart-ventilation-dashboard-1  Recreated
+ Container smart-ventilation-actuator-1  Recreated
+ Container smart-ventilation-decision-1  Recreate
+ Container smart-ventilation-occupancy-sensor-1  Recreated
+ Container smart-ventilation-occupancy-1  Recreated
+ Container smart-ventilation-co2-sensor-1  Recreated
+ Container smart-ventilation-physical-model-1  Recreated
+ Container smart-ventilation-decision-1  Recreated
+ Container smart-ventilation-room-model-1  Starting
+ Container smart-ventilation-buildsim-1  Starting
+ Container smart-ventilation-dashboard-1  Starting
+ Container smart-ventilation-buildsim-1  Started
+ Container smart-ventilation-actuator-1  Starting
+ Container smart-ventilation-physical-model-1  Starting
+ Container smart-ventilation-occupancy-sensor-1  Starting
+ Container smart-ventilation-co2-sensor-1  Starting
+ Container smart-ventilation-occupancy-1  Starting
+ Container smart-ventilation-room-model-1  Started
+ Container smart-ventilation-dashboard-1  Started
+ Container smart-ventilation-actuator-1  Started
+ Container smart-ventilation-decision-1  Starting
+ Container smart-ventilation-physical-model-1  Started
+ Container smart-ventilation-co2-sensor-1  Started
+ Container smart-ventilation-occupancy-1  Started
+ Container smart-ventilation-occupancy-sensor-1  Started
+ Container smart-ventilation-decision-1  Started
+session started at room time 2026-12-01T00:53:28Z, speed 1
+waiting for the first decision
+ Container smart-ventilation-mosquitto-1  Stopping
+ Container smart-ventilation-mosquitto-1  Stopped
+broker stopped at 21:35:30
+ Container smart-ventilation-mosquitto-1  Starting
+ Container smart-ventilation-mosquitto-1  Started
+broker started at 21:42:30
+--- the Decision service's log over the session
+2026/10/11 21:34:49 deciding for level0/A125, commanding http://actuator:8080, keeping CO2 under 950 ppm over the next 1h0m0s
+2026/10/11 21:34:49 connected to broker, subscribing
+2026/10/11 21:34:49 room model from 2026-12-01: a=4.995 b0=0.008893 b1=0.05344
+2026/10/11 21:34:59 level0/A125: damper 0.00 at 420 ppm, unknown people
+2026/10/11 21:35:30 connection to broker lost: EOF
+2026/10/11 21:40:34 command applied but its copy was not published: broker did not take the message within 5s
+2026/10/11 21:40:34 level0/A125: damper 1.00 after no CO2 reading
+2026/10/11 21:42:35 connected to broker, subscribing
+2026/10/11 21:42:35 level0/A125: damper 0.00 at 420 ppm, unknown people
+2026/10/11 21:42:35 head count 0
+ Container smart-ventilation-room-model-1  Stopping
+ Container smart-ventilation-occupancy-1  Stopping
+ Container smart-ventilation-occupancy-sensor-1  Stopping
+ Container smart-ventilation-co2-sensor-1  Stopping
+ Container smart-ventilation-decision-1  Stopping
+ Container smart-ventilation-dashboard-1  Stopping
+ Container smart-ventilation-physical-model-1  Stopping
+ Container smart-ventilation-co2-sensor-1  Stopped
+ Container smart-ventilation-physical-model-1  Stopped
+ Container smart-ventilation-occupancy-sensor-1  Stopped
+ Container smart-ventilation-room-model-1  Stopped
+ Container smart-ventilation-decision-1  Stopped
+ Container smart-ventilation-actuator-1  Stopping
+ Container smart-ventilation-dashboard-1  Stopped
+ Container smart-ventilation-storage-service-1  Stopping
+ Container smart-ventilation-occupancy-1  Stopped
+ Container smart-ventilation-actuator-1  Stopped
+ Container smart-ventilation-buildsim-1  Stopping
+ Container smart-ventilation-storage-service-1  Stopped
+ Container smart-ventilation-mosquitto-1  Stopping
+ Container smart-ventilation-buildsim-1  Stopped
+ Container smart-ventilation-mosquitto-1  Stopped
+restored the History store from eval/snapshots/reconnect_before.tar

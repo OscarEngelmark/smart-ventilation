@@ -1440,7 +1440,8 @@ actual CO₂, taken from the Physical model's log
 \midrule
 Stopped-broker test & Runs one weekday with the Message broker stopped
 from before anyone arrives, and judges it by the room's actual CO₂,
-taken from the Physical model's log
+taken from the Physical model's log; a second run brings the broker
+back after 7~minutes
 & \req{NFR-3} & Test output; stored data; real CO₂ & Run \\
 \midrule
 Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
@@ -1599,7 +1600,8 @@ Friday 2026-11-27, per room minute, for both methods
 \end{figure}
 
 \textbf{A frozen CO₂ sensor.} The frozen-sensor test ran Wednesday
-2026-12-02 at the same speed as the comparison week, with the CO₂ sensor
+2026-12-02 at the same speed as the comparison week (250 $\times$ the wall
+clock), with the CO₂ sensor
 repeating its first reading, 420~ppm, all day
 (\texttt{test/results/\allowbreak frozen\_2026-12-02/}). The Decision
 service went on choosing damper levels with the room model from the head count,
@@ -1612,15 +1614,19 @@ the damper never opened fully. The room's real CO₂ first reached
 damper closed.
 
 \textbf{A stopped Message broker.} The stopped-broker test ran the same
-Wednesday at the same speed, with the Message broker stopped at 23:08
+Wednesday at the same speed (250 $\times$ the wall
+clock), with the Message broker stopped at 23:08
 the evening before and kept stopped all day
 (\texttt{test/results/\allowbreak broker\_2026-12-02/}). No reading
 reached the Decision service, so 5~minutes after the stop it opened the
 damper fully (Section~\ref{sec:decision-logic}), and the damper stayed
 open all day. The first person came in at 06:45, and the room's real
-CO₂ peaked at 878~ppm at 13:45. In a run on the same day before the full
-opening was added, the damper stayed closed all day, and CO₂ was at or
-above 1000~ppm for 10.5 hours, peaking at 2329~ppm.
+CO₂ peaked at 878~ppm at 13:45. A second run, with room time at the pace
+of the wall clock and the room empty, brought the broker back after 7~minutes: the Decision service
+reconnected 5~s later and closed the damper again on the next reading
+(\texttt{test/results/\allowbreak reconnect\_2026-10-11/}). [In a run of
+the stopped-broker test before the full opening was added, the damper stayed closed all day, and CO₂ was at or
+above 1000~ppm for 10.5 hours, peaking at 2329~ppm.]
 
 \textbf{Delay.} Over the comparison week, each of the 221 commands
 came under 2~s of room time after the CO₂ reading before it; times are

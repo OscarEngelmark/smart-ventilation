@@ -1434,13 +1434,14 @@ _(nothing yet)_
   stopped decision service, but the decision service sends a command only
   when the level changes, so it would have to resend the level on every
   reading, storing a command each time, and the actuator would need the
-  room clock. Trade-off: while the broker is down the full opening's copy
-  can't be published, so the stored command history misses it. The
-  decision service waits at most 5 s for the broker to take a copy
-  (`publishCopy`), since the stopped-broker test showed that waiting
-  without limit stalls its decisions until the broker returns; the
-  sensors and the room-model service still wait without limit
-  (`PublishJSON` in `internal/mqttclient`). Decided and implemented
+  room clock. Trade-off: the ventilation runs fully open until readings
+  return. The decision service waits at most 5 s for the broker to take a
+  command's copy (`publishCopy`), since the stopped-broker test showed
+  that waiting without limit stalls its decisions until the broker
+  returns; the sensors and the room-model service still wait without
+  limit (`PublishJSON` in `internal/mqttclient`). The MQTT client keeps a
+  copy it couldn't publish and sends it on reconnecting, so the history
+  store gets it once the broker returns. Decided and implemented
   2026-10-11.
   - Useful for: §4.4, §7.1, §11, §13.
 
@@ -1723,6 +1724,15 @@ _(nothing yet)_
     13:45. Evidence in `test/results/broker_2026-12-02/`: the test's
     output (`test.txt`), the data stored in the session (`stored_*`) and
     the real CO2 per step (`real_co2.json`).
+    - Recovery, checked 2026-10-11 with `test/fault/reconnect.sh`: on a
+      session at speed 1 with the room empty, the broker stopped for 7
+      minutes. The decision service opened the damper fully 5 minutes
+      after the last reading, reconnected 5 s after the broker returned,
+      and in the same second closed the damper again on the next reading.
+      The full opening's copy was stored after the reconnect. Evidence in
+      `test/results/reconnect_2026-10-11/`: the check's output with the
+      decision service's log (`test.txt`) and the data stored in the
+      session (`stored_*`).
     - It replaces a failed run on the same day before the full opening
       existed: the damper stayed closed all day, and the room's real CO2
       reached 1000 ppm at 08:21, 96 minutes after the first arrival,
@@ -2154,3 +2164,12 @@ was caught. Kept for the report's reflection and the oral exam.
   Correct: about 195 a second (see *Measured: the storage service stores
   about 195 CO2 readings a second…*, §11). Noted 2026-10-11.
   - Useful for: §11.
+
+- **The notes said that while the broker is down, the full opening's copy
+  is lost, so the history store never gets it.** The MQTT client keeps a
+  copy it couldn't publish and sends it on reconnecting. Caught by the
+  recovery check, whose stored commands include the full opening (see
+  *Decided: the stopped-broker test…*, §10). Only a copy from an outage
+  that never ends, as in the stopped-broker test, is never stored. Noted
+  2026-10-11.
+  - Useful for: §7.1.

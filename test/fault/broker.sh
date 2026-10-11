@@ -28,14 +28,6 @@ wait_for_first_decision() {
   done
 }
 
-# save_stored saves each kind of stored history since the session started in stored_<kind>.json.
-save_stored() {
-  for kind in co2 occupancy commands; do
-    curl -sfG "$STORAGE_URL/$kind" --data-urlencode "room=$ROOM" \
-      --data-urlencode "since=$(setting SIM_ROOM_START)" | jq . > "$out/stored_$kind.json"
-  done
-}
-
 begin_test broker
 echo "test day $day, Message broker stopped, speed $SPEED"
 ./start.sh "$SPEED" "$(session_start "$day")"
