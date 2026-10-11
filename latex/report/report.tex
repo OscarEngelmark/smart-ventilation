@@ -144,13 +144,14 @@
 % - overview table: title, team, use case, repository, version
 % - changes since the proposal, and the evidence that forced each one
 
-The system keeps the CO₂ in one office room under 1000~ppm while running
+The system designed keeps the CO₂ in one office room under 1000~ppm while running
 the ventilation as low as it can. It senses the room's CO₂ and the number
-of people in it, decides how far to open the ventilation damper, and sets
+of people in it, decides how far to open a ventilation damper, and sets
 the damper. It also stores what it senses and does, and learns from that
-history how this room's CO₂ responds to people and to ventilation, which
-it uses in its decisions. The room is simulated: BuildSim~\cite{buildsim}
-holds the building's shared state, and the project's own programs
+history how the room's CO₂ responds to people and to ventilation, which
+it uses in its decisions. The room is simulated. It is one room of the LTU A-building 
+held in BuildSim~\cite{buildsim}, which keeps the building's
+state for every program that uses it, and the project's own programs
 simulate the people and the room's air.
 
 \begin{longtable}[]{@{}
@@ -176,44 +177,41 @@ the ventilation as low as possible \\
 \begin{itemize}
 \tightlist
 \item
-  \textbf{A learned room model replaced the CO₂ forecast.} The proposal
-  forecast CO₂ from recent readings and switched on the ventilation
-  before the forecast crossed the threshold. In the simulation, acting
-  early gains almost nothing: a new damper level takes effect at the
-  Physical model's next step, and near the threshold a fully open damper
-  turns a full room's rise around at once. The CO₂-only switch, which
-  only reacts, opens the damper fully at 950~ppm and peaked at 952~ppm
-  (Table~\ref{tab:comparison}). A forecast from recent CO₂ also sees
-  people only once their CO₂ has raised the readings. The learned part
-  now sets how far the damper opens instead: the Decision service picks
-  the lowest level that its room model predicts will hold the people
-  counted now under the target for the next hour
-  (Section~\ref{sec:decision-logic}). The Occupancy sensor and the
-  Room-model service were added for it.
+  \textbf{A learned room model replaced the planned forecast.} The
+  proposal planned to forecast CO₂ and open the ventilation before the
+  forecast crossed a threshold. Forecasts were built during the
+  project but removed, because planning ahead with them did not lower
+  the ventilation over time, and each one added a service to build and test. Now
+  the Decision service picks the lowest damper level that a room model,
+  learned from the stored history, predicts will keep CO₂ under a
+  target for the next hour with the number of people currently in the
+  room (Section~\ref{sec:decision-logic}).
 \item
-  \textbf{Occupancy has its own process.} The proposal planned a
-  weekday schedule but left open where it runs. The Occupancy simulator
-  writes the people in the room to BuildSim, and the Physical model
-  reads them from there, so a new occupancy source leaves the Physical
+  \textbf{Occupancy has its own process.} The proposal planned to
+  generate the people in the room from a weekday schedule, but left open
+  where that runs. Now an Occupancy simulator writes the people to
+  BuildSim, and the Physical model, which simulates the room's air, reads
+  them from there, such that a new source of occupancy leaves the Physical
   model untouched (Table~\ref{tab:responsibilities}).
 \item
   \textbf{A data pipeline and a dashboard were added.} The proposal left
-  storage and any view beyond BuildSim's own open. The room model needs
-  a history to learn from, so the Storage service keeps one and serves
-  it to the Room-model service and the Dashboard
+  storage and any view beyond BuildSim's own open. Now a Storage service
+  keeps the CO₂ and head counts the system senses, and the damper levels
+  it sets, in a History store. It serves them to a Room-model service,
+  which learns the room model from them, and to a Dashboard
   (Sections~\ref{sec:pipeline} and~\ref{sec:dashboard}).
 \item
   \textbf{Each room gets its own Decision service, and one room has been
   run.} The proposal left open whether one Decision service serves all
-  rooms, and planned to repeat the loop across rooms once one worked.
-  Each room gets its own, so a crash stops the decisions for one room
-  only (Table~\ref{tab:decisions}), but only A125 has been run
+  rooms, and planned to add more rooms once one worked. Each room gets
+  its own, so a crash stops the decisions for one room only
+  (Table~\ref{tab:decisions}), but only one room (A125) has been run
   (Table~\ref{tab:risks}).
 \item
-  \textbf{CO₂ rises with the room's volume.} The proposal used a fixed
-  rise of about 40~ppm per person per hour. Without ventilation, one
-  person raises CO₂ at $G/V$, which depends on the room's air volume:
-  about 282~ppm/h in A125 (Section~\ref{sec:simulation}).
+  \textbf{One person's CO₂ rise depends on the room's volume.} The
+  proposal used a fixed rise of about 40~ppm per person per hour.
+  Without ventilation, the rise one person causes is smaller in a larger
+  room: about 282~ppm per hour in A125 (Section~\ref{sec:simulation}).
 \end{itemize}
 
 \section{Use case and building context}\label{sec:usecase}
