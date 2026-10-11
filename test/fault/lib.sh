@@ -1,8 +1,9 @@
 # Shared steps of the day-long fault tests (project_notes.md §10), sourced by
-# frozen.sh and broker.sh. Each test runs one weekday at speed 250 on a snapshot
-# of the History store, restored at the end, and judges NFR-3 by the room's real
-# CO2, read from the physical model's log, since the fault keeps the stored
-# readings from showing it.
+# frozen.sh and broker.sh, and by test/stress/stress.sh for history_end and
+# restore. Each fault test runs one weekday at speed 250 on a snapshot of the
+# History store, restored at the end, and judges NFR-3 by the room's real CO2,
+# read from the physical model's log, since the fault keeps the stored readings
+# from showing it.
 set -euo pipefail
 export LC_ALL=C # numbers with a decimal point, whatever the machine's locale
 

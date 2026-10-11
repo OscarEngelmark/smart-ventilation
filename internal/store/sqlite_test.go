@@ -373,3 +373,21 @@ func want(t *testing.T, got, expected []float64) {
 		t.Errorf("got %v, want %v", got, expected)
 	}
 }
+
+// BenchmarkSaveCO2Reading times saving one reading to a database file on disk,
+// each in its own write, as the storage-service saves them.
+func BenchmarkSaveCO2Reading(b *testing.B) {
+	s, err := OpenSQLite(filepath.Join(b.TempDir(), "readings.db"))
+	if err != nil {
+		b.Fatalf("open: %v", err)
+	}
+	defer s.Close() // runs when the benchmark returns
+	ctx := context.Background()
+	for i := 0; i < b.N; i++ {
+		ts := noon.Add(time.Duration(i) * 10 * time.Second) // a new time each save, so none is a duplicate
+		r := message.CO2Reading{RoomID: "level0/A125", PPM: 600, Ts: ts}
+		if err := s.SaveCO2Reading(ctx, r); err != nil {
+			b.Fatalf("save: %v", err)
+		}
+	}
+}

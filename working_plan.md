@@ -13,10 +13,10 @@ table.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 16 | Fixes for the two faults that failed NFR-3 (`test/fault/frozen.sh`, `test/fault/broker.sh`), then rerun both and update §11 and §13: a fail-safe such as the Damper actuator opening fully when no command arrives for a set time (the Decision service sends a command only when the level changes, so a steady level must not trigger it), and a way to catch a frozen CO2 sensor; if there is no time, §13 names them as next steps | whether to add each fix, and how | 1–2 |
-| 17 | Stress test to a breaking point; sample each container's memory and CPU repeatedly over the run, since §9's figures rest on one `docker stats` sample | what to scale up, and what counts as broken | 1–2 |
+| 17 | Report the stress test (`test/results/stress_2026-10-11/`, notes §10 and §11): §9's resource figures, the stress row of §10, §11 with a plot of readings stored against sent, and §13's "Only one room has been run" row; say why the broker and the Storage service are where the system breaks (BuildSim and the Physical model stand in for the building, and each room's own containers don't load each other), as long as the machine has memory for every room's containers | none | 1 |
 | 20 | The Decision service checks each message it receives against its schema, as the Storage service and the Damper actuator do; today a CO2 reading missing its `ppm` field reads as 0 ppm (Revisit in the notes' JSON Schema entry, §5); then update the report where it says the Decision service does not check: §7.1 and §7.2 | what it does with a refused message | 1 |
 | 18 | Pipeline delay, measured from stored data and set against the sampling intervals (10 s for CO2, 1 min for the head count), which likely dominate how fast the damper reacts to a change; the history store keeps whole seconds (`internal/store/sqlite.go`), too coarse for sub-second delays | whether to store each message's receive time | 1 |
+| 16 | Fixes for the two faults that failed NFR-3 (`test/fault/frozen.sh`, `test/fault/broker.sh`), then rerun both and update §11 and §13: a fail-safe such as the Damper actuator opening fully when no command arrives for a set time (the Decision service sends a command only when the level changes, so a steady level must not trigger it), and a way to catch a frozen CO2 sensor; if there is no time, §13 names them as next steps | whether to add each fix, and how | 1–2 |
 
 ## Before submission: one-command reruns
 

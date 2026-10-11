@@ -1483,8 +1483,8 @@ _(nothing yet)_
   (`test/results/resources_2026-10-09.txt`), so the figures are rounded:
   a Go program's memory moves by a few MiB with its garbage collection,
   and earlier single samples of the Go services gave 12–15 MB. Measured 2026-10-09.
-  - **Revisit:** sample memory and CPU repeatedly over the stress test
-    run (working plan row 17).
+  - Sampled every 3 s over the stress test in `test/results/stress_*/stats.txt`
+    (see the stress test's result, §11).
   - Useful for: §9, §11.
 
 ## 10. Test plan
@@ -1692,6 +1692,28 @@ _(nothing yet)_
     (`stored_*`) and the real CO2 per step (`real_co2.json`).
   - Useful for: §10, §11, §13.
 
+- **Decided: the stress test raises the rate of CO2 readings into the
+  broker and the storage service until readings are lost.**
+  `test/stress/stress.sh` runs only those two containers, on a snapshot of
+  the history store, and `test/stress/main.go` publishes readings for 1000
+  made-up rooms, spread evenly over each second, in rising steps of 30 s;
+  60 s after each step it counts the readings stored. Broken means a step
+  loses readings (FR-1, §3). One room reads every 10 s, so a rate of X
+  readings per second is the load of 10·X rooms. Only these two containers
+  are loaded because they are the only shared ones in the system's own
+  path: BuildSim, the physical model and the occupancy simulator stand in
+  for the building, which a real building's sensors would measure
+  directly, and each room's own containers handle only that room, so more
+  rooms don't load one another; this holds as long as the machine has
+  memory and CPU for every room's containers. Rejected: running real
+  copies of each room's containers, which loads the same two containers
+  but makes the machine's limits part of the result; including BuildSim's
+  calls, whose limits would be the simulation's, not the system's; and
+  publishing every room's readings at the same moment, which a real
+  building only sees briefly after everything restarts at once (see the
+  result, §11). Decided and implemented 2026-10-11.
+  - Useful for: §10, §11, §13.
+
 - **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a
   fan losing capacity — and measure how long the room model stays wrong.**
   The decision side never sees `Q_max`, `V` or `G`; the room model learns
@@ -1747,6 +1769,37 @@ _(nothing yet)_
     minute in each session, so every count of one week must lie between
     the other week's counts just before and after it.
   - Useful for: §10, §11.
+
+- **Measured: the storage service stores about 195 CO2 readings a second,
+  the load of about 1950 rooms; above that the broker drops readings.**
+  Result of the stress test (see *Decided: the stress test raises the rate
+  of CO2 readings…*, §10), 2026-10-11: every reading was stored at 10, 50,
+  100, 125, 150 and 200 a second; at 300, 500 and 1000 a second 2109, 8656
+  and 23344 of each step's readings were lost, and the broker logged that
+  it was dropping messages for the storage service. One save to the
+  history store took 5.1 ms with the file on disk and 0.017 ms in memory
+  (`BenchmarkSaveCO2Reading`, `internal/store/sqlite_test.go`), so the
+  limit, 1 / 5.1 ms ≈ 195 a second, is the wait for the disk to confirm
+  each reading's own write. In each overloaded step about 6300–6900
+  readings were stored: about 195 a second for 30 s plus the 1000 the
+  broker held. The storage service peaked at 4.5 % of one CPU and 21 MiB,
+  the broker at 1.4 % and 5 MiB, so neither was short of CPU or memory.
+  Readings are lost rather than late because Mosquitto keeps at most 1000
+  messages waiting for a subscriber (`max_queued_messages`, its default)
+  and drops the rest. Evidence in `test/results/stress_2026-10-11/`: the
+  test's output (`test.txt`), CPU and memory every 3 s (`stats.txt`) and
+  the broker's log line (`broker_dropped.txt`).
+  - **Known caveat —** reasoned, not measured: the test spreads readings
+    evenly, as a real building's sensors are. Each sensor here counts its
+    10 s from its own start, so after everything restarts at once all
+    rooms publish together, until restarts and clock drift spread them
+    out again; a burst from more than about 1000 rooms then overflows the
+    broker's queue for the storage service and loses readings.
+  - Saving readings in batches, one write per batch, would spread the
+    5.1 ms over many readings; a store built for time series is the
+    other way (see *Decided: CO2 readings, occupancy counts, and commands are
+    persisted in SQLite…*, §7).
+  - Useful for: §9, §11, §13.
 
 - **Decided: the CO2-only week runs on the normal stack, with a setting
   that makes the decision service ignore room models.** Started with
@@ -2028,3 +2081,12 @@ was caught. Kept for the report's reflection and the oral exam.
   three people, as the stored commands of 2026-10-22 show. Caught when the
   report was checked against the code and stored data. Noted 2026-10-08.
   - Useful for: §2, §13.
+
+- **A pilot of the stress test was read as a limit of about 140 readings
+  a second.** The stored count of an overloaded step was divided by the
+  step plus the wait after it, 50 s, though readings were only stored
+  while they arrived, 30 s, plus the 1000 the broker held. Caught when
+  the full test's numbers matched the saving time measured on its own.
+  Correct: about 195 a second (see *Measured: the storage service stores
+  about 195 CO2 readings a second…*, §11). Noted 2026-10-11.
+  - Useful for: §11.
