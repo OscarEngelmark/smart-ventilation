@@ -243,10 +243,10 @@ and the Damper actuator each register their own device when they start
 
 \textbf{Actors.} The \textbf{Operator} watches the room's CO₂, head count,
 and damper level on the Dashboard (Section~\ref{sec:dashboard}), which reads the stored
-history rather than BuildSim. The \textbf{Room occupants} raise the CO₂
-by being in the room; here they are simulated from a weekday schedule
-(Section~\ref{sec:simulation}). Neither actor is in control: the system runs without anyone
-acting on it.
+history rather than BuildSim. The Operator is not in control: the system runs
+without anyone acting on it. The people in the room are not actors:
+the Occupancy simulator generates them from a weekday schedule
+(Section~\ref{sec:simulation}).
 
 \textbf{A demo scenario.} For most of a weekday, three people
 work in A125, and the damper holds the CO₂ under the Decision service's
@@ -381,9 +381,8 @@ Section~\ref{sec:container} opens it up.
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/context.pdf}
-\caption{C4 Context diagram. Smart Ventilation is the system built here;
-BuildSim, the Operator and the Room occupants are outside it. Each arrow
-points from the side that starts the interaction.}
+\caption{C4 Context diagram. Smart Ventilation is the system; the
+Simulated room, BuildSim and the Operator are outside it. Each arrow points from the side that starts the interaction.}
 \label{fig:context}
 \end{figure}
 
@@ -398,11 +397,11 @@ points from the side that starts the interaction.}
   level on the dashboard, served over HTTP, but takes no part in the
   decisions.
 \item
-  The \textbf{Room occupants} raise the room's CO₂, and the system learns
-  about them only from what BuildSim holds; here they are simulated by
-  the Occupancy simulator and the Physical model, which a real building
-  replaces with real people and physics, so both sit
-  outside the boundary (Section~\ref{sec:container}).
+  The \textbf{Simulated room} stands in for the real room's people and
+  air: its Occupancy simulator and Physical model write the people and
+  the CO₂ to BuildSim (Section~\ref{sec:container}). It is built here,
+  but a real building replaces it with real people and physics, so it
+  sits outside the boundary.
 \end{itemize}
 
 \subsection{Container diagram (C4 Level 2)}\label{sec:container}
@@ -413,7 +412,7 @@ points from the side that starts the interaction.}
 % - a 1:1 match with docker-compose.yml and the repository folders
 % - why the system is split this way: justified in Section 4.4
 
-Figure~\ref{fig:container} opens the Smart Ventilation box. Each box is
+Figure~\ref{fig:container} opens the Smart Ventilation and Simulated room boxes. Each box is
 one service in \texttt{docker-compose.yml}, except the History store,
 which is the Storage service's database file. The Physical model writes
 the room's CO₂ to BuildSim. The CO₂ sensor reads it and publishes it to

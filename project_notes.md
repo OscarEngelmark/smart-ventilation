@@ -189,13 +189,18 @@ _(nothing yet)_
     the box would be replaced by the room and its devices. They are still
     drawn as containers, so the container diagram matches
     `docker-compose.yml` one to one. The context diagram follows the same
-    rule: the room's occupants act on BuildSim, not on the system. Rejected:
+    rule: the same box appears there as the Simulated room, linked only to
+    BuildSim, so both levels show the same three parts. It includes the
+    room's people, so they are not drawn as a separate actor. Rejected:
     drawing them inside the system boundary, which suggests they would ship
     with a real deployment; leaving them off, which breaks the match with
     `docker-compose.yml`. Decided and drawn 2026-09-26
     (`diagrams/container.d2`, `diagrams/context.d2`).
     - Replaces *Revisit: where the physical model sits in the C4
       diagrams*.
+    - The context diagram first drew the room's occupants as an actor on
+      BuildSim, which hid the simulated room and left its two containers
+      with no system at Level 1. Changed 2026-10-12.
     - REST arrows point from the caller to the service it calls, so every
       link to BuildSim is one-way: nothing uses BuildSim's WebSocket. MQTT
       arrows point the way messages travel, two-headed where they travel

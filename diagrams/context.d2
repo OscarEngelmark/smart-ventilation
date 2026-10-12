@@ -9,14 +9,13 @@ direction: right
 operator: "Operator\n[Person]\nWatches CO2, the head\ncount, and damper decisions" {
   shape: person
 }
-occupants: "Room occupants\n[Person, simulated]\nRaise CO2 by being in the room" {
-  shape: person
-}
 
 sys: "Smart Ventilation\n[Software System]\nKeeps room CO2 under 1000 ppm\nwith the ventilation\nas low as possible"
 
 bs: "BuildSim\n[Software System, external]\nShared building state: people\nin each room, sensor values,\nactuator state"
 
-occupants -> bs: "are in the room,\nraising its CO2\n(simulated from a\nweekday schedule)"
+room: "Simulated room\n[Software System, stands in\nfor the real room]\nMoves people by a weekday\nschedule; steps the room's CO2"
+
+room -> bs: "sets the people;\nreads the damper and CO2,\nwrites the next CO2 [REST]"
 operator -> sys: "monitors\n[dashboard web page,\nHTTP]"
 sys -> bs: "reads and writes\nroom and device\nstate [REST]"
