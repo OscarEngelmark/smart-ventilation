@@ -1600,15 +1600,18 @@ the stopped-broker test on Wednesday 2026-12-02, before the full opening was add
 above 1000~ppm for 10.5 hours, peaking at 2329~ppm
 (\texttt{test/results/\allowbreak broker\_2026-12-02\_before\_opening/})].
 
-\textbf{Delay.} Over the comparison week, each of the 223 commands
-came under 2~s of room time after the CO₂ reading before it; times are
+\textbf{Delay.} Over the comparison week the Decision service sent 223
+commands. For each, the time from the CO₂ sensor taking the reading to
+the Decision service choosing the level from it was under 2~s of room
+time, by the two messages' timestamps (Table~\ref{tab:fields}). Times are
 stored in whole seconds, so no finer figure is available
 (\texttt{test/results/\allowbreak comparison\_week\_2026-11-23/\allowbreak delay.txt}).
-With room time running 250 times as fast as the wall clock, that is
-under 8~ms of real time. How fast the damper answers a change in the
-room is set instead by how often it is sampled: an arrival reaches the
-Decision service with the next head count, up to a minute later, and
-is acted on at the next CO₂ reading, up to 10~s after that.
+With room time running 250 times as fast as the wall clock, each delay
+was under 8~ms of real time. A change in the room takes longer to reach the
+damper, because the system only sees it at the next sample: after
+someone arrives, the Occupancy sensor reports the new head count up to
+a minute later, and the Decision service acts on it at the next CO₂
+reading, up to 10~s after that.
 
 \textbf{Breaking point.} The stress test loaded only the two containers that
 every room shares and that a real building would also run: the Message
