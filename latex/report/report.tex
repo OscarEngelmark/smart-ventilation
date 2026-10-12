@@ -190,9 +190,10 @@ the ventilation as low as possible \\
 office room. It aims to keep the room's CO₂ concentration under a threshold of 1000 ppm
 (Section~\ref{sec:requirements}) while running the ventilation as low as it can. CO₂ rises
 as the people in the room breathe and falls as ventilation replaces room
-air with outdoor air. The system therefore senses two variables, CO₂ and
-the number of people in the room, and acts through one device: a ventilation damper whose level runs from 0
-(closed) to 1 (fully open).
+air with outdoor air. The system therefore senses two variables, the CO₂
+concentration $C$ and the number of people $N$ in the room, and acts
+through one device: a ventilation damper with level $0 \leq d \leq 1$
+(0 closed, 1 fully open).
 
 \textbf{The building and BuildSim.} The room is A125, on level 0 of the
 LTU A-building as modeled in BuildSim, with a floor area of 29.8 m² and
@@ -244,18 +245,18 @@ and the Damper actuator each register their own device when they start
 and damper level on the Dashboard (Section~\ref{sec:dashboard}), which reads the stored
 history rather than BuildSim. The \textbf{Room occupants} raise the CO₂
 by being in the room; here they are simulated from a weekday schedule
-(Section~\ref{sec:simulation}). Neither is in control: the system runs without anyone
+(Section~\ref{sec:simulation}). Neither actor is in control: the system runs without anyone
 acting on it.
 
-\textbf{A demo scenario.} For most of a weekday, three people
+\textbf{A demo scenario.} For most of a weekday, $N = 3$ people
 work in A125, and the damper holds them under the Decision service's
-950 ppm target (Section~\ref{sec:decision-logic}) at about 0.4. At 13:00
-a meeting fills the room to its six-person maximum for an hour. Six
-people need the damper at about 0.9, most of what the ventilation can
+950 ppm target (Section~\ref{sec:decision-logic}) at $d \approx 0.4$. At 13:00
+a meeting fills the room to its maximum of $N = 6$ for an hour. With
+$N = 6$, the room needs $d \approx 0.9$, most of what the ventilation can
 give, so the meeting is the hardest case the Decision service has to
-hold under the threshold. The Occupancy sensor reports six, and the
+hold under the threshold. The Occupancy sensor reports $N = 6$, and the
 Decision service raises the damper to the lowest level its room model
-predicts will hold six people under the target. When the meeting ends,
+predicts will keep CO₂ under the target with $N = 6$. When the meeting ends,
 the level drops back. Room time, the simulated clock all of the
 project's own programs share, can run faster than the wall clock, so a
 demo shows the whole
@@ -264,8 +265,8 @@ holds.
 
 \textbf{Why it matters.} The system's goals pull against each other. The
 ventilation must be able to hold a full room under 1000 ppm, since a room
-can fill without warning, yet for most of the day A125 holds three people
-or none. Running the ventilation at the full-room setting all day keeps
+can fill without warning, yet for most of the day A125 holds $N = 3$
+people or none. Running the ventilation at the full-room setting all day keeps
 the air fresh at a cost in noise and energy. A fixed low setting is quiet
 but lets CO₂ pass the threshold when a meeting fills the room. The level
 that meets both goals depends on how many people are in the room now and on how
@@ -844,8 +845,8 @@ notices a change in $N$ or the damper, and 10~s is short compared with
 the time scale on which the room's CO₂ changes,
 $V/Q \geq V/Q_\text{max} \approx 17$~min.
 
-\textbf{How the damper closes the loop.} The damper level
-$0 \leq d \leq 1$ (0 closed, 1 fully open) sets the airflow:
+\textbf{How the damper closes the loop.} The damper level $d$ sets the
+airflow:
 \begin{equation}\label{eq:airflow}
   Q = Q_\text{min} + d\,(Q_\text{max} - Q_\text{min}).
 \end{equation}
@@ -1039,7 +1040,7 @@ $C_0 \geq C_\text{target}$. To keep the level from flipping back and
 forth at the edge between two levels, it keeps the current $d$ while that
 still gives $C(t) < C_\text{target}$ for all $t$, and lowers it only to a
 $d$ with $C(t) < C_\text{target} - 20$~ppm for all $t$. A command is sent only when the level changes.
-In A125 this holds three people at $d \approx 0.4$ and a full meeting at $d \approx 0.9$.
+In A125 this holds $N = 3$ at $d \approx 0.4$ and a full meeting, $N = 6$, at $d \approx 0.9$.
  Table~\ref{tab:decisions} gives the alternatives this plan was chosen over.
 
 \textbf{When data is thin.} Until the first room model exists, the
@@ -1098,8 +1099,8 @@ with the room model than with the CO₂-only switch; Section~\ref{sec:evaluation
 \item
   \textbf{The CO₂ sensor frozen.} The sensor keeps sending the same
   value, whatever the room's CO₂. With people in the room, CO₂ keeps
-  changing, so a value that stays the same for 5~minutes with at least 
-  one person present is treated as a frozen sensor. The Decision service then
+  changing, so a value that stays the same for 5~minutes with
+  $N \geq 1$ is treated as a frozen sensor. The Decision service then
   sets $d = 1$ until the value changes or the room empties.
 \item
   \textbf{A malformed message.} The Decision service checks each
@@ -1180,7 +1181,7 @@ retained message (Section~\ref{sec:decision-logic}).
   however old. If the Occupancy sensor stops, a count left too low lets
   CO₂ rise until a reading at $C_\text{target}$ opens the damper fully; a
   count left too high only runs the ventilation harder than needed. A
-  CO₂ value that stays the same while at least one person is present is treated as
+  CO₂ value that stays the same while $N \geq 1$ is treated as
   a frozen sensor (Section~\ref{sec:decision-logic}).
 \end{itemize}
 
@@ -1196,11 +1197,11 @@ retained message (Section~\ref{sec:decision-logic}).
 Figure~\ref{fig:dynamic} follows one person arriving for the 13:00
 meeting in A125, taken from the History store on a running day
 (\texttt{test/results/\allowbreak scenario\_arrival\_2026-11-19\_*.json}).
-Four people are in the room and the damper is at 0.55. The Occupancy
+The room holds $N = 4$ people and the damper is at $d = 0.55$. The Occupancy
 simulator moves a fifth person in (1), and the Occupancy sensor's next
-count reports 5 (2--3). The Decision service only keeps the count (4):
+count reports $N = 5$ (2--3). The Decision service only keeps the count (4):
 a decision waits for a CO₂ reading. The next one reads 853.5~ppm
-(6--10). With five people, the Decision service chooses
+(6--10). With $N = 5$, the Decision service chooses
 $d = 0.75$ (11), which the Damper actuator applies in BuildSim (12--13),
 and the Decision service publishes the applied command for storage
 (14--15). The Physical model's next step uses the new level (16).
@@ -1513,11 +1514,11 @@ Peak CO₂ & 943~ppm (938--947) & 952~ppm (951--952) \\
 The difference is largest in the meeting, shown in
 Figure~\ref{fig:meeting} for Friday, the day closest to the mean. With the
 room model, the Decision service raises the damper as the head count grows, in steps from
-0.15 to 0.90, and lowers it as people leave; CO₂ stays under the
+$d = 0.15$ to $d = 0.90$, and lowers it as people leave; CO₂ stays under the
 950~ppm target throughout. With the CO₂-only switch, the Decision service keeps the damper closed until a
 reading reaches the target, then holds it fully open until CO₂
-falls below 800~ppm, so it ventilates harder than six people need and
-then cycles the damper between closed and fully open with three. Both stay under
+falls below 800~ppm, so with $N = 6$ it ventilates harder than needed,
+and with $N = 3$ it cycles the damper between closed and fully open. Both stay under
 the 1000~ppm threshold. With the room model, the Decision service thus runs the damper about 10\,\%
 lower over a day, and about 15\,\% lower in the meeting hour.
 
