@@ -1313,14 +1313,16 @@ damper reacts to a change (Section~\ref{sec:dynamic}).
 \textbf{Edge and external compute.} In a real building, every container
 inside the Smart Ventilation boundary would run on a computer in the
 building, so that the damper keeps being controlled while the building's internet
-connection is down. The Room-model service is the only container that
-could move to external compute: it fits once per room day, away from the
-per-reading decisions, and if it cannot be reached the Decision service
-keeps its last room model (Section~\ref{sec:decision-logic}). It stays in the
-building because the fit is a small least-squares problem over seven days
-of history (\ref{eq:fit}), so external compute would gain
-nothing and would mean sending the history out of the building every
-night.
+connection is down. Three containers take no part in that control: the
+Storage service, the Room-model service and the Dashboard. The Decision
+service never reads stored history, and it keeps its last room model
+when no new one arrives (Section~\ref{sec:decision-logic}). These three could
+therefore run outside the building without the damper depending on the
+connection. For the Room-model service this was considered and
+rejected: the fit is a small least-squares problem~(\ref{eq:fit}), so external
+compute would gain nothing and would mean sending the history out of the
+building every night. Moving the Storage service and the Dashboard was
+not evaluated.
 
 \section{Test plan}\label{sec:testplan}
 

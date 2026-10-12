@@ -1562,14 +1562,16 @@ _(nothing yet)_
   building (the edge), the Room-model service included.** The loop from
   the sensors through the Message broker and the Decision service to the
   Damper actuator has to keep working while the building's internet
-  connection is down. The Room-model service is the only container that
-  could move to external compute such as a cloud server: it fits once per
-  room day, off the per-reading path, and the Decision service keeps its
-  last room model when no new one arrives. Rejected: running it on
-  external compute — the fit is a small least-squares problem over seven
-  days of history (§7), so it gains nothing and would mean sending the
-  history out of the building every night. A heavier learned model would
-  change that. Decided 2026-10-09.
+  connection is down. The Storage service, the Room-model service and the
+  Dashboard are off that loop, so they could move to external compute
+  such as a cloud server; the Decision service never reads stored history
+  and keeps its last room model when no new one arrives. Rejected: running
+  the Room-model service on external compute — the fit is a small
+  least-squares problem over seven days of history (§7), so it gains
+  nothing and would mean sending the history out of the building every
+  night. A heavier learned model would change that. Decided 2026-10-09.
+  - **Revisit:** moving the Storage service and the Dashboard was not
+    evaluated.
   - Useful for: §9, §13.
 
 - **Measured: all eleven containers use under 200 MiB of memory together
@@ -2036,6 +2038,16 @@ _(nothing yet)_
 
 Cases where advice from the AI coding assistant turned out wrong, and how it
 was caught. Kept for the report's reflection and the oral exam.
+
+- **The Room-model service was called the only container that could move
+  to external compute.** The assistant drafted that claim for the edge
+  decision (§9). Checking Section 9 against the code showed the Storage
+  service and the Dashboard are just as far off the loop from reading to
+  command, since the Decision service never reads stored history. Correct:
+  all three could move, and only the Room-model service's case was
+  evaluated (see *Decided: in a real building every container runs on a
+  computer in the building…*, §9). Noted 2026-10-12.
+  - Useful for: §13.
 
 - **The 1000 ppm CO2 threshold was attributed to the wrong source.** The
   assistant suggested it came from the workplace rules already cited for the
