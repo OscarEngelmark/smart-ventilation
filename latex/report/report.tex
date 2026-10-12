@@ -837,8 +837,7 @@ of~(\ref{eq:massbalance}):
 \end{equation}
 where $C_\text{steady}$ is the level the room settles at while $N$ and $Q$
 stay as they are. Because the step is exact, its accuracy does not depend
-on $\Delta t$, unlike a forward-Euler step, which is accurate only for
-steps much shorter than $V/Q$. $\Delta t$ only sets how late the model
+on $\Delta t$, unlike a forward-Euler step. $\Delta t$ only sets how late the model
 notices a change in $N$ or the damper, and 10~s is short compared with
 the time scale on which the room's CO₂ changes,
 $V/Q \geq V/Q_\text{max} \approx 17$~min.
@@ -1029,9 +1028,9 @@ of~(\ref{eq:roommodel}), of the same form as~(\ref{eq:step}):
   \qquad
   C_\text{steady} = C_\text{out} + \frac{a\,N}{b_0 + b_1\,d}.
 \end{equation}
-$C(t)$ moves steadily toward $C_\text{steady}$, so it stays under a limit
-for the whole hour when both $C_0$ and $C(1~\text{h})$ are under it, and
-only these two are checked. The Decision
+Since $C(t)$ only rises or only falls over the hour, its highest value
+is $C_0$ or $C(1~\text{h})$, so checking these two tells whether $C(t)$
+stays under a limit throughout. The Decision
 service chooses the lowest $d$ with $C(t) < C_\text{target}$ for all $t$,
 and $d = 1$ when none qualifies, as for a reading
 $C_0 \geq C_\text{target}$. To keep the level from flipping back and
