@@ -1339,9 +1339,10 @@ about (Table~\ref{tab:tests}): unit tests for one piece of logic on its
 own, the end-to-end test for the loop's answer to one reading, fault
 tests for what happens when something breaks, and the comparison week
 for what the system does over whole days. The end-to-end test and the
-crash test, which time a response against a limit set in room time, run
-with room time at the pace of the wall clock, so that the limit holds in
-real time as well; they refuse to run otherwise. The comparison week, the
+crash test check that the damper is fully open within 2~minutes of room
+time. Both run with room time at the pace of the wall clock and refuse to
+run otherwise, so that the 2~minutes they check are real minutes, as in
+a real room. The comparison week, the
 frozen-sensor test and the stopped-broker test run faster, since the
 Physical model computes the same CO₂ at any pace
 (Section~\ref{sec:simulation}). The delay measurement uses the comparison
@@ -1406,7 +1407,7 @@ actual CO₂, taken from the Physical model's log
 \midrule
 Stopped-broker test & Runs one weekday with the Message broker stopped
 from before anyone arrives, and judges it by the room's actual CO₂,
-taken from the Physical model's log; a separate run at speed 1 stops
+taken from the Physical model's log; a separate run in real time stops
 the broker for 7~minutes, and the Decision service's log shows it
 recovering
 & \req{NFR-3} & Test output; stored data; real CO₂ & Run \\
