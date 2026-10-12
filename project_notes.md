@@ -77,7 +77,7 @@ _(nothing yet)_
   | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash test, at speed 1 |
   | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Comparison week |
   | NFR-3 | Non-functional | Should | A frozen CO2 sensor or a downed broker doesn't push CO2 over 1000 ppm | Fault tests |
-  | NFR-4 | Non-functional | Could | Time from a reading to its command stays under 2 min of room time | Delay measurement |
+  | NFR-4 | Non-functional | Should | Time from a reading to its command stays under 2 min of room time | Delay measurement |
 
   - **Decided: a requirement verified by unit tests names the logic its
     tests check, not the service around it.** FR-5, FR-6, FR-9 and FR-10
@@ -94,6 +94,11 @@ _(nothing yet)_
     with the damper closed, a full room raises CO2 about 23 ppm/min (§7,
     *Decided: the system pursues three goals…*), so the 50 ppm between the
     950 ppm target and the threshold lasts about 2 minutes.
+  - **Decided: NFR-4 is a Should.** Its limit protects the threshold, so
+    Could understated it; but the one late command that can let CO2
+    through, a reading at the target, is already FR-2's Must, and every
+    other command only moves the level below the target. Rejected: Must,
+    which would repeat FR-2. Decided 2026-10-12.
   - **Decided: NFR-4's limit comes from that margin, not from a
     measurement.** Rejected: measuring the delay first and setting the
     limit from it, a test that can't fail and so verifies nothing.
