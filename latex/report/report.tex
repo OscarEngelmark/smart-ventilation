@@ -610,7 +610,7 @@ History store & SQLite behind a storage interface & InfluxDB & Enough
 for one room, and runs inside the Storage service with no extra
 container (\req{FR-1}, \req{FR-4}); the interface limits a move to
 InfluxDB to one new implementation & Limits one Storage service to
-about 1670 rooms, about 1.7 times BuildSim's building
+about 1650 rooms, about 1.7 times the LTU A-building
 (Section~\ref{sec:evaluation}) \\
 \midrule
 Choosing the damper level & The lowest level the learned room model
@@ -1345,7 +1345,7 @@ service.
 (\texttt{test/results/\allowbreak resources\_2026-10-09.txt}). BuildSim
 and the Storage service use about 40~MiB each and every other container
 about 10~MiB, rounded from one sample. Under the stress test's heaviest
-load, the Storage service used at most 21~MiB
+load, the Storage service used at most 36~MiB
 (Section~\ref{sec:evaluation}). No container has a resource
 limit, since the computer has
 memory to spare; separate processes would allow one to be set per
@@ -1454,7 +1454,7 @@ back after 7~minutes
 Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
 (Section~\ref{sec:dashboard}) & Run \\
 \midrule
-Stress test & Publishes CO₂ readings for 1000 made-up rooms at rates
+Stress test & Publishes CO₂ readings for one made-up room at rates
 rising step by step, with only the Message broker and the Storage
 service running, and counts the readings stored after each step, to find
 the rate at which readings are lost & \req{FR-1} & Test output; CPU and
@@ -1647,11 +1647,12 @@ is acted on at the next CO₂ reading, up to 10~s after that.
 
 \textbf{Breaking point.} The stress test loaded only the two containers that
 every room shares and that a real building would also run: the Message
-broker and the Storage service. A load program published CO₂ readings for 1000 made-up rooms,
-spread evenly over each second, at a rate raised in steps from 10 to
-1000~readings/s. Each step was held for 30~s, and the readings stored
+broker and the Storage service. A load program published CO₂ readings for one made-up room at a rate
+raised in steps from 10 to 1000~readings/s. Each reading was stamped
+10~s after the one before, since the History store skips a second
+reading for a room within one second (Section~\ref{sec:pipeline}). Each step was held for 30~s, and the readings stored
 were counted a minute later
-(\texttt{test/results/\allowbreak stress\_2026-10-11/}).
+(\texttt{test/results/\allowbreak stress\_2026-10-12/}).
 Every reading was stored at rates up to 200~readings/s, and readings
 were lost at 300~readings/s and above (Figure~\ref{fig:stress}). A
 real room sends a CO₂ reading every 10~s and a head count every minute,
@@ -1660,13 +1661,13 @@ so each room sends the equivalent of $0.1 + 1/60 \approx
 0.117$~readings/s, and 200~readings/s is the load of about 1700 rooms.
 
 The limit is the Storage service saving each reading in its own write
-to the History store. One save, timed on its own, took 5.1~ms with the
-file on disk and 0.017~ms with it in memory, so the Storage service
-stores at most $1/5.1~\text{ms} \approx 195$~readings/s, the load of
-about 1670 rooms. The LTU A-building, whose floor plans list about 970
+to the History store. One save, timed on its own, took 5.2~ms with the
+file on disk and 0.016~ms with it in memory, so the Storage service
+stores at most $1/5.2~\text{ms} \approx 192$~readings/s, the load of
+about 1650 rooms. The LTU A-building, whose floor plans list about 970
 rooms \cite{buildsim}, sends about $970 \times 0.117 \approx
 115$~readings/s, well under that limit. The Storage service was waiting
-for the disk, not short of CPU or memory: it used at most 4.5\,\% of one CPU and 21~MiB. Readings
+for the disk, not short of CPU or memory: it used at most 4.5\,\% of one CPU and 36~MiB. Readings
 beyond the limit are lost rather than late, because the Message broker
 keeps at most 1000 messages waiting for each subscriber, its default
 \cite{mosquittoconf}, and drops the rest. The test spreads readings evenly, similar to how sensors started
@@ -1685,14 +1686,14 @@ follows from the queue's size and was not measured.
   legend pos=south west,legend style={font=\footnotesize,draw=none},
   tick label style={font=\footnotesize},label style={font=\small}]
 \addplot[blue,thick,mark=*,mark size=1.5pt] coordinates {(10,100) (50,100)
-  (100,100) (125,100) (150,100) (200,100) (300,76.6) (500,42.3) (1000,22.2)};
-\addplot[red,dashed] coordinates {(195,0) (195,105)};
-\legend{Stored,Limit from one save (195~readings/s)}
+  (100,100) (125,100) (150,100) (200,100) (300,76.1) (500,46.2) (1000,23.0)};
+\addplot[red,dashed] coordinates {(192,0) (192,105)};
+\legend{Stored,Limit from one save (192~readings/s)}
 \end{semilogxaxis}
 \end{tikzpicture}
 \caption{Share of each step's readings stored in the stress test, against
 the rate they were sent at (\texttt{test/results/\allowbreak
-stress\_2026-10-11/test.txt}).}
+stress\_2026-10-12/test.txt}).}
 \label{fig:stress}
 \end{figure}
 

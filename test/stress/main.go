@@ -1,5 +1,5 @@
 // Load program of the stress test (project_notes.md §10): publishes CO2
-// readings for made-up rooms at rising rates, spread evenly over each second,
+// readings for one made-up room at rising rates, spread evenly over each second,
 // and counts how many the storage-service stored after each step. Run by
 // test/stress/stress.sh.
 package main
@@ -21,17 +21,17 @@ import (
 	"github.com/OscarEngelmark/smart-ventilation/internal/mqttclient"
 )
 
-// load publishes readings round the rooms, each room's readings 10 s apart in time.
+// room is the made-up room every reading is for.
+const room = "stress/R000"
+
+// load publishes the room's readings, each 10 s apart in time.
 type load struct {
 	client mqtt.Client
-	rooms  []string
-	next   []time.Time // each room's next reading time
-	turn   int         // the room the next reading is for
+	next   time.Time // the next reading's time
 }
 
 func main() {
 	rates := flag.String("rates", "10,50,100,125,150,200,300,500,1000", "readings per second, one step each")
-	rooms := flag.Int("rooms", 1000, "made-up rooms the readings are spread over")
 	step := flag.Duration("step", 30*time.Second, "real time each rate is held")
 	wait := flag.Duration("wait", 60*time.Second, "real time waited after a step before counting")
 	broker := flag.String("broker", "tcp://localhost:1883", "the broker's address")
@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("connect to broker: %v", err)
 	}
-	l := newLoad(client, *rooms, t0)
+	l := &load{client: client, next: t0}
 
 	fmt.Println("rate_per_s sent stored lost")
 	storedBefore := 0
@@ -58,21 +58,11 @@ func main() {
 		}
 		sent := l.publishFor(rate, *step)
 		time.Sleep(*wait)
-		stored := countStored(*storage, l.rooms, t0)
+		stored := countStored(*storage, t0)
 		inStep := stored - storedBefore
 		fmt.Printf("%d %d %d %d\n", rate, sent, inStep, sent-inStep)
 		storedBefore = stored
 	}
-}
-
-// newLoad names n made-up rooms stress/R000, stress/R001, … and starts each one's readings at t0.
-func newLoad(client mqtt.Client, n int, t0 time.Time) *load {
-	l := &load{client: client, rooms: make([]string, n), next: make([]time.Time, n)}
-	for i := range l.rooms {
-		l.rooms[i] = fmt.Sprintf("stress/R%03d", i)
-		l.next[i] = t0
-	}
-	return l
 }
 
 // publishFor publishes rate readings per second for duration d of real time,
@@ -97,35 +87,29 @@ func (l *load) publishFor(rate int, d time.Duration) int {
 	return sent
 }
 
-// publishNext publishes the next room's next reading at QoS 1 without waiting for the broker.
+// publishNext publishes the room's next reading at QoS 1 without waiting for the broker.
 func (l *load) publishNext() mqtt.Token {
-	i := l.turn
-	l.turn = (l.turn + 1) % len(l.rooms)
-	reading := message.CO2Reading{RoomID: l.rooms[i], PPM: 600, Ts: l.next[i]}
-	l.next[i] = l.next[i].Add(10 * time.Second)
+	reading := message.CO2Reading{RoomID: room, PPM: 600, Ts: l.next}
+	l.next = l.next.Add(10 * time.Second)
 	payload, err := json.Marshal(reading)
 	if err != nil {
 		log.Fatalf("encode: %v", err)
 	}
-	return l.client.Publish(l.rooms[i]+"/co2/reading", 1, false, payload)
+	return l.client.Publish(room+"/co2/reading", 1, false, payload)
 }
 
-// countStored returns how many readings the storage-service holds for the rooms from t0 on.
-func countStored(storage string, rooms []string, t0 time.Time) int {
-	total := 0
-	for _, room := range rooms {
-		query := url.Values{"room": {room}, "since": {t0.Format(time.RFC3339)}}
-		resp, err := http.Get(storage + "/co2?" + query.Encode())
-		if err != nil {
-			log.Fatalf("count stored: %v", err)
-		}
-		var rows []json.RawMessage // each reading left undecoded, since only the count matters
-		err = json.NewDecoder(resp.Body).Decode(&rows)
-		resp.Body.Close()
-		if err != nil {
-			log.Fatalf("count stored: %v", err)
-		}
-		total += len(rows)
+// countStored returns how many readings the storage-service holds for the room from t0 on.
+func countStored(storage string, t0 time.Time) int {
+	query := url.Values{"room": {room}, "since": {t0.Format(time.RFC3339)}}
+	resp, err := http.Get(storage + "/co2?" + query.Encode())
+	if err != nil {
+		log.Fatalf("count stored: %v", err)
 	}
-	return total
+	defer resp.Body.Close()    // closes the response once countStored returns
+	var rows []json.RawMessage // each reading left undecoded, since only the count matters
+	err = json.NewDecoder(resp.Body).Decode(&rows)
+	if err != nil {
+		log.Fatalf("count stored: %v", err)
+	}
+	return len(rows)
 }

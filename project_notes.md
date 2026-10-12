@@ -1773,9 +1773,11 @@ _(nothing yet)_
 - **Decided: the stress test raises the rate of CO2 readings into the
   broker and the storage service until readings are lost.**
   `test/stress/stress.sh` runs only those two containers, on a snapshot of
-  the history store, and `test/stress/main.go` publishes readings for 1000
-  made-up rooms, spread evenly over each second, in rising steps of 30 s;
-  60 s after each step it counts the readings stored. Broken means a step
+  the history store, and `test/stress/main.go` publishes readings for one
+  made-up room, spread evenly over each second, in rising steps of 30 s;
+  60 s after each step it counts the readings stored. Each reading is
+  stamped 10 s after the one before, because the history store keeps one
+  reading per room per second and would skip the rest as duplicates. Broken means a step
   loses readings (FR-1, §3). One room sends a CO2 reading every 10 s
   and a head count every minute, each saved as one write, so a rate of X
   readings per second is the load of X / 0.117 rooms. Only these two containers
@@ -1787,10 +1789,17 @@ _(nothing yet)_
   memory and CPU for every room's containers. Rejected: running real
   copies of each room's containers, which loads the same two containers
   but makes the machine's limits part of the result; including BuildSim's
-  calls, whose limits would be the simulation's, not the system's; and
+  calls, whose limits would be the simulation's, not the system's;
   publishing every room's readings at the same moment, which a real
   building only sees briefly after everything restarts at once (see the
-  result, §11). Decided and implemented 2026-10-11.
+  result, §11); and spreading the readings over 1000 made-up rooms taking
+  turns, which looks more like a building but is harder to explain and
+  gives the same limit, since each save costs the same whichever room it
+  is for. Decided and implemented 2026-10-11.
+  - Replaced 1000 made-up rooms taking turns with one room on 2026-10-12,
+    for the reason above. The 1000-room run of 2026-10-11 stored every
+    reading up to 200 a second and lost readings from 300 a second, the
+    same as the one-room rerun.
   - Useful for: §10, §11, §13.
 
 - **Idea, not yet evaluated: change `Q_max` in the physical model mid-run — a
@@ -1873,30 +1882,30 @@ _(nothing yet)_
   measured 2026-10-11.
   - Useful for: §10, §11.
 
-- **Measured: the storage service stores about 195 CO2 readings a second,
-  the load of about 1670 rooms; above that the broker drops readings.**
+- **Measured: the storage service stores about 192 CO2 readings a second,
+  the load of about 1650 rooms; above that the broker drops readings.**
   A room's head count is saved the same way as its CO2 reading, so each
   room needs 0.1 + 1/60 ≈ 0.117 saves a second; this is reasoned from
   `SaveOccupancy` being the same single insert, not measured. That is
   about 1.7 times BuildSim's building, whose floor plans list 970 rooms
   (322, 358 and 290 under `rooms` in each level's `floorplan_data.json`).
   Result of the stress test (see *Decided: the stress test raises the rate
-  of CO2 readings…*, §10), 2026-10-11: every reading was stored at 10, 50,
-  100, 125, 150 and 200 a second; at 300, 500 and 1000 a second 2109, 8656
-  and 23344 of each step's readings were lost, and the broker logged that
+  of CO2 readings…*, §10), 2026-10-12: every reading was stored at 10, 50,
+  100, 125, 150 and 200 a second; at 300, 500 and 1000 a second 2151, 8076
+  and 23094 of each step's readings were lost, and the broker logged that
   it was dropping messages for the storage service. One save to the
-  history store took 5.1 ms with the file on disk and 0.017 ms in memory
+  history store took 5.2 ms with the file on disk and 0.016 ms in memory
   (`BenchmarkSaveCO2Reading`, `internal/store/sqlite_test.go`), so the
-  limit, 1 / 5.1 ms ≈ 195 a second, is the wait for the disk to confirm
-  each reading's own write. In each overloaded step about 6300–6900
-  readings were stored: about 195 a second for 30 s plus the 1000 the
-  broker held. The storage service peaked at 4.5 % of one CPU and 21 MiB,
-  the broker at 1.4 % and 5 MiB, so neither was short of CPU or memory.
+  limit, 1 / 5.2 ms ≈ 192 a second, is the wait for the disk to confirm
+  each reading's own write. In each overloaded step about 6850–6900
+  readings were stored: about 192 a second for 30 s plus the 1000 the
+  broker held. The storage service peaked at 4.5 % of one CPU and 36 MiB,
+  the broker at 1.4 % and 14 MiB, so neither was short of CPU or memory.
   Readings are lost rather than late because Mosquitto keeps at most 1000
   messages waiting for a subscriber, above the 20 in flight
   (`max_queued_messages`, its default; Mosquitto's `mosquitto.conf(5)`
   manual page, https://mosquitto.org/man/mosquitto-conf-5.html), and drops
-  the rest. Evidence in `test/results/stress_2026-10-11/`: the
+  the rest. Evidence in `test/results/stress_2026-10-12/`: the
   test's output (`test.txt`), CPU and memory every 3 s (`stats.txt`) and
   the broker's log line (`broker_dropped.txt`).
   - **Known caveat —** reasoned, not measured: the test spreads readings
@@ -1908,7 +1917,7 @@ _(nothing yet)_
     and loses readings, and once a minute, when each room's head count
     arrives with its reading, a burst from more than about 500 rooms does.
   - Saving readings in batches, one write per batch, would spread the
-    5.1 ms over many readings; a store built for time series is the
+    5.2 ms over many readings; a store built for time series is the
     other way (see *Decided: CO2 readings, occupancy counts, and commands are
     persisted in SQLite…*, §7).
   - Useful for: §9, §11, §13.
@@ -2199,8 +2208,8 @@ was caught. Kept for the report's reflection and the oral exam.
   step plus the wait after it, 50 s, though readings were only stored
   while they arrived, 30 s, plus the 1000 the broker held. Caught when
   the full test's numbers matched the saving time measured on its own.
-  Correct: about 195 a second (see *Measured: the storage service stores
-  about 195 CO2 readings a second…*, §11). Noted 2026-10-11.
+  Correct: about 192 a second (see *Measured: the storage service stores
+  about 192 CO2 readings a second…*, §11). Noted 2026-10-11.
   - Useful for: §11.
 
 - **The notes said that while the broker is down, the full opening's copy

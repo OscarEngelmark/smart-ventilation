@@ -1,6 +1,6 @@
 #!/bin/bash
-# Stress test (project_notes.md §10): publishes CO2 readings for 1000 made-up
-# rooms at rising rates, with only the broker and the storage-service running,
+# Stress test (project_notes.md §10): publishes CO2 readings for one made-up
+# room at rising rates, with only the broker and the storage-service running,
 # and counts how many were stored at each rate: ./test/stress/stress.sh
 # Its output, each container's CPU and memory every 3 s and the broker's
 # dropped-message lines are saved in test/results/stress_<date>/.
