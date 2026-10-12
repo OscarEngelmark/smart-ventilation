@@ -1622,19 +1622,21 @@ reading for a room within one second (Section~\ref{sec:pipeline}). Each step was
 were counted a minute later
 (\texttt{test/results/\allowbreak stress\_2026-10-12/}).
 Every reading was stored at rates up to 200~readings/s, and readings
-were lost at 300~readings/s and above (Figure~\ref{fig:stress}). A
+started getting lost at 300~readings/s and above (Figure~\ref{fig:stress}). A
 real room sends a CO₂ reading every 10~s and a head count every minute,
 and the Storage service saves a head count the same way as a reading,
 so each room sends the equivalent of $0.1 + 1/60 \approx
-0.117$~readings/s, and 200~readings/s is the load of about 1700 rooms.
+0.117$~readings/s.
 
 The limit is the Storage service saving each reading in its own write
 to the History store. One save, timed on its own, took 5.2~ms with the
 file on disk and 0.016~ms with it in memory, so the Storage service
-stores at most $1/5.2~\text{ms} \approx 192$~readings/s, the load of
-about 1650 rooms. The LTU A-building, whose floor plans list about 970
+can store up to about $1/5.2~\text{ms} \approx 192$~readings/s, the load of
+about 1650 rooms. The 200~readings/s step still passed because the
+readings the Storage service fell behind by waited in the broker's
+queue and were saved before the count. The LTU A-building, whose floor plans list about 970
 rooms \cite{buildsim}, sends about $970 \times 0.117 \approx
-115$~readings/s, well under that limit. The Storage service was waiting
+113$~readings/s, well under the limit. The Storage service was waiting
 for the disk, not short of CPU or memory: it used at most 4.5\,\% of one CPU and 36~MiB. Readings
 beyond the limit are lost rather than late, because the Message broker
 keeps at most 1000 messages waiting for each subscriber, its default
@@ -1674,7 +1676,7 @@ stress\_2026-10-12/test.txt}).}
   same mass balance equation the room model is fitted to
   (Section~\ref{sec:decision-logic}), the head counts are exact, and the
   CO₂ sensor has no noise (Section~\ref{sec:simulation}). In a real room
-  the room model would fit less well, and CO₂ would pass the target more
+  the room model would fit less well, and CO₂ would likely pass the target more
   often, leaving the 50~ppm margin below the threshold to absorb the
   error.
 \item
