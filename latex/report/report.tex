@@ -1036,7 +1036,7 @@ and $d = 1$ when none qualifies, as for a reading
 $C_0 \geq C_\text{target}$. To keep the level from flipping back and
 forth at the edge between two levels, it keeps the current $d$ while that
 still gives $C(t) < C_\text{target}$ for all $t$, and lowers it only to a
-$d$ with $C(t) < C_\text{target} - 20$~ppm for all $t$. A command is sent only when the level changes.
+$d$ yielding $C(t) < C_\text{target} - 20$~ppm for all $t$. A command is sent only when the level changes.
 In A125 this holds $N = 3$ at $d \approx 0.4$ and a full meeting, $N = 6$, at $d \approx 0.9$.
  Table~\ref{tab:decisions} gives the alternatives this plan was chosen over.
 
@@ -1079,8 +1079,8 @@ with the room model than with the CO₂-only switch; Section~\ref{sec:evaluation
   room model from the broker and decides again from the next reading.
 \item
   \textbf{A command not applied.} When the Damper actuator answers
-  anything but 200, the level is decided and sent again on the next
-  reading.
+  anything but 200, or not within 5~s, the level is decided and sent
+  again on the next reading.
 \item
   \textbf{The Room-model service unavailable, or a fit refused.} The last
   room model stays in use, however old, since a room's rates change
