@@ -1225,8 +1225,8 @@ starts by connecting to the Message broker and subscribing to its three
 inputs; if either fails, it exits with an error, and Docker starts it
 again. Once subscribed, the Decision service opens or closes the damper
 on CO₂ alone (\ref{eq:switch}) until a room model arrives, which, being retained, comes right
-after subscribing unless the broker has restarted since the last fit
-(Section~\ref{sec:decision-logic}). From then on it plans on every
+after subscribing unless no room model has been published since the
+broker last started (Section~\ref{sec:decision-logic}). From then on it plans on every
 reading. In either state, a CO₂ value that stays the same for 5~minutes
 while people are counted, or 5~minutes without a reading, opens the
 damper fully (Section~\ref{sec:decision-logic}).
@@ -1239,8 +1239,9 @@ after 5~minutes without one it opens the damper fully. Once reconnected,
 it subscribes again and
 returns to the state it left, keeping any room model it holds.
 
-The other processes have simpler lifecycles. One that fails to start, by registering with BuildSim or connecting
-to the broker, exits and is restarted. A failed call to BuildSim in a
+The other processes have simpler lifecycles. One that fails a step of
+its start, such as registering with BuildSim or connecting to the
+broker, exits and is restarted. A failed call to BuildSim in a
 loop skips that cycle, and the next one tries again. The Damper actuator
 instead refuses the command, which the Decision service sends again on
 the next reading.
