@@ -1162,12 +1162,13 @@ retained message (Section~\ref{sec:decision-logic}).
   \textbf{Missing.} The Room-model service's fit leaves out a pair of readings more than a
   minute apart, so a gap in the history adds no equation. Without a new
   reading the Decision service makes no decision, and the damper keeps
-  its level.
+  its level until 5~minutes pass without one; then the Decision service
+  opens it fully (Section~\ref{sec:decision-logic}).
 \item
   \textbf{Duplicate.} At QoS~1 a message can arrive twice. The History
   store holds one row per room and timestamp and skips a second copy.
-  Timestamps are whole seconds, so this assumes no source sends twice
-  within one second.
+  The History store keeps timestamps to the whole second, so this
+  assumes no source sends twice within one second.
 \item
   \textbf{Invalid.} The Storage service checks each message against its
   schema and drops one that fails, or whose room differs from its
