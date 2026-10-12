@@ -232,7 +232,7 @@ acts through one device: a ventilation damper whose level runs from 0
 (closed) to 1 (fully open).
 
 \textbf{The building and BuildSim.} The room is A125, on level 0 of the
-LTU A-building as modelled in BuildSim, with a floor area of 29.8 m² and
+LTU A-building as modeled in BuildSim, with a floor area of 29.8 m² and
 room for six people. BuildSim holds the shared state of the building in memory:
 its rooms and their floor areas, the devices registered in each room with
 their current values, and who is in which room. Processes read and write
@@ -244,54 +244,54 @@ its own devices to it through the API: a CO₂ sensor, an occupancy sensor,
 and a damper in A125.
 
 \textbf{How the processes use BuildSim.} Five of the project's processes
-talk to BuildSim. The decision service, the storage service, the
-room-model service, and the dashboard never do.
+talk to BuildSim. The Decision service, the Storage service, the
+Room-model service, and the Dashboard never do.
 
 \begin{itemize}
 \tightlist
 \item
-  \textbf{The occupancy simulator and the physical model} stand in for the
-  physical world (Section~\ref{sec:simulation}). The occupancy simulator writes who is in each
-  room (\texttt{PUT /api/occupancy}). The physical model reads the people
+  \textbf{The Occupancy simulator and the Physical model} stand in for the
+  physical world (Section~\ref{sec:simulation}). The Occupancy simulator writes who is in each
+  room (\texttt{PUT /api/occupancy}). The Physical model reads the people
   in the room, the damper's state, and the current CO₂, steps the CO₂
   forward, and writes the result as the CO₂ sensor's value
   (\texttt{PUT /api/sensors/\{id\}/value}). It is the only process that
   changes the CO₂, and its reading of the damper is what closes the loop.
 \item
   \textbf{The CO₂ sensor} reads its device's value
-  (\texttt{GET /api/sensors/\{id\}}) and publishes it to an MQTT message
-  broker. Like a real sensor, it reports the room's CO₂ but does not
+  (\texttt{GET /api/sensors/\{id\}}) and publishes it to the Message
+  broker over MQTT. Like a real sensor, it reports the room's CO₂ but does not
   produce it.
 \item
-  \textbf{The occupancy sensor} reads who is in the room
+  \textbf{The Occupancy sensor} reads who is in the room
   (\texttt{GET /api/occupancy}), writes the head count as its own device's
-  value, and publishes it to the broker.
+  value, and publishes it to the Message broker.
 \item
-  \textbf{The damper actuator} receives the decision service's commands
+  \textbf{The Damper actuator} receives the Decision service's commands
   over REST and writes each new level to the damper
   (\texttt{PUT /api/actuators/\{id\}/state}). BuildSim is the one place
   the damper's position is kept.
 \end{itemize}
 
-BuildSim starts with no devices, so the CO₂ sensor, the occupancy sensor,
-and the damper actuator each register their own device when they start
+BuildSim starts with no devices, so the CO₂ sensor, the Occupancy sensor,
+and the Damper actuator each register their own device when they start
 (\texttt{POST /api/equipment/bulk}).
 
-\textbf{Actors.} The \textbf{operator} watches the room's CO₂, head count,
-and damper level on the dashboard (Section~\ref{sec:dashboard}), which reads the stored
-history rather than BuildSim. The \textbf{room's occupants} raise the CO₂
+\textbf{Actors.} The \textbf{Operator} watches the room's CO₂, head count,
+and damper level on the Dashboard (Section~\ref{sec:dashboard}), which reads the stored
+history rather than BuildSim. The \textbf{Room occupants} raise the CO₂
 by being in the room; here they are simulated from a weekday schedule
 (Section~\ref{sec:simulation}). Neither is in control: the system runs without anyone
 acting on it.
 
 \textbf{A demo scenario.} For most of a weekday, three people
-work in A125, and the damper holds them under the decision service's
+work in A125, and the damper holds them under the Decision service's
 950 ppm target (Section~\ref{sec:decision-logic}) at about 0.4. At 13:00
 a meeting fills the room to its six-person maximum for an hour. Six
 people need the damper at about 0.9, most of what the ventilation can
-give, so the meeting is the hardest case the decision service has to
-hold under the threshold. The occupancy sensor reports six, and the
-decision service raises the damper to the lowest level its room model
+give, so the meeting is the hardest case the Decision service has to
+hold under the threshold. The Occupancy sensor reports six, and the
+Decision service raises the damper to the lowest level its room model
 predicts will hold six people under the target. When the meeting ends,
 the level drops back. Room time, the simulated clock all of the
 project's own programs share, can run faster than the wall clock, so a
@@ -397,7 +397,7 @@ minutes. A restart or a delay longer than that can let CO₂ through the
 threshold before the damper opens.
 
 \textbf{The tension between requirements.} \req{REG-1} pulls the damper up and \req{NFR-2}
-pulls it down. The decision service meets both by choosing, on each
+pulls it down. The Decision service meets both by choosing, on each
 reading, the lowest level that still holds CO₂ under the target; \req{FR-6} is
 a safety net when the decision service has no room model to choose with.
 
@@ -1235,7 +1235,7 @@ retained message (Section~\ref{sec:decision-logic}).
   a frozen sensor (Section~\ref{sec:decision-logic}).
 \end{itemize}
 
-\section{Behaviour}\label{sec:behavior}
+\section{Behavior}\label{sec:behavior}
 
 \subsection{Key scenario (dynamic diagram)}\label{sec:dynamic}
 
@@ -1279,10 +1279,12 @@ Figure~\ref{fig:state} shows the lifecycle of the Decision service. It
 starts by connecting to the Message broker and subscribing to its three
 inputs; if either fails, it exits with an error, and Docker starts it
 again. Once subscribed, the Decision service opens or closes the damper
-on CO₂ alone (Equation~\ref{eq:switch}) until a room model arrives, which, being retained, comes right
+on CO₂ alone (\ref{eq:switch}) until a room model arrives, which, being retained, comes right
 after subscribing unless the broker has restarted since the last fit
 (Section~\ref{sec:decision-logic}). From then on it plans on every
-reading.
+reading. In either state, a CO₂ value that stays the same for 5~minutes
+while people are counted, or 5~minutes without a reading, opens the
+damper fully (Section~\ref{sec:decision-logic}).
 
 When the connection to the broker drops, the Decision service tries to
 reconnect by itself. After each failed try it waits
@@ -1346,9 +1348,10 @@ service.
 \textbf{Resources.} With all eleven containers running, they used under
 200~MiB of memory together
 (\texttt{test/results/\allowbreak resources\_2026-10-09.txt}). BuildSim
-and the Storage service use about 40~MiB each and every other container
-about 10~MiB, rounded from one sample. Under the stress test's heaviest
-load, the Storage service used at most 36~MiB
+and the Storage service used about 40~MiB each, the Room-model service
+about 20~MiB, and every other container about 10~MiB, rounded from one
+sample. In the stress test, which ran the Storage service with only the
+Message broker, it used at most 36~MiB under the heaviest load
 (Section~\ref{sec:evaluation}). No container has a resource
 limit, since the computer has
 memory to spare; separate processes would allow one to be set per
@@ -1367,9 +1370,9 @@ building, so that the damper keeps being controlled while the building's interne
 connection is down. The Room-model service is the only container that
 could move to external compute: it fits once per room day, away from the
 per-reading decisions, and if it cannot be reached the Decision service
-keeps its last room model (Section~\ref{sec:state}). It stays in the
+keeps its last room model (Section~\ref{sec:decision-logic}). It stays in the
 building because the fit is a small least-squares problem over seven days
-of history (Equation~\ref{eq:fit}), so external compute would gain
+of history (\ref{eq:fit}), so external compute would gain
 nothing and would mean sending the history out of the building every
 night.
 

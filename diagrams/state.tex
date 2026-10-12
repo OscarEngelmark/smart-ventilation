@@ -17,15 +17,15 @@
   \node[state] (stop) at (13.2, -5.3) {Stopped};
   \node[dot, double, double distance=1.5pt] (end) at (15.4, -5.3) {};
 
-  \draw[dashed] (0.7, 2.3) rectangle (15.6, -4.1);
+  \draw[dashed] (0.7, 2.8) rectangle (15.6, -4.1);
   \node[anchor=south west] at (0.7, -4.1) {Running};
 
   \draw[->] (start) -- (conn);
   \draw (conn) edge[loop above] node[lbl, above] {connect or subscribe fails:\\exit 1, Docker restarts} (conn);
   \draw[->] (conn) -- node[lbl, above] {subscribed} (sw);
-  \draw (sw) edge[loop above] node[lbl, above] {CO₂ reading:\\open or close} (sw);
+  \draw (sw) edge[loop above] node[lbl, above] {CO₂ reading: open or close;\\frozen value, or 5 min\\without a reading: open fully} (sw);
   \draw[->] (sw) -- node[lbl, above] {room model arrives} (plan);
-  \draw (plan) edge[loop above] node[lbl, above] {CO₂ reading: plan,\\send if it differs from\\the last applied level} (plan);
+  \draw (plan) edge[loop above] node[lbl, above] {CO₂ reading: plan, send if it\\differs from the last applied level;\\frozen value, or 5 min\\without a reading: open fully} (plan);
 
   \draw[->] ([xshift=-4mm]sw.south) -- node[lbl, left] {connection lost} ([xshift=-4mm]sw.south |- wait.north);
   \draw[<-] ([xshift=4mm]sw.south) -- node[lbl, right] {reconnected,\\no room model} ([xshift=4mm]sw.south |- wait.north);

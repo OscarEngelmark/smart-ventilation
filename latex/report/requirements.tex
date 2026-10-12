@@ -4,7 +4,7 @@
 
 \defreq{FR-1}
   {Functional}
-  {CO₂ readings and head counts are saved in the history store}
+  {CO₂ readings and head counts are saved in the History store}
   {Must}
   {A full simulated weekday has a stored CO₂ reading for every 10~s and a head
    count for every room minute}
@@ -12,7 +12,7 @@
 
 \defreq{FR-2}
   {Functional}
-  {The decision service sets the damper in BuildSim from the CO₂ readings, in
+  {The Decision service sets the damper in BuildSim from the CO₂ readings, in
    time to hold the threshold}
   {Must}
   {After a reading above the 950 ppm target
@@ -40,7 +40,7 @@
 
 \defreq{FR-5}
   {Functional}
-  {The room-model service fits the room model to the stored history}
+  {The Room-model service fits the room model to the stored history}
   {Must}
   {The fit recovers the room model's rates for a simulated room, and gives no room model
    when the history can't separate the rates
@@ -57,14 +57,14 @@
 
 \defreq{FR-7}
   {Functional}
-  {The dashboard shows CO₂, head count and damper level}
+  {The Dashboard shows CO₂, head count and damper level}
   {Should}
   {All three are shown over recent room time}
   {Screenshot (Section~\ref{sec:dashboard})}
 
 \defreq{FR-8}
   {Functional}
-  {The storage service keeps bad messages out of the history store}
+  {The Storage service keeps bad messages out of the History store}
   {Must}
   {A message that fails its schema, a reading for another room than its topic
    names, and a second copy of a stored reading are not stored}
@@ -73,7 +73,7 @@
 
 \defreq{FR-9}
   {Functional}
-  {The occupancy simulator fills the room on a weekday schedule}
+  {The Occupancy simulator fills the room on a weekday schedule}
   {Must}
   {Nobody at night or at weekends, 3 people mid-morning and mid-afternoon,
    empty at 12:00, full (6) at 13:30, never over capacity}
@@ -81,7 +81,7 @@
 
 \defreq{FR-10}
   {Functional}
-  {The physical model's CO₂ follows the people and the damper}
+  {The Physical model's CO₂ follows the people and the damper}
   {Must}
   {With the damper closed, a full room settles at about 3640 ppm and one
    person at about 957 ppm; fully open, a full room settles at about 903 ppm;
@@ -100,7 +100,7 @@
   {Non-functional}
   {A killed container recovers without help}
   {Must}
-  {Docker restarts it, a sensor or the damper actuator registers its device
+  {Docker restarts it, a sensor or the Damper actuator registers its device
    with BuildSim again, and after a reading above the target, BuildSim holds
    the damper fully open within 2 min of the kill, with room time running as
    fast as the wall clock}
@@ -116,10 +116,10 @@
 
 \defreq{NFR-3}
   {Non-functional}
-  {A faulty CO₂ sensor or a stopped broker does not let CO₂ through the
+  {A faulty CO₂ sensor or a stopped Message broker does not let CO₂ through the
    threshold}
   {Should}
-  {With the CO₂ sensor frozen at one value, or the message broker stopped, CO₂
+  {With the CO₂ sensor frozen at one value, or the Message broker stopped, CO₂
    stays under 1000 ppm}
   {Fault tests}
 
