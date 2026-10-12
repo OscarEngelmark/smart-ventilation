@@ -512,7 +512,7 @@ container \\
 
 Table~\ref{tab:decisions} lists the decisions that shape the system as a
 whole, each with the alternative it was chosen over, the reason for the
-choice and the trade-off it accepts. A requirement in brackets
+choice and the trade-off it accepts. A requirement in parentheses
 (Table~\ref{tab:requirements}) is the one the decision helps the system
 meet. Why
 each container runs as a process of its own is in
@@ -685,8 +685,8 @@ Ventilation command & \texttt{level} & number, 0--1 & Damper opening,
 0 closed, 1 fully open \\
  & \texttt{ts} & date-time & Room time the level was chosen, UTC \\
 \midrule
-Room model & \texttt{date} & date & Room-time date of the fit
-(YYYY-MM-DD) \\
+Room model & \texttt{date} & date & Room-time date of the fit in the
+building's time zone (YYYY-MM-DD) \\
  & \texttt{a} & number & CO₂ rise per person, in ppm per minute \\
  & \texttt{b0} & number & Share of the gap to outdoor CO₂ cleared per
 minute with the damper closed \\
