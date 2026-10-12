@@ -1276,15 +1276,15 @@ and only on 127.0.0.1, so no other machine can reach a container.
 \centering
 \includegraphics[width=\textwidth]{figures/deployment.pdf}
 \caption{Deployment diagram. Box names are those of
-Figure~\ref{fig:container}, with the Compose service in brackets.
-Arrows between containers are left out; they are those of
-Figure~\ref{fig:container}.}
+Figure~\ref{fig:container}, with the Compose service in brackets;
+arrows between containers are left out. The History store is a Docker
+volume on the computer's disk, outside the Compose network but part of
+Smart Ventilation.}
 \label{fig:deployment}
 \end{figure}
 
 \textbf{Fault isolation and maintainability.} Each container is one
-process with one job, and Table~\ref{tab:responsibilities} gives what
-merging it into another would lose. When a container exits with an
+process with one job, and Table~\ref{tab:responsibilities} states the reasons for separation. When a container exits with an
 error, Docker restarts that container alone. After a change to one
 container's code, only that container is rebuilt and restarted, while the
 others keep running. The History store lives
