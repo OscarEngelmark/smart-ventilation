@@ -746,7 +746,8 @@ a fully open damper \\
 A CO₂ reading stored during a simulated weekday:
 
 \begin{verbatim}
-{"room_id": "level0/A125", "ppm": 836.2, "ts": "2026-10-22T06:20:02Z"}
+{"room_id": "level0/A125", "ppm": 841.2241944630672,
+ "ts": "2026-11-23T07:20:05Z"}
 \end{verbatim}
 
 \textbf{REST endpoints.} The Damper actuator and the Storage service
@@ -798,7 +799,7 @@ is stored yet; 500 if the History store can't be read \\
 the project makes to BuildSim's REST API, and
 Section~\ref{sec:usecase} says what each process uses BuildSim for.
 BuildSim keeps each sensor value and actuator state as text, so a
-number is written as text, such as \texttt{"836.5648267190627"} for the CO₂ or
+number is written as text, such as \texttt{"841.2241944630672"} for the CO₂ or
 \texttt{"0.85"} for the damper. A device record holds one sensor or one
 actuator, with the fields in \texttt{internal/buildsim/client.go}. A call
 fails when BuildSim answers outside 2xx, or not within 5 real seconds.
@@ -1512,21 +1513,23 @@ pass & Met \\
 \req{FR-7} & CO₂, head count and damper level shown over the last
 6~hours of room time (Figure~\ref{fig:dashboard}) & Met \\
 \midrule
-\req{REG-1} & Peak CO₂ 938--943~ppm on the five room-model weekdays, meetings
+\req{REG-1} & Peak CO₂ 938--947~ppm on the five room-model weekdays, meetings
 included & Met \\
 \midrule
 \req{NFR-1} & Docker restarted both killed containers once, the restarted CO₂
 sensor's 980~ppm reading was stored, and BuildSim held the damper fully
-open 10.8~s after the kill & Met \\
+open 0.5~s after the kill; 10.8~s in an earlier run, where the restarted
+Decision service subscribed just after the CO₂ sensor's first reading
+and decided on the next one, 10~s later & Met \\
 \midrule
 \req{NFR-2} & Mean damper level over a room day 0.137 with the room model,
 0.153 with the CO₂-only switch; lower on every day & Met \\
 \midrule
 \req{NFR-3} & The room's real CO₂ stayed under 1000~ppm, peaking at
-879~ppm with the CO₂ sensor frozen at 420~ppm, and at 878~ppm with the
+882~ppm with the CO₂ sensor frozen at 420~ppm, and at 882~ppm with the
 Message broker stopped & Met \\
 \midrule
-\req{NFR-4} & All 221 commands of the comparison week came under 2~s
+\req{NFR-4} & All 223 commands of the comparison week came under 2~s
 of room time after the reading before them & Met \\
 \bottomrule
 \end{longtable}
@@ -1558,11 +1561,11 @@ brackets.}\label{tab:comparison}\\
 \midrule
 \endhead
 Mean damper level over a room day & 0.137 (0.134--0.141) & 0.153
-(0.149--0.157) \\
+(0.148--0.156) \\
 \midrule
-Mean damper level over 13:00--14:00 & 0.845 (0.773--0.896) & 1.000 \\
+Mean damper level over 13:00--14:00 & 0.849 (0.779--0.897) & 1.000 \\
 \midrule
-Peak CO₂ & 941~ppm (938--943) & 951~ppm (951--952) \\
+Peak CO₂ & 943~ppm (938--947) & 952~ppm (951--952) \\
 \bottomrule
 \end{longtable}
 }
@@ -1611,39 +1614,39 @@ Friday 2026-11-27, per room minute, for both methods
 \label{fig:meeting}
 \end{figure}
 
-\textbf{A frozen CO₂ sensor.} The frozen-sensor test ran Wednesday
-2026-12-02 at the same speed as the comparison week (250 $\times$ the wall
+\textbf{A frozen CO₂ sensor.} The frozen-sensor test ran Monday
+2026-11-30 at the same speed as the comparison week (250 $\times$ the wall
 clock), with the CO₂ sensor
 repeating its first reading, 420~ppm, all day
-(\texttt{test/results/\allowbreak frozen\_2026-12-02/}). When the
-first person came in at 06:45, the Decision service treated the
+(\texttt{test/results/\allowbreak frozen\_2026-11-30/}). When the
+first person came in at 06:52, the Decision service treated the
 unchanging value as a frozen sensor and opened the damper fully
 (Section~\ref{sec:decision-logic}); it closed it while the room was
-empty over lunch and from 17:37 onwards. The mean damper level over the day was
-0.431, against 0.137 in the comparison week, and the room's real CO₂
-peaked at 879~ppm at 13:45. [In a run of the frozen-sensor test before
-the frozen sensor was detected, the Decision service planned from
+empty over lunch and from 17:25 onwards. The mean damper level over the day was
+0.424, against 0.137 in the comparison week, and the room's real CO₂
+peaked at 882~ppm at 13:45. [In a run of the frozen-sensor test on
+Wednesday 2026-12-02, before the frozen sensor was detected, the Decision service planned from
 420~ppm, so the levels it chose were too low, and CO₂ was at or above
 1000~ppm for 7.5 hours, peaking at 1180~ppm
 (\texttt{test/results/\allowbreak frozen\_2026-12-02\_before\_check/})].
 
 \textbf{A stopped Message broker.} The stopped-broker test ran the same
-Wednesday at the same speed (250 $\times$ the wall
+Monday at the same speed (250 $\times$ the wall
 clock), with the Message broker stopped at 23:08
 the evening before and kept stopped all day
-(\texttt{test/results/\allowbreak broker\_2026-12-02/}). No reading
+(\texttt{test/results/\allowbreak broker\_2026-11-30/}). No reading
 reached the Decision service, so 5~minutes after the stop it opened the
 damper fully (Section~\ref{sec:decision-logic}), and the damper stayed
-open all day. The first person came in at 06:45, and the room's real
-CO₂ peaked at 878~ppm at 13:45. A second run, with room time at the pace
+open all day. The first person came in at 06:52, and the room's real
+CO₂ peaked at 882~ppm at 13:45. A second run, with room time at the pace
 of the wall clock and the room empty, brought the broker back after 7~minutes: the Decision service
 reconnected 5~s later and closed the damper again on the next reading
-(\texttt{test/results/\allowbreak reconnect\_2026-10-11/}). [In a run of
-the stopped-broker test before the full opening was added, the damper stayed closed all day, and CO₂ was at or
+(\texttt{test/results/\allowbreak reconnect\_2026-10-12/}). [In a run of
+the stopped-broker test on Wednesday 2026-12-02, before the full opening was added, the damper stayed closed all day, and CO₂ was at or
 above 1000~ppm for 10.5 hours, peaking at 2329~ppm
 (\texttt{test/results/\allowbreak broker\_2026-12-02\_before\_opening/})].
 
-\textbf{Delay.} Over the comparison week, each of the 221 commands
+\textbf{Delay.} Over the comparison week, each of the 223 commands
 came under 2~s of room time after the CO₂ reading before it; times are
 stored in whole seconds, so no finer figure is available
 (\texttt{test/results/\allowbreak comparison\_week\_2026-11-23/\allowbreak delay.txt}).
@@ -1814,12 +1817,12 @@ A CO₂ sensor frozen at a plausible value & The Decision service plans
 from the wrong CO₂, and no reading reaches $C_\text{target}$ & When the
 value stays the same for 5~minutes while people are counted, the
 Decision service opens the damper fully. In the frozen-sensor test, CO₂
-peaked at 879~ppm (\req{NFR-3}, Section~\ref{sec:evaluation}) \\
+peaked at 882~ppm (\req{NFR-3}, Section~\ref{sec:evaluation}) \\
 \midrule
 The Message broker stopped & No readings reach the Decision service, so
 it can't choose a level & After 5~minutes without a reading, the
 Decision service opens the damper fully, until the broker returns. In
-the stopped-broker test, CO₂ peaked at 878~ppm (\req{NFR-3},
+the stopped-broker test, CO₂ peaked at 882~ppm (\req{NFR-3},
 Section~\ref{sec:evaluation}) \\
 \midrule
 BuildSim restarted while the system runs & BuildSim forgets every

@@ -19,6 +19,7 @@ from pathlib import Path
 from day_summary import ROOM_TZ, mean_level
 
 METHODS = ("model", "switch")
+SIMULATOR_INTERVAL = timedelta(seconds=10)  # OCCUPANCY_INTERVAL in docker-compose.yml
 
 
 def load_day(folder: Path, method: str, day: date, kind: str) -> list[dict]:
@@ -53,14 +54,17 @@ def _counts(folder: Path, method: str, day: date) -> list[tuple[datetime, int]]:
 def _fits_between(
     count: tuple[datetime, int], other: list[tuple[datetime, int]]
 ) -> bool:
-    """Whether a count lies between the other run's counts just before and after it.
+    """Whether a count lies between the other run's counts before and after it.
 
-    Holds for any count of the same schedule sampled at another second; a count
-    with no neighbor on one side is compared with the nearest one alone.
+    A count shows the people as the Occupancy simulator last wrote them, up to
+    SIMULATOR_INTERVAL earlier, so the other run's counts are taken from at
+    least that far before and after. Holds for any count of the same schedule
+    sampled at another second; a count with no neighbor on one side is
+    compared with the nearest one alone.
     """
     ts, value = count
-    before = [c for t, c in other if t <= ts][-1:]
-    after = [c for t, c in other if t >= ts][:1]
+    before = [c for t, c in other if t <= ts - SIMULATOR_INTERVAL][-1:]
+    after = [c for t, c in other if t >= ts + SIMULATOR_INTERVAL][:1]
     neighbors = before + after
     return min(neighbors) <= value <= max(neighbors)
 
@@ -69,7 +73,8 @@ def _same_head_counts(folder: Path, day: date) -> bool:
     """Whether both methods' head counts fit one schedule, sampled at other seconds.
 
     The Occupancy sensor counts once a room minute, at a second set by when the
-    session started, so the same arrival can be counted up to a minute apart.
+    session started, and the Occupancy simulator writes once every
+    SIMULATOR_INTERVAL, so the same arrival can be counted a minute apart.
     """
     model, switch = (_counts(folder, method, day) for method in METHODS)
     model_fits = all(_fits_between(count, switch) for count in model)

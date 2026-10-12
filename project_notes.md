@@ -1415,8 +1415,9 @@ _(nothing yet)_
   connects with a persistent session…*, above), which needs every reading,
   while the decision service needs only the latest. Trade-off: up to one
   reading interval of extra delay after a restart. The crash test measured
-  10.8 s twice, the decision service having subscribed just after the
-  restarted sensor's first reading, within NFR-1's 2 minutes (see *Decided: the crash test kills the CO2 sensor and
+  10.8 s when the decision service subscribed just after the restarted
+  sensor's first reading, and 0.5 s when it subscribed just before, both
+  within NFR-1's 2 minutes (see *Decided: the crash test kills the CO2 sensor and
   the decision service together…*, §10). The clean session was the MQTT
   library's default until the crash test showed its cost. Decided
   2026-10-06; no code change.
@@ -1630,26 +1631,24 @@ _(nothing yet)_
     just before the actuator writes it to BuildSim, so the write itself is
     not timed; and the history store keeps whole seconds, so the gap is
     known to 1 s. Added 2026-10-06.
-  - Result, 2026-10-09, at speed 1 with the room empty at night and the
-    damper closed: passed in 34 real seconds. The stored reading was
+  - Result, 2026-10-12, at speed 1 with the room empty at night and the
+    damper closed: passed in 31 real seconds. The stored reading was
     979 ppm, since the Physical model stepped once after the injection; a
     1.00 command was stored in the same room second; CO2 then fell from
     973.8 to 963.1 ppm over the readings that followed. It replaces passes
-    on 2026-10-06 and 2026-10-07, rerun on the code of 2026-10-09.
-    Evidence in `test/results/`: the test's output (`e2e_2026-10-09.txt`)
+    on 2026-10-06, 2026-10-07 and 2026-10-09, rerun on the final code.
+    Evidence in `test/results/`: the test's output (`e2e_2026-10-12.txt`)
     and the stored CO2 readings, commands and head counts of the run's
-    window (`e2e_2026-10-09_*.json`).
+    window (`e2e_2026-10-12_*.json`).
   - Useful for: §10, §11.
 
-- **All 71 unit tests and subtests passed on 2026-10-11**, among them
+- **All 71 unit tests and subtests passed on 2026-10-12**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
   FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
-  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-11.txt`, the
-  output of `go test -v -count=1 ./...`. It replaces passes on 2026-10-07,
-  2026-10-08 and 2026-10-09, rerun on the code of 2026-10-11, which adds
-  the decision service's schema checks and its full opening when readings
-  stop or look frozen (`cmd/decision`).
+  (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-12.txt`, the
+  output of `go test -v -count=1 ./...` on the final code. It replaces
+  passes on 2026-10-07, 2026-10-08, 2026-10-09 and 2026-10-11.
   - Useful for: §10, §11.
 
 - **Decided: the crash test kills the CO2 sensor and the decision service
@@ -1673,7 +1672,14 @@ _(nothing yet)_
   BuildSim. The other containers aren't killed: every one restarts through
   the same `restart: on-failure`, and every device process registers through
   the same `buildsim.Client.Register`. Decided and implemented 2026-10-06.
-  - Result, 2026-10-09, at speed 1: passed in 10.8 real seconds, with
+  - Result, 2026-10-12, at speed 1 on the final code: passed in 0.5 real
+    seconds, with Docker restarting each container once. The restarted
+    decision service subscribed 42 ms before the restarted sensor published
+    980 ppm, so it opened the damper on that first reading. Evidence in
+    `test/results/`: the run's output (`crash_2026-10-12.txt`), and its
+    stored CO2 readings, commands, head counts and the two services' logs
+    (`crash_2026-10-12_*`).
+  - Earlier result, 2026-10-09, at speed 1: passed in 10.8 real seconds, with
     Docker restarting each container once. The restarted sensor published
     980 ppm 14 ms before the restarted decision service subscribed, so the
     decision service missed that reading and opened the damper on the next
@@ -1688,12 +1694,13 @@ _(nothing yet)_
   - Useful for: §8.2, §10, §11.
 
 - **REG-1 held on all five days of the room-model week, 2026-11-23 to 27:
-  the peak CO2 was 938–943 ppm.** The week ran at speed 250 on the code of
-  2026-10-09 (see *Decided: the comparison runs both methods on the same
+  the peak CO2 was 938–947 ppm.** The week ran at speed 250 on the final
+  code (see *Decided: the comparison runs both methods on the same
   five weekdays…*, §11). Evidence in
   `test/results/comparison_week_2026-11-23/`: `day_model_2026-11-2*`
   (each day's summary from `eval/day_summary.py` and its stored CO2
-  readings, commands and head counts). Measured 2026-10-09.
+  readings, commands and head counts). Measured 2026-10-12, replacing
+  the run of 2026-10-09 on older code.
   - The same days verify FR-1: each holds 8640 CO2 readings, 9–11 s apart,
     and 1440 head counts, as `eval/save_day.sh` checks.
     Rejected: the end-to-end test, which shows one reading stored where
@@ -1733,17 +1740,19 @@ _(nothing yet)_
   next step; a second publisher on the sensor's topic, which leaves the real
   sensor publishing too, so the decision service sees two alternating
   values. Decided and implemented 2026-10-11.
-  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: passed. The
-    sensor froze at 420 ppm. When the first person came in at 06:45, the
+  - Result, 2026-10-12, on Monday 2026-11-30 at speed 250, on the final
+    code: passed. The sensor froze at 420 ppm. When the first person came
+    in at 06:52, the
     decision service treated the unchanged value as a frozen sensor and
     opened the damper fully (see *Decided: a CO2 value unchanged for 5
     room minutes…*, §7); it closed it while the room was empty over lunch
-    and from 17:37. The mean level over the day was 0.431, against 0.137
-    in the comparison week, and the room's real CO2 peaked at 879 ppm at
-    13:45. Evidence in `test/results/frozen_2026-12-02/`: the test's
+    and from 17:25. The mean level over the day was 0.424, against 0.137
+    in the comparison week, and the room's real CO2 peaked at 882 ppm at
+    13:45. Evidence in `test/results/frozen_2026-11-30/`: the test's
     output (`test.txt`), the day's stored data (`day*`) and the real CO2
     per step (`real_co2.json`).
-    - It replaces a failed run on the same day before the rule existed:
+    - It replaces a passing run on 2026-12-02 on older code, and a failed
+      run on that day before the rule existed:
       the levels planned from 420 ppm were too low (mean 0.094), no
       reading reached the target, and the room's real CO2 was at or above
       1000 ppm for 7.5 hours, peaking at 1180 ppm. Evidence in
@@ -1765,27 +1774,28 @@ _(nothing yet)_
   NFR-3 reworded around an outage length. The slow reconnect after a long
   outage is removed instead (see *Decided: services wait at most 10 s
   between attempts to reconnect to the broker*, §8). Decided and implemented 2026-10-11.
-  - Result, 2026-10-11, on Wednesday 2026-12-02 at speed 250: passed. The
-    broker stopped at 23:08 the evening before, with the damper closed for
+  - Result, 2026-10-12, on Monday 2026-11-30 at speed 250, on the final
+    code: passed. The broker stopped at 23:08 the evening before, with the damper closed for
     the empty room. No reading was stored after that, and the decision
     service made one decision, the full opening 5 minutes later (see
     *Decided: when no CO2 reading has reached the decision service for 5
     room minutes…*, §7), so the damper stayed open all day. The first
-    person came in at 06:45, and the room's real CO2 peaked at 878 ppm at
-    13:45. Evidence in `test/results/broker_2026-12-02/`: the test's
+    person came in at 06:52, and the room's real CO2 peaked at 882 ppm at
+    13:45. Evidence in `test/results/broker_2026-11-30/`: the test's
     output (`test.txt`), the data stored in the session (`stored_*`) and
     the real CO2 per step (`real_co2.json`).
-    - Recovery, checked 2026-10-11 with `test/fault/reconnect.sh`: on a
+    - Recovery, checked 2026-10-12 on the final code with
+      `test/fault/reconnect.sh`, as on 2026-10-11 on older code: on a
       session at speed 1 with the room empty, the broker stopped for 7
       minutes. The decision service opened the damper fully 5 minutes
       after the last reading, reconnected 5 s after the broker returned,
       and in the same second closed the damper again on the next reading.
       The full opening's copy was stored after the reconnect. Evidence in
-      `test/results/reconnect_2026-10-11/`: the check's output with the
+      `test/results/reconnect_2026-10-12/`: the check's output with the
       decision service's log (`test.txt`) and the data stored in the
       session (`stored_*`).
-    - It replaces a failed run on the same day before the full opening
-      existed: the damper stayed closed all day, and the room's real CO2
+    - It replaces a passing run on 2026-12-02 on older code, and a failed
+      run on that day before the full opening existed: the damper stayed closed all day, and the room's real CO2
       reached 1000 ppm at 08:21, 96 minutes after the first arrival,
       stayed at or above it for 10.5 hours and peaked at 2329 ppm.
       Evidence in `test/results/broker_2026-12-02_before_opening/`.
@@ -1874,22 +1884,25 @@ _(nothing yet)_
 
     | | Room model | CO2-only switch |
     |---|---|---|
-    | Mean damper level, whole day | 0.137 (0.134–0.141) | 0.153 (0.149–0.157) |
-    | Mean damper level, 13:00–14:00 (meeting) | 0.845 (0.773–0.896) | 1.000 |
-    | Peak CO2 | 941 ppm (938–943) | 951 ppm (951–952) |
+    | Mean damper level, whole day | 0.137 (0.134–0.141) | 0.153 (0.148–0.156) |
+    | Mean damper level, 13:00–14:00 (meeting) | 0.849 (0.779–0.897) | 1.000 |
+    | Peak CO2 | 943 ppm (938–947) | 952 ppm (951–952) |
 
     The switch holds the damper fully open through every meeting, and
     crosses the 950 ppm target because it opens only once a reading
     reaches it. The comparison script also checks that both weeks saw the
     same people: the Occupancy sensor counts at a different second of the
-    minute in each session, so every count of one week must lie between
-    the other week's counts just before and after it.
+    minute in each session, and the Occupancy simulator writes every 10 s,
+    so every count of one week must lie between the other week's counts
+    from at least 10 s before and after it. Figures from the rerun on the
+    final code, 2026-10-12; the run of 2026-10-09 gave the same damper
+    levels to within 0.004 and peaks to within 2 ppm.
   - Useful for: §10, §11.
 
 - **Measured: every command came under 2 s of room time after the CO2
   reading before it, so NFR-4 (§3) is met.** `eval/delay.py` takes, for
   each stored command of the comparison week, the time back to the latest
-  reading at or before it: 221 commands over both methods' five days,
+  reading at or before it: 223 commands over both methods' five days,
   median 0 s, longest 1 s between stamps in whole seconds, so under 2 s.
   Decided to measure on the comparison week, run at speed 250, rather
   than on a new run at speed 1: speed stretches a real delay 250 times in
@@ -1900,7 +1913,7 @@ _(nothing yet)_
   the head count and 10 s for CO2, set how fast the damper answers a
   change in the room, not this delay. Evidence:
   `test/results/comparison_week_2026-11-23/delay.txt`. Decided and
-  measured 2026-10-11.
+  measured 2026-10-11; remeasured on the final code 2026-10-12.
   - Useful for: §10, §11.
 
 - **Measured: the storage service stores about 192 CO2 readings a second,

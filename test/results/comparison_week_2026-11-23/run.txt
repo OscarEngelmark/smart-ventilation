@@ -90,3 +90,218 @@ week with the switch, speed 250
  Container smart-ventilation-occupancy-1  Started
  Container smart-ventilation-decision-1  Started
 session started at room time 2026-11-22T23:00:00+01:00, speed 250
+level0/A125, 2026-11-23: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.153
+  12:00-13:00, before meeting: 0.177
+  13:00-14:00, meeting: 1.000
+peak CO2: 951 ppm at 15:29
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-23_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-23_occupancy.json
+commands: 25 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-23_commands.json
+check: complete, 8640 readings 10-10 s apart, 1440 head counts
+level0/A125, 2026-11-24: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.154
+  12:00-13:00, before meeting: 0.263
+  13:00-14:00, meeting: 1.000
+peak CO2: 952 ppm at 12:44
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-24_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-24_occupancy.json
+commands: 27 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-24_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+level0/A125, 2026-11-25: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.156
+  12:00-13:00, before meeting: 0.096
+  13:00-14:00, meeting: 1.000
+peak CO2: 952 ppm at 12:54
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-25_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-25_occupancy.json
+commands: 27 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-25_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+level0/A125, 2026-11-26: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.148
+  12:00-13:00, before meeting: 0.046
+  13:00-14:00, meeting: 1.000
+peak CO2: 952 ppm at 12:57
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-26_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-26_occupancy.json
+commands: 27 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-26_commands.json
+check: complete, 8640 readings 10-10 s apart, 1440 head counts
+level0/A125, 2026-11-27: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.152
+  12:00-13:00, before meeting: 0.116
+  13:00-14:00, meeting: 1.000
+peak CO2: 951 ppm at 08:24
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-27_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-27_occupancy.json
+commands: 25 rows in test/results/comparison_week_2026-11-23/day_switch_2026-11-27_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+ Container smart-ventilation-physical-model-1  Stopping
+ Container smart-ventilation-dashboard-1  Stopping
+ Container smart-ventilation-occupancy-1  Stopping
+ Container smart-ventilation-room-model-1  Stopping
+ Container smart-ventilation-occupancy-sensor-1  Stopping
+ Container smart-ventilation-decision-1  Stopping
+ Container smart-ventilation-co2-sensor-1  Stopping
+ Container smart-ventilation-physical-model-1  Stopped
+ Container smart-ventilation-occupancy-sensor-1  Stopped
+ Container smart-ventilation-co2-sensor-1  Stopped
+ Container smart-ventilation-room-model-1  Stopped
+ Container smart-ventilation-occupancy-1  Stopped
+ Container smart-ventilation-decision-1  Stopped
+ Container smart-ventilation-actuator-1  Stopping
+ Container smart-ventilation-dashboard-1  Stopped
+ Container smart-ventilation-storage-service-1  Stopping
+ Container smart-ventilation-actuator-1  Stopped
+ Container smart-ventilation-buildsim-1  Stopping
+ Container smart-ventilation-storage-service-1  Stopped
+ Container smart-ventilation-mosquitto-1  Stopping
+ Container smart-ventilation-buildsim-1  Stopped
+ Container smart-ventilation-mosquitto-1  Stopped
+restored the History store from eval/snapshots/before.tar
+week with the model, speed 250
+ Container smart-ventilation-mosquitto-1  Starting
+ Container smart-ventilation-mosquitto-1  Started
+ Container smart-ventilation-storage-service-1  Starting
+ Container smart-ventilation-storage-service-1  Started
+ Container smart-ventilation-mosquitto-1  Running
+ Container smart-ventilation-storage-service-1  Running
+ Container smart-ventilation-dashboard-1  Recreate
+ Container smart-ventilation-actuator-1  Recreate
+ Container smart-ventilation-co2-sensor-1  Recreate
+ Container smart-ventilation-occupancy-sensor-1  Recreate
+ Container smart-ventilation-occupancy-1  Recreate
+ Container smart-ventilation-physical-model-1  Recreate
+ Container smart-ventilation-room-model-1  Recreate
+ Container smart-ventilation-actuator-1  Recreated
+ Container smart-ventilation-decision-1  Recreate
+ Container smart-ventilation-occupancy-sensor-1  Recreated
+ Container smart-ventilation-occupancy-1  Recreated
+ Container smart-ventilation-co2-sensor-1  Recreated
+ Container smart-ventilation-room-model-1  Recreated
+ Container smart-ventilation-physical-model-1  Recreated
+ Container smart-ventilation-dashboard-1  Recreated
+ Container smart-ventilation-decision-1  Recreated
+ Container smart-ventilation-dashboard-1  Starting
+ Container smart-ventilation-buildsim-1  Starting
+ Container smart-ventilation-room-model-1  Starting
+ Container smart-ventilation-buildsim-1  Started
+ Container smart-ventilation-actuator-1  Starting
+ Container smart-ventilation-co2-sensor-1  Starting
+ Container smart-ventilation-physical-model-1  Starting
+ Container smart-ventilation-occupancy-sensor-1  Starting
+ Container smart-ventilation-occupancy-1  Starting
+ Container smart-ventilation-dashboard-1  Started
+ Container smart-ventilation-room-model-1  Started
+ Container smart-ventilation-co2-sensor-1  Started
+ Container smart-ventilation-occupancy-1  Started
+ Container smart-ventilation-occupancy-sensor-1  Started
+ Container smart-ventilation-physical-model-1  Started
+ Container smart-ventilation-actuator-1  Started
+ Container smart-ventilation-decision-1  Starting
+ Container smart-ventilation-decision-1  Started
+session started at room time 2026-11-22T23:00:00+01:00, speed 250
+level0/A125, 2026-11-23: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.141
+  12:00-13:00, before meeting: 0.265
+  13:00-14:00, meeting: 0.897
+peak CO2: 945 ppm at 13:55
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-23_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-23_occupancy.json
+commands: 20 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-23_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+level0/A125, 2026-11-24: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.134
+  12:00-13:00, before meeting: 0.230
+  13:00-14:00, meeting: 0.779
+peak CO2: 940 ppm at 13:40
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-24_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-24_occupancy.json
+commands: 21 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-24_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+level0/A125, 2026-11-25: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.140
+  12:00-13:00, before meeting: 0.149
+  13:00-14:00, meeting: 0.889
+peak CO2: 947 ppm at 14:06
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-25_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-25_occupancy.json
+commands: 19 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-25_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+level0/A125, 2026-11-26: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.136
+  12:00-13:00, before meeting: 0.170
+  13:00-14:00, meeting: 0.835
+peak CO2: 938 ppm at 13:43
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-26_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-26_occupancy.json
+commands: 21 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-26_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+level0/A125, 2026-11-27: 8640 readings
+  from 00:00 to 23:59
+mean damper level:
+  whole day: 0.136
+  12:00-13:00, before meeting: 0.190
+  13:00-14:00, meeting: 0.843
+peak CO2: 943 ppm at 13:51
+co2: 8640 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-27_co2.json
+occupancy: 1440 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-27_occupancy.json
+commands: 21 rows in test/results/comparison_week_2026-11-23/day_model_2026-11-27_commands.json
+check: complete, 8640 readings 9-11 s apart, 1440 head counts
+ Container smart-ventilation-co2-sensor-1  Stopping
+ Container smart-ventilation-occupancy-1  Stopping
+ Container smart-ventilation-dashboard-1  Stopping
+ Container smart-ventilation-decision-1  Stopping
+ Container smart-ventilation-physical-model-1  Stopping
+ Container smart-ventilation-occupancy-sensor-1  Stopping
+ Container smart-ventilation-room-model-1  Stopping
+ Container smart-ventilation-occupancy-sensor-1  Stopped
+ Container smart-ventilation-co2-sensor-1  Stopped
+ Container smart-ventilation-dashboard-1  Stopped
+ Container smart-ventilation-occupancy-1  Stopped
+ Container smart-ventilation-decision-1  Stopped
+ Container smart-ventilation-actuator-1  Stopping
+ Container smart-ventilation-physical-model-1  Stopped
+ Container smart-ventilation-room-model-1  Stopped
+ Container smart-ventilation-storage-service-1  Stopping
+ Container smart-ventilation-actuator-1  Stopped
+ Container smart-ventilation-buildsim-1  Stopping
+ Container smart-ventilation-storage-service-1  Stopped
+ Container smart-ventilation-mosquitto-1  Stopping
+ Container smart-ventilation-buildsim-1  Stopped
+ Container smart-ventilation-mosquitto-1  Stopped
+day         method  damper day  damper meeting  peak CO2  same people
+2026-11-23  model        0.141           0.897    945 ppm  NO
+2026-11-23  switch       0.153           1.000    951 ppm  NO
+2026-11-24  model        0.134           0.779    940 ppm  NO
+2026-11-24  switch       0.154           1.000    952 ppm  NO
+2026-11-25  model        0.140           0.889    947 ppm  yes
+2026-11-25  switch       0.156           1.000    952 ppm  yes
+2026-11-26  model        0.136           0.835    938 ppm  yes
+2026-11-26  switch       0.148           1.000    952 ppm  yes
+2026-11-27  model        0.136           0.843    943 ppm  yes
+2026-11-27  switch       0.152           1.000    951 ppm  yes
+mean over 5 days:
+  model        0.137           0.849    943 ppm
+  switch       0.153           1.000    952 ppm
+method  commands    median    longest
+model         97         0 s        1 s
+switch       126         0 s        0 s
+both         223         0 s        1 s
