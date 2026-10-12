@@ -33,7 +33,7 @@
   {Other components can fetch a room's stored readings and commands from a
    given time on}
   {Must}
-  {The Storage service answers requests for them over REST, and the History
+  {The Storage service answers requests over REST, and the History
    store's query for one room from a given time returns exactly that room's
    rows from that time on, oldest first; commands are led by the one in force
    at that time}
@@ -41,12 +41,12 @@
 
 \defreq{FR-5}
   {Functional}
-  {The Room-model service's fit learns the room's rates from a history of
-   readings, head counts and damper levels}
+  {The Room-model service's fit learns how the room's CO₂ responds to people
+   and to the damper, from a history of readings, head counts and damper
+   levels}
   {Must}
-  {The fit recovers the room model's rates for a simulated room, and gives no room model
-   when the history can't separate the rates
-   (Section~\ref{sec:decision-logic})}
+  {For a simulated room, the fit recovers the room's actual rates (Section~\ref{sec:decision-logic}). It gives no room
+   model when the history can't tell these apart}
   {Unit tests, \texttt{internal/roommodel}}
 
 \defreq{FR-6}
