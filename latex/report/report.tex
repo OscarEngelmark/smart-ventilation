@@ -1013,7 +1013,7 @@ sourced figures: the floor area per person, the factor 1.2, the outdoor
 CO₂, $\Delta t$ and the schedule's times, and the schedule repeats the
 same shape every weekday. BuildSim keeps its state only in memory, so
 after BuildSim restarts, the room's CO₂ starts again from the outdoor
-level. Section~\ref{sec:risks} weighs what these mean for the results.
+level. Sections~\ref{sec:evaluation} and~\ref{sec:risks} weigh what these mean for the results.
 
 \section{Autonomous services and data pipeline}\label{sec:autonomy}
 
@@ -1461,7 +1461,7 @@ Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
 Stress test & Publishes CO₂ readings for one made-up room at rates
 rising step by step, with only the Message broker and the Storage
 service running, and counts the readings stored after each step, to find
-the rate at which readings are lost & \req{FR-1} & Test output; CPU and
+the rate at which readings are lost & None & Test output; CPU and
 memory samples; time of one save & Run \\
 \bottomrule
 \end{longtable}
