@@ -443,8 +443,7 @@ service it calls; MQTT arrows point the way messages travel.}
 Each container in Figure~\ref{fig:container} has one job, listed in
 Table~\ref{tab:responsibilities}. The \emph{Reason for separation} column
 gives what the system gains from running that job in a process of its
-own instead of inside another container. The last two containers stand
-in for the real room and sit outside the system boundary.
+own instead of inside another container.
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.17}}
@@ -464,8 +463,7 @@ process.}\label{tab:responsibilities}\\
 \midrule
 \endhead
 CO₂ sensor & Read the room's CO₂ and publish it & \texttt{co2-sensor}
-& The only part a real sensor replaces; a crash leaves the head count
-flowing \\
+& The only part a real sensor replaces \\
 \midrule
 Occupancy sensor & Count the people in the room and publish the count
 & \texttt{occupancy-sensor} & The only part a real people counter
@@ -476,8 +474,8 @@ Message broker & Pass each message to its subscribers & \texttt{mosquitto}
 Decision service and the Storage service \\
 \midrule
 Decision service & Choose the damper level & \texttt{decision}
-& A crash leaves the sensors publishing and the damper at its last
-level \\
+& Runs one per room, so a crash or restart affects only its room; the
+sensors keep publishing \\
 \midrule
 Damper actuator & Apply commands to the damper & \texttt{actuator}
 & The interface to the damper, simulated or real; a real damper changes
@@ -492,8 +490,8 @@ Room-model service & Learn how CO₂ responds to people and to the damper
 command; the Decision service keeps the last room model \\
 \midrule
 Dashboard & Show CO₂, head count and damper level
-& \texttt{dashboard} & Showing data is a separate job from storing it;
-a crashed Dashboard loses nothing \\
+& \texttt{dashboard} & A crashed or overloaded Dashboard cannot stop
+storage, and loses nothing \\
 \midrule
 Occupancy simulator & Move people in and out of the room on a weekday
 schedule & \texttt{occupancy} & Stands in for the real occupants; a new
