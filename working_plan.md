@@ -9,6 +9,4 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 ## 2026-10-12
 
 Decide whether the page header ("D7065E – Architecture Document") and the
-subtitle, which name the course, stay. Check the report against the
-template's own "Checklist before submission", then delete that section
-from `report.tex`, build, and submit.
+subtitle, which name the course, stay. Build, and submit.
