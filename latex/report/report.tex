@@ -412,12 +412,13 @@ Simulated room, BuildSim and the Operator are outside it. Each arrow points from
 % - a 1:1 match with docker-compose.yml and the repository folders
 % - why the system is split this way: justified in Section 4.4
 
-Figure~\ref{fig:container} opens the Smart Ventilation and Simulated room boxes. Each box is
+Figure~\ref{fig:container} opens the Smart Ventilation and Simulated room boxes from Figure~\ref{fig:context}. Each box is now
 one service in \texttt{docker-compose.yml}, except the History store,
-which is the Storage service's database file. The Physical model writes
-the room's CO₂ to BuildSim. The CO₂ sensor reads it and publishes it to
-the Message broker, as the Occupancy sensor does with the head count.
-The Decision service uses both, with the room model from the Room-model
+which is the Storage service's database file. The Occupancy simulator
+writes the people in the room to BuildSim, and the Physical model writes
+the room's CO₂. The CO₂ sensor reads the CO₂ and publishes it to the
+Message broker, as the Occupancy sensor does with the head count.
+The Decision service uses both, along with the room model from the Room-model
 service, to choose a damper level, and sends each new level to the
 Damper actuator, which sets it in BuildSim; the Physical model reads it
 there on its next step. The Storage service stores the readings and
