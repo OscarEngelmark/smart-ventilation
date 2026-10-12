@@ -87,7 +87,7 @@ restore() {
 }
 
 # begin_test saves the History store, picks the test day and its results folder
-# results/<$1>_<day>, and from then on also saves everything printed in test.txt there.
+# test/results/<$1>_<day>, and from then on also saves everything printed in test.txt there.
 begin_test() {
   snapshot=$1_before
   ./eval/snapshot.sh save "$snapshot" # also stops every container
