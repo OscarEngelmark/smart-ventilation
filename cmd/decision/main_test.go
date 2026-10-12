@@ -30,6 +30,25 @@ func TestValidCO2ReadingIsKept(t *testing.T) {
 	}
 }
 
+func TestWithoutRoomModelLevelFollowsCO2Alone(t *testing.T) {
+	s := planner.Settings{Target: 950, CloseBelow: 800}
+	fullRoomAt := func(ppm float64) inputs { // six people counted, no room model
+		return inputs{
+			co2:    &message.CO2Reading{PPM: ppm},
+			people: &message.OccupancyReading{Count: 6},
+		}
+	}
+	if got := choose(fullRoomAt(950), s, 0); got != 1 {
+		t.Errorf("level %v at 950 ppm while closed, want 1", got)
+	}
+	if got := choose(fullRoomAt(799), s, 1); got != 0 {
+		t.Errorf("level %v at 799 ppm while open, want 0", got)
+	}
+	if got := choose(fullRoomAt(900), s, 0); got != 0 {
+		t.Errorf("level %v at 900 ppm while closed, want 0", got)
+	}
+}
+
 func TestNoReadingOpensDamperFully(t *testing.T) {
 	readings := make(chan message.CO2Reading) // no reading ever arrives
 	level, _ := nextLevel(readings, 5*time.Minute, 10*time.Millisecond, &latest{}, planner.Settings{}, 0.2)

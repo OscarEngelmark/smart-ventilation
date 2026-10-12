@@ -68,7 +68,7 @@ _(nothing yet)_
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
   | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; the storage service answers requests for them over REST, and the history store's query for one room from a given time returns exactly that room's rows from that time on, oldest first; commands are led by the one in force at that time | Unit tests, `internal/store`; end-to-end test |
   | FR-5 | Functional | Must | The room-model service's fit learns how the room's CO2 responds to people and to the damper, from a history of readings, head counts and damper levels; for a simulated room it recovers the room's actual rates, and gives no room model when the history can't tell them apart | Unit tests, `internal/roommodel` |
-  | FR-6 | Functional | Must | Without a room model, the decision service's choice of level follows CO2 alone | Unit tests, `internal/planner` |
+  | FR-6 | Functional | Must | Without a room model, the decision service's choice of level follows CO2 alone | Unit tests, `internal/planner` and `cmd/decision` |
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
   | FR-8 | Functional | Must | The storage service keeps bad messages out of the history store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
   | FR-9 | Functional | Must | The occupancy simulator's schedule fills the room on weekdays; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
@@ -1651,9 +1651,9 @@ _(nothing yet)_
     window (`e2e_2026-10-12_*.json`).
   - Useful for: §10, §11.
 
-- **All 71 unit tests and subtests passed on 2026-10-12**, among them
+- **All 72 unit tests and subtests passed on 2026-10-12**, among them
   those that verify FR-4 (`internal/store`), FR-5 (`internal/roommodel`),
-  FR-6 (`internal/planner`), FR-8 (`cmd/storage-service`,
+  FR-6 (`internal/planner`, `cmd/decision`), FR-8 (`cmd/storage-service`,
   `internal/store`), FR-9 (`internal/occupancy`) and FR-10
   (`internal/co2`), §3. Evidence: `test/results/unit_2026-10-12.txt`, the
   output of `go test -v -count=1 ./...` on the final code. It replaces
