@@ -1298,10 +1298,10 @@ and the Storage service used about 40~MiB each, the Room-model service
 about 20~MiB, and every other container about 10~MiB, rounded from one
 sample. In the stress test, which ran the Storage service with only the
 Message broker, it used at most 36~MiB under the heaviest load
-(Section~\ref{sec:evaluation}). No container has a resource
-limit, since the computer has
-memory to spare; separate processes would allow one to be set per
-container.
+(Section~\ref{sec:evaluation}). Docker can cap how much memory and CPU
+each container may use. No cap is set, since the one-room system uses
+under 200~MiB of the 30~GiB of memory on the computer in
+Figure~\ref{fig:deployment}.
 
 \textbf{Latency.} All messages stay on the computer, passing through
 Docker's virtual network instead of a physical one. The delay this
