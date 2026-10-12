@@ -1292,10 +1292,10 @@ _(nothing yet)_
     Rejected: a real-time window, which would keep a different number of
     room days after every session; downsampling old readings to hourly
     means, which keeps a longer history in less space but needs a second
-    table and code path. 90 days caps the file at about 120 MB (about 1.3 MB
-    per room day, measured over 16.5 room days) and keeps experiment days
-    long enough to be analyzed for the report, since room time advances
-    about 60 days per real day at speed 60. SQLite reuses the space of
+    table and code path. The 90 days is a judgment call, not derived: it
+    only has to exceed the room model's 7 days, and at that length the file
+    stays near 120 MB (about 1.3 MB per room day, measured over 16.5 room
+    days). SQLite reuses the space of
     deleted rows rather than returning it to the disk, so the file stops
     growing at its largest size. `RETENTION_DAYS` sets the window. Decided
     and implemented 2026-09-28 (`DeleteBefore` in `internal/store`, with unit

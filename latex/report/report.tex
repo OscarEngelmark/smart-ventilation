@@ -1139,9 +1139,9 @@ touches the file; they ask the Storage service over REST
 \textbf{Retention.} The History store keeps the last 90 room days,
 counted back from its newest timestamp. Once an hour the Storage service
 deletes older rows, except each room's command in force at the cutoff,
-since a damper level holds until the next command. The window is far
-longer than the room model's 7 days, so recorded test days stay
-available for evaluation.
+since a damper level holds until the next command. Deleting old rows
+keeps the file from growing without limit. The 90 days is a judgment
+call, well above the 7 days the room model fits on.
 
 \textbf{Processing and serving.} The Room-model service is the
 pipeline's processing step. At each fit it asks the Storage service for
