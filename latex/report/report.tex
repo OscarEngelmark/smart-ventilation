@@ -293,7 +293,6 @@ what the system needs to work at all; Should and Could mark what it
 aims for beyond that. A \emph{room day} is one day of room time, which
 can run faster than the wall clock (Section~\ref{sec:usecase}).
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.08}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.12}}
@@ -343,7 +342,6 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 \reqrow{NFR-4}
 \bottomrule
 \end{longtable}
-}
 
 \textbf{Where the numbers come from.} \req{REG-1}'s threshold follows the
 Public Health Agency of Sweden's general advice on ventilation
@@ -447,7 +445,6 @@ gives what the system gains from running that job in a process of its
 own instead of inside another container. The last two containers stand
 in for the real room and sit outside the system boundary.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.17}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.26}}
@@ -506,7 +503,6 @@ Physical model & Step the room's CO₂ mass balance & \texttt{physical-model}
 container \\
 \bottomrule
 \end{longtable}
-}
 
 \subsection{Design decisions and alternatives}\label{sec:decisions}
 
@@ -523,7 +519,6 @@ meet. Why
 each container runs as a process of its own is in
 Table~\ref{tab:responsibilities}.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.14}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}
@@ -594,7 +589,6 @@ nothing between steps & The Physical model keeping the true CO₂ itself
 logic (\req{NFR-1}) & Small: one extra read from BuildSim per step \\
 \bottomrule
 \end{longtable}
-}
 
 \section{Interfaces and data contracts}\label{sec:interfaces}
 
@@ -619,7 +613,6 @@ message is published at QoS~1
 same message twice. Only the room model is \emph{retained}: the broker keeps
 the last one and hands it to every service that subscribes later.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.25}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.15}}
@@ -655,7 +648,6 @@ midnight, retained; skipped when the stored history can't give a room
 model (Section~\ref{sec:decision-logic}) \\
 \bottomrule
 \end{longtable}
-}
 
 \textbf{Messages.} Each message is a JSON object holding
 \texttt{room\_id} and its own fields in Table~\ref{tab:fields}, and no
@@ -663,7 +655,6 @@ others. Each message has its own JSON Schema in the repository's
 \texttt{schemas/} folder, such as \texttt{co2\_reading.schema.json}.
 The schemas are the full contract.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.22}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.13}}
@@ -704,7 +695,6 @@ minute with the damper closed \\
 a fully open damper \\
 \bottomrule
 \end{longtable}
-}
 
 A CO₂ reading stored during a simulated weekday:
 
@@ -717,7 +707,6 @@ A CO₂ reading stored during a simulated weekday:
 serve the endpoints in Table~\ref{tab:endpoints}. A refused request is
 answered with the reason as plain text.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.20}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.17}}
@@ -756,7 +745,6 @@ newest time in the History store, as plain RFC~3339 text; 204 if nothing
 is stored yet; 500 if the History store can't be read \\
 \bottomrule
 \end{longtable}
-}
 
 \textbf{Calls to BuildSim.} Table~\ref{tab:buildsim} lists every call
 the project makes to BuildSim's REST API, and
@@ -767,7 +755,6 @@ number is written as text, such as \texttt{"841.2241944630672"} for the CO₂ or
 actuator, with the fields in \texttt{internal/buildsim/client.go}. A call
 fails when BuildSim answers outside 2xx, or not within 5 real seconds.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.32}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.28}}
@@ -812,7 +799,6 @@ the damper's state, 0 to 1 \\
 for each command & Sends the new damper level, 0 to 1 \\
 \bottomrule
 \end{longtable}
-}
 
 \section{Simulating the sensor values (the physical model)}\label{sec:simulation}
 
@@ -892,7 +878,6 @@ $C_\text{steady} = 1000$~ppm at $d \approx 0.8$.
 % (ceiling height); chapter 5, section 4, p. 39 (0.35 L/s per m²).
 % FoHMFS 2014:18, p. 1 (0.35 L/s per m²). Persily and de Jonge, section 3,
 % p. 3 (1.5 met for office work), Table 2, p. 4 (rates at 1.4 and 1.6 met).
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.32}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.18}}
@@ -940,7 +925,6 @@ by~(\ref{eq:parameters}); the factor 1.2 is a judgment \\
 Step $\Delta t$ & 10~s of room time & Chosen, not tuned \\
 \bottomrule
 \end{longtable}
-}
 
 $G$ is computed from Persily and de Jonge, who put seated office work at
 1.5~met~\cite[p.~3]{persily2017}, met being an activity level as a
@@ -1362,7 +1346,6 @@ time window in \texttt{test/results/}; Section~\ref{sec:evaluation}
 reports the results.
 
 \newpage
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.15}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.39}}
@@ -1430,7 +1413,6 @@ the rate at which readings are lost & None & Test output; CPU and
 memory samples; time of one save & Run \\
 \bottomrule
 \end{longtable}
-}
 
 \section{Evaluation and results}\label{sec:evaluation}
 
@@ -1444,7 +1426,6 @@ memory samples; time of one save & Run \\
 Table~\ref{tab:results} sets each result against its requirement. The
 checks are those of Table~\ref{tab:tests}, run on the final code.
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.18}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.70}}
@@ -1495,7 +1476,6 @@ Message broker stopped & Met \\
 of room time after the reading before them & Met \\
 \bottomrule
 \end{longtable}
-}
 
 \textbf{Decision quality.} The comparison week ran Monday to Friday
 2026-11-23 to 27 twice from the same stored history, with room time
@@ -1506,7 +1486,6 @@ damper level comes from the decision logic alone.
 Table~\ref{tab:comparison} gives the means over the five days
 (\texttt{test/results/\allowbreak comparison\_week\_2026-11-23/}).
 
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.40}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.30}}
@@ -1530,7 +1509,6 @@ Mean damper level over 13:00--14:00 & 0.849 (0.779--0.897) & 1.000 \\
 Peak CO₂ & 943~ppm (938--947) & 952~ppm (951--952) \\
 \bottomrule
 \end{longtable}
-}
 
 The difference is largest in the meeting, shown in
 Figure~\ref{fig:meeting} for Friday, the day closest to the mean. With the
@@ -1755,7 +1733,6 @@ and they can stay under the target while the room's real CO₂ is over
 1000~ppm.
 The simulated room is also easier to predict than a real one, which
 favors the room model in the comparison (Section~\ref{sec:evaluation}).
-{\small
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.26}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.42}}
@@ -1802,7 +1779,6 @@ Only one room has been run & How the system behaves with more than one
 room is untested & Build and run several rooms \\
 \bottomrule
 \end{longtable}
-}
 
 \textbf{What would be done next.} The 950~ppm target and the one-hour
 horizon of the Decision service's predictions are untuned defaults. A target nearer 1000~ppm or a shorter
