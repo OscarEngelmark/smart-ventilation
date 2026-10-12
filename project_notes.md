@@ -1745,7 +1745,8 @@ _(nothing yet)_
     - It replaces a failed run on the same day before the rule existed:
       the levels planned from 420 ppm were too low (mean 0.094), no
       reading reached the target, and the room's real CO2 was at or above
-      1000 ppm for 7.5 hours, peaking at 1180 ppm.
+      1000 ppm for 7.5 hours, peaking at 1180 ppm. Evidence in
+      `test/results/frozen_2026-12-02_before_check/`.
   - Useful for: §10, §11, §13.
 
 - **Decided: the stopped-broker test stops the broker before anyone arrives
@@ -1786,6 +1787,7 @@ _(nothing yet)_
       existed: the damper stayed closed all day, and the room's real CO2
       reached 1000 ppm at 08:21, 96 minutes after the first arrival,
       stayed at or above it for 10.5 hours and peaked at 2329 ppm.
+      Evidence in `test/results/broker_2026-12-02_before_opening/`.
   - Useful for: §10, §11, §13.
 
 - **Decided: the stress test raises the rate of CO2 readings into the

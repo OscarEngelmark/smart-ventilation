@@ -10,13 +10,12 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 22 | Run `eval/run_comparison.sh` (about 1 hour; it rebuilds the images) and the speed-1 tests (end-to-end, crash; run `docker compose build` with the stack stopped first, since `start.sh` doesn't build) on the final code; check that no stored CO2 value repeats for 5 room minutes with people present and that the Decision service never opened the damper on a frozen reading; bring the new figures into `project_notes.md` and §11, the "code of 2026-10-09" mentions in `project_notes.md` §10 up to date, and §11's "run on the final code" true | — | 1 |
+| 22 | Run `eval/run_comparison.sh` (about 1 hour; it rebuilds the images), the speed-1 tests (end-to-end, crash; run `docker compose build` with the stack stopped first, since `start.sh` doesn't build) and the three fault tests (frozen sensor, stopped broker, reconnect) on the final code; replace §5's example CO2 message with one from the rerun; check that no stored CO2 value repeats for 5 room minutes with people present and that the Decision service never opened the damper on a frozen reading; bring the new figures into `project_notes.md` and §11, the "code of 2026-10-09" mentions in `project_notes.md` §10 up to date, and §11's "run on the final code" true | — | 1 |
 
 ## Report fixes found in review
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 24 | §11: the two bracketed sentences on earlier runs of the frozen-sensor and stopped-broker tests print with their brackets and cite no results file; those runs' files were replaced, so the figures live only in `project_notes.md` and git history | Keep them, with a source, or drop them | 1 |
 | 25 | §3 says §7.1 covers the choice of threshold, but §7.1 only states 1000 ppm and points back to §3; neither says why advice stated for schools applies to an office | Where the justification goes, and what it says | 1 |
 | 26 | §9, *Edge and external compute*: the pointer to §8.2 for "keeps its last room model" belongs to §7.1's failure list | — | 1 |
 | 27 | §9, *Resources*: the Room-model service used 19 MiB, not "about 10"; the Storage service's "about 40 MiB" (full system) next to "at most 36 MiB" (stress test) reads as a contradiction, since they come from different runs | — | 1 |
