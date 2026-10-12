@@ -105,14 +105,14 @@
 % - overview table: title, team, use case, repository, version
 % - changes since the proposal, and the evidence that forced each one
 
-The system designed keeps the CO₂ in one office room under 1000~ppm while running
+The system aims to keep the CO₂ in one office room under 1000~ppm while running
 the ventilation as low as it can. It senses the room's CO₂ and the number
 of people in it, decides how far to open a ventilation damper, and sets
-the damper. It also stores what it senses and does, and learns from that
+the damper level. It also stores what it senses and does, and learns from that
 history how the room's CO₂ responds to people and to ventilation, which
 it uses in its decisions. The room is simulated. It is one room of the LTU A-building 
 held in BuildSim~\cite{buildsim}, which keeps the building's
-state for every program that uses it, and the project's own programs
+state for every program that uses it. The project's own programs
 simulate the people and the room's air.
 
 \begin{longtable}[]{@{}
@@ -143,7 +143,7 @@ the ventilation as low as possible \\
   proposal planned to forecast CO₂ and open the ventilation before the
   forecast crossed a threshold. Forecasts were built during the
   project but removed, because planning ahead with them did not lower
-  the ventilation over time, and each one added a service to build and test. Now
+  the ventilation over time, so all they added was a service to build and test. Now
   the Decision service picks the lowest damper level that a room model,
   learned from the stored history, predicts will keep CO₂ under a
   target for the next hour with the number of people currently in the
@@ -153,7 +153,7 @@ the ventilation as low as possible \\
   generate the people in the room from a weekday schedule, but left open
   where that runs. Now an Occupancy simulator writes the people to
   BuildSim, and the Physical model, which simulates the room's air, reads
-  them from there, such that a new source of occupancy leaves the Physical
+  them from there, such that a new source of occupancy would leave the Physical
   model untouched (Table~\ref{tab:responsibilities}).
 \item
   \textbf{A data pipeline and a dashboard were added.} The proposal left
@@ -187,7 +187,7 @@ the ventilation as low as possible \\
 % - why the use case matters; what makes the decision non-trivial
 
 \textbf{The use case.} The system manages the indoor air quality of one
-office room. It keeps the room's CO₂ concentration under a threshold of 1000 ppm
+office room. It aims to keep the room's CO₂ concentration under a threshold of 1000 ppm
 (Section~\ref{sec:requirements}) while running the ventilation as low as it can. CO₂ rises
 as the people in the room breathe and falls as ventilation replaces room
 air with outdoor air. The system therefore senses one variable, CO₂, and
