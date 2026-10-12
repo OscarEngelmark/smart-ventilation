@@ -934,8 +934,9 @@ _(nothing yet)_
     treats CO2 regularly above 1000 ppm in normal use as a sign of
     inadequate ventilation (stated for schools and childcare premises). The
     workplace rules cited for the ceiling height (AFS 2023:12) give no CO2
-    limit, only a minimum outdoor airflow per person and per m². No
-    alternative value was weighed. Decided 2026-09-18.
+    limit, only a minimum outdoor airflow per person and per m², so the
+    advice's figure is applied to the office. No alternative value was
+    weighed. Decided 2026-09-18.
   - **Decided: occupancy is sensed by its own sensor process**, reporting
     the room's head count the way the CO2 sensor reports CO2. The fit and
     the plan both need the number of people, which CO2 can't give: the same

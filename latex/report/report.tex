@@ -225,7 +225,7 @@ the ventilation as low as possible \\
 
 \textbf{The use case.} The system manages the indoor air quality of one
 office room. It keeps the room's CO₂ concentration under a threshold of 1000 ppm
-(Section~\ref{sec:decision-logic}) while running the ventilation as low as it can. CO₂ rises
+(Section~\ref{sec:requirements}) while running the ventilation as low as it can. CO₂ rises
 as the people in the room breathe and falls as ventilation replaces room
 air with outdoor air. The system therefore senses one variable, CO₂, and
 acts through one device: a ventilation damper whose level runs from 0
@@ -386,7 +386,10 @@ can run faster than the wall clock (Section~\ref{sec:usecase}).
 Public Health Agency of Sweden's general advice on ventilation
 (FoHMFS 2014:18)~\cite{fohmfs2014}, which treats CO₂ regularly above 1000 ppm in normal
 use as a sign of inadequate ventilation. It is advice rather than a
-binding rule, and is stated for schools and childcare premises; Section~\ref{sec:decision-logic} covers the choice of threshold. The 2 minutes in \req{FR-2}, \req{NFR-1} and
+binding rule, and is stated for schools and childcare premises. The
+Swedish workplace rules set no CO₂ limit, only minimum outdoor
+airflows~\cite[p.~39]{afs2023}, so the advice's 1000 ppm is applied to
+the office here. The 2 minutes in \req{FR-2}, \req{NFR-1} and
 \req{NFR-4} are the project's own figure, not taken from a source: with the damper
 closed, a full room raises CO₂ by about 23 ppm a minute (Section~\ref{sec:simulation}), so
 the 50 ppm between the 950 ppm target and the threshold lasts about two

@@ -16,7 +16,6 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 25 | §3 says §7.1 covers the choice of threshold, but §7.1 only states 1000 ppm and points back to §3; neither says why advice stated for schools applies to an office | Where the justification goes, and what it says | 1 |
 | 26 | §9, *Edge and external compute*: the pointer to §8.2 for "keeps its last room model" belongs to §7.1's failure list | — | 1 |
 | 27 | §9, *Resources*: the Room-model service used 19 MiB, not "about 10"; the Storage service's "about 40 MiB" (full system) next to "at most 36 MiB" (stress test) reads as a contradiction, since they come from different runs | — | 1 |
 | 28 | `diagrams/state.tex` and §8.2: add the full opening on a frozen CO2 value; the 5-minute timeout is drawn only under "Waiting for the broker", though the code applies it in every running state | — | 1 |
