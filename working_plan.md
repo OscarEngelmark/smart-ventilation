@@ -8,5 +8,4 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 ## 2026-10-12
 
-Optionally delete the report preamble's unused template helpers
-(`\guidance`, `\fillin`, `\diagramslot`); they print nothing. Submit.
+Submit.

@@ -1,7 +1,6 @@
 % Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
-\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
 %
 \documentclass[11pt]{article}
 \usepackage{amsmath,amssymb}
@@ -13,12 +12,8 @@
   \usepackage{textcomp}
 \fi
 \IfFileExists{microtype.sty}{\usepackage[]{microtype}\UseMicrotypeSet[protrusion]{basicmath}}{}
-\makeatletter
-\@ifundefined{KOMAClassName}{%
-  \IfFileExists{parskip.sty}{\usepackage{parskip}}{%
-    \setlength{\parindent}{0pt}\setlength{\parskip}{6pt plus 2pt minus 1pt}}
-}{\KOMAoptions{parskip=half}}
-\makeatother
+\IfFileExists{parskip.sty}{\usepackage{parskip}}{%
+  \setlength{\parindent}{0pt}\setlength{\parskip}{6pt plus 2pt minus 1pt}}
 \usepackage{xcolor}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{}
 \usepackage{float} % before hyperref, or [H] figures get duplicate link targets
@@ -28,7 +23,6 @@
   pdfauthor={Oscar Lundqvist Engelmark},
   colorlinks=true,
   linkcolor={black},
-  filecolor={Maroon},
   citecolor={black},
   urlcolor={black}}
 \urlstyle{same}
@@ -41,20 +35,11 @@
 \def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
 \makeatother
 \setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
-\setlength{\emergencystretch}{3em}
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{2}
 \usepackage{newunicodechar}
-\usepackage{textcomp}
-\usepackage{amssymb}
 \newunicodechar{₂}{\textsubscript{2}}
-\newunicodechar{≤}{\ensuremath{\leq}}
-\newunicodechar{≥}{\ensuremath{\geq}}
-\newunicodechar{≈}{\ensuremath{\approx}}
-\newunicodechar{✓}{\ensuremath{\checkmark}}
 \usepackage{etoolbox}
 \AtBeginEnvironment{longtable}{\footnotesize}
-\AtBeginEnvironment{tabular}{\footnotesize}
 \usepackage{fancyhdr}
 \pagestyle{fancy}\fancyhf{}
 \rhead{\small D7065E\,--\,Architecture Document}
@@ -64,7 +49,6 @@
 \usepackage{titlesec}
 \titleformat{\section}{\Large\bfseries}{\thesection.}{0.6em}{}
 \titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
-\usepackage{microtype}
 \usepackage{pgfplots}
 \usetikzlibrary{calc}
 \pgfplotsset{compat=1.16}
@@ -99,16 +83,6 @@
 \input{requirements}
 % ---------------------------------------------------------------------------
 
-% --- template helpers -------------------------------------------------------
-\definecolor{guidegray}{gray}{0.42}
-% Grey guidance note: what this section must contain. Delete before submission.
-\newcommand{\guidance}[1]{{\color{guidegray}\small\textit{#1}}\par\vspace{0.3em}}
-% A slot to be replaced with the team's own prose.
-\newcommand{\fillin}[1]{\par\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\color{guidegray}\textit{[#1]}}}\par\vspace{0.4em}}
-% A placeholder where a rendered diagram should be inserted.
-\newcommand{\diagramslot}[1]{\par\begin{center}\fbox{\parbox[c][2.6cm][c]{0.82\linewidth}{\centering\color{guidegray}\textit{[Insert: #1]}}}\end{center}\par}
-% ---------------------------------------------------------------------------
-
 \begin{document}
 
 \begin{center}
@@ -121,13 +95,9 @@
 
 \vspace{1.2em}
 
-{
-\hypersetup{linkcolor=black}
-\setcounter{tocdepth}{3}
 \tableofcontents
-}
 
-\section{Summary}\label{sec:summary}
+\section{Summary}
 
 % Required points (report guide, section 3.1; template, section 1):
 % - one paragraph: what the system does
@@ -147,7 +117,7 @@ simulate the people and the room's air.
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.35}}
   >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.65}}@{}}
-\caption{Project overview.}\label{tab:overview}\\
+\caption{Project overview.}\\
 \toprule
 \textbf{Field} & \textbf{Value} \\
 \midrule
@@ -392,9 +362,9 @@ pulls it down. The Decision service meets both by choosing, on each
 reading, the lowest level that still holds CO₂ under the target; \req{FR-6} is
 a safety net when the decision service has no room model to choose with.
 
-\section{Architecture}\label{sec:architecture}
+\section{Architecture}
 
-\subsection{Context diagram (C4 Level 1)}\label{sec:context}
+\subsection{Context diagram (C4 Level 1)}
 
 % Required points (report guide, sections 2.2 and 3.4; template, section 4.1):
 % - the system as one box, with the people and external systems it touches
@@ -462,7 +432,7 @@ service it calls; MQTT arrows point the way messages travel.}
 \label{fig:container}
 \end{figure}
 
-\subsection{Component responsibilities}\label{sec:responsibilities}
+\subsection{Component responsibilities}
 
 % Required points (report guide, sections 2.2 and 3.4; template, section 4.3):
 % - every container with the single job it owns
@@ -1006,7 +976,7 @@ same shape every weekday. BuildSim keeps its state only in memory, so
 after BuildSim restarts, the room's CO₂ starts again from the outdoor
 level. Sections~\ref{sec:evaluation} and~\ref{sec:risks} weigh what these mean for the results.
 
-\section{Autonomous services and data pipeline}\label{sec:autonomy}
+\section{Autonomous services and data pipeline}
 
 \subsection{The autonomous service}\label{sec:decision-logic}
 
@@ -1068,7 +1038,7 @@ the Decision service predicts CO₂ over the next hour, $0 \leq t \leq
 1$~h, starting from the current reading $C_0$ and holding $d$ and the
 current head count $N$ fixed. The prediction is the exact solution
 of~(\ref{eq:roommodel}), of the same form as~(\ref{eq:step}):
-\begin{equation}\label{eq:plan}
+\begin{equation}
   C(t) = C_\text{steady}
   + \big(C_0 - C_\text{steady}\big)\,e^{-(b_0 + b_1\,d)\,t},
   \qquad
@@ -1227,7 +1197,7 @@ retained message (Section~\ref{sec:decision-logic}).
   a frozen sensor (Section~\ref{sec:decision-logic}).
 \end{itemize}
 
-\section{Behavior}\label{sec:behavior}
+\section{Behavior}
 
 \subsection{Key scenario (dynamic diagram)}\label{sec:dynamic}
 
@@ -1257,7 +1227,7 @@ answers. Protocols are as in Figure~\ref{fig:container}.}
 \label{fig:dynamic}
 \end{figure}
 
-\subsection{Process lifecycle (state diagram)}\label{sec:state}
+\subsection{Process lifecycle (state diagram)}
 
 % Required points (report guide, section 3.8; template, section 8.2):
 % - a state machine for one process whose lifecycle matters
@@ -1297,7 +1267,7 @@ its code; the dashed box holds the states in which the process runs.}
 \label{fig:state}
 \end{figure}
 
-\section{Deployment and component view}\label{sec:deployment}
+\section{Deployment and component view}
 
 % Required points (report guide, sections 2.5 and 3.9; template, section 9):
 % - a deployment diagram: each process and where it runs
