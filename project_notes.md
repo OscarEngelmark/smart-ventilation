@@ -190,7 +190,23 @@ _(nothing yet)_
       to the broker too, so every MQTT arrow would point at the broker and
       the diagram would no longer show who receives which messages.
       Decided and drawn 2026-10-07.
-  - Useful for: §4.1, §4.4, §6.
+  - **Decided: the physical model's CO2 is written to BuildSim
+    unrounded.** Each cycle starts from the value BuildSim holds, so
+    rounding it becomes part of the model. Close to the level the room
+    settles at, one cycle's change is under 0.05 ppm, and rounding to
+    0.1 ppm erased it: CO2 stopped about 10 ppm short and held one value
+    for over two hours with three people present
+    (`test/results/comparison_week_2026-11-23/`), which the frozen-sensor
+    rule (§7) reads as a frozen sensor. `SetSensorValue` in
+    `internal/buildsim/client.go` now writes the fewest digits that read
+    back as the same number. Rejected: adding noise to the CO2 sensor,
+    more realistic and a fuller test of the frozen-sensor rule, but it
+    changes what the comparison week measures and needs a sourced noise
+    level; and flagging a frozen sensor only when the room model predicts
+    moving CO2, which relies on the room model the full opening backs up.
+    Decided and implemented 2026-10-12.
+    - Replaces writing the value rounded to one decimal.
+  - Useful for: §4.1, §4.4, §5, §6, §7.1.
 
 - **Decided: the container that fits the room model is the "Room-model
   service".** "Room model" means only the learned rates it publishes on
@@ -1455,8 +1471,10 @@ _(nothing yet)_
   showed the levels planned from a frozen value leave CO2 over 1000 ppm
   for hours (see *Decided: the frozen-sensor test…*, §10). With people in
   the room, CO2 keeps changing, and the simulated readings carry no noise
-  or rounding, so the same value 30 readings in a row doesn't happen in
-  normal operation; a real sensor's noise makes the same hold for it. The
+  or rounding (see *Decided: the physical model's CO2 is written to
+  BuildSim unrounded*, §4), so the same value 30 readings in a row doesn't
+  happen in normal operation; a real sensor's noise makes the same hold
+  for it. The
   rule is `frozen` in `cmd/decision/main.go`, timed by the readings' own
   timestamps, and reuses the 5 minutes of `READING_TIMEOUT`, so a value
   that doesn't change is handled like a reading that doesn't arrive. It
@@ -2220,3 +2238,16 @@ was caught. Kept for the report's reflection and the oral exam.
   that never ends, as in the stopped-broker test, is never stored. Noted
   2026-10-11.
   - Useful for: §7.1.
+
+- **The frozen-sensor rule was justified by saying the simulated readings
+  carry no rounding.** The assistant reasoned that with people in the
+  room the CO2 value never repeats 30 times in a row. But the value was
+  written to BuildSim rounded to 0.1 ppm, and the physical model stalled
+  about 10 ppm below where the room settles, repeating one value for over
+  two hours with three people present. The rule would have opened the
+  damper fully on most weekday mornings. Caught in a review of the report,
+  from a flat CO2 line in the dashboard screenshot, then confirmed in the
+  comparison week's stored readings, which ran before the rule existed.
+  Correct: the value is now written unrounded (see *Decided: the physical
+  model's CO2 is written to BuildSim unrounded*, §4). Noted 2026-10-12.
+  - Useful for: §7.1, §13.

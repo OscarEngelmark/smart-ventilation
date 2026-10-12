@@ -165,12 +165,13 @@ func (c *Client) SensorValue(ctx context.Context, id string) (float64, error) {
 	return asNumber(id, sensor.Value)
 }
 
-// SetSensorValue writes a sensor's value, rounded to one decimal.
+// SetSensorValue writes a sensor's value unrounded, so that SensorValue
+// reads back exactly the number written.
 func (c *Client) SetSensorValue(ctx context.Context, id string, value float64) error {
 	url := fmt.Sprintf("%s/api/sensors/%s/value", c.baseURL, id)
 	update := valueUpdate{
-		DataType: "text", // BuildSim's other option, "binary", is for on/off devices
-		Value:    strconv.FormatFloat(value, 'f', 1, 64),
+		DataType: "text",                                  // BuildSim's other option, "binary", is for on/off devices
+		Value:    strconv.FormatFloat(value, 'f', -1, 64), // -1: the fewest digits that read back as the same number
 	}
 	return c.do(ctx, http.MethodPut, url, update, nil)
 }
