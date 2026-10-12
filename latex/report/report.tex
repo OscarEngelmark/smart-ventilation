@@ -1338,11 +1338,15 @@ Each requirement is verified by the kind of check that fits what it is
 about (Table~\ref{tab:tests}): unit tests for one piece of logic on its
 own, the end-to-end test for the loop's answer to one reading, fault
 tests for what happens when something breaks, and the comparison week
-for what the system does over whole days. Checks that time how fast something
-happens run with room time at the pace of the wall clock, so that their
-limits, set in room time, hold in real time as well; they refuse to run
-otherwise. The comparison week, the frozen-sensor test and the stopped-broker test run faster, since the Physical model
-computes the same CO₂ at any pace (Section~\ref{sec:simulation}). Every check saves
+for what the system does over whole days. The end-to-end test and the
+crash test, which time a response against a limit set in room time, run
+with room time at the pace of the wall clock, so that the limit holds in
+real time as well; they refuse to run otherwise. The comparison week, the
+frozen-sensor test and the stopped-broker test run faster, since the
+Physical model computes the same CO₂ at any pace
+(Section~\ref{sec:simulation}). The delay measurement uses the comparison
+week's data: at a faster pace a real delay counts for more room time, so
+a pass there is the stricter result. Every check saves
 its raw output and the stored readings, commands and head counts of its
 time window in \texttt{test/results/}; Section~\ref{sec:evaluation}
 reports the results.
@@ -1402,8 +1406,9 @@ actual CO₂, taken from the Physical model's log
 \midrule
 Stopped-broker test & Runs one weekday with the Message broker stopped
 from before anyone arrives, and judges it by the room's actual CO₂,
-taken from the Physical model's log; a second run brings the broker
-back after 7~minutes
+taken from the Physical model's log; a separate run at speed 1 stops
+the broker for 7~minutes, and the Decision service's log shows it
+recovering
 & \req{NFR-3} & Test output; stored data; real CO₂ & Run \\
 \midrule
 Screenshot & Captures the Dashboard during a session & \req{FR-7} & Screenshot
@@ -1466,9 +1471,10 @@ pass & Met \\
 \req{REG-1} & Peak CO₂ 938--947~ppm on the five room-model weekdays, meetings
 included & Met \\
 \midrule
-\req{NFR-1} & Docker restarted both killed containers once, the restarted CO₂
-sensor's 980~ppm reading was stored, and BuildSim held the damper fully
-open 0.5~s after the kill; 10.8~s in an earlier run, where the restarted
+\req{NFR-1} & Docker restarted both killed containers once. The restarted
+CO₂ sensor registered its device again (its log shows it reading, which
+follows registering), and its 980~ppm reading was stored. BuildSim held
+the damper fully open 0.5~s after the kill; 10.8~s in an earlier run, where the restarted
 Decision service subscribed just after the CO₂ sensor's first reading
 and decided on the next one, 10~s later & Met \\
 \midrule
