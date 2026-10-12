@@ -10,7 +10,7 @@ the evaluation that lifts the grade, and starts only once phase 1 is done.
 
 | # | Part | Open decisions | Steps |
 |---|---|---|---|
-| 22 | Put the whole comparison in one script that runs unattended from a snapshot to the comparison table, saving into one run folder and running `eval/delay.py` on it, so the final rerun on the submitted code is one command with no decisions on the way; then rerun it and the speed-1 tests on the final code | which settings the final rerun uses | 1 |
+| 22 | Run `eval/run_comparison.sh` (about 1 hour) and the speed-1 tests (end-to-end, crash) on the final code; bring the new figures into `project_notes.md` and §11, and the "code of 2026-10-09" mentions up to date | — | 1 |
 
 ## 2026-10-12
 

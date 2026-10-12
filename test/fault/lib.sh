@@ -1,6 +1,7 @@
 # Shared steps of the day-long fault tests (project_notes.md §10), sourced by
-# frozen.sh and broker.sh, by reconnect.sh for save_stored and restore, and by
-# test/stress/stress.sh for history_end and restore. Each fault test runs one weekday at speed 250 on a snapshot of the
+# frozen.sh and broker.sh, by reconnect.sh for save_stored and restore, by
+# test/stress/stress.sh for history_end and restore, and by
+# eval/run_comparison.sh for session_start, epoch and wait_until. Each fault test runs one weekday at speed 250 on a snapshot of the
 # History store, restored at the end, and judges NFR-3 by the room's real CO2,
 # read from the physical model's log, since the fault keeps the stored readings
 # from showing it.
@@ -14,7 +15,7 @@ THRESHOLD_PPM=1000 # NFR-3
 TIMEOUT_S=1200     # real seconds to wait for the day to end; it takes about 6
 MARGIN_S=600       # room seconds to run past midnight, so the day's last readings are stored
 
-cd "$(dirname "$0")/../.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." # the repo root, whichever script sources this file
 tz=$(sed -n 's/^TZ=//p' sim.env)
 
 # setting prints the value run.env gives for the name $1.
@@ -101,17 +102,22 @@ begin_test() {
   exec > >(tee "$out/test.txt") 2>&1 # everything printed from here on is also saved
 }
 
-# wait_for_day_end waits until room time lies MARGIN_S past the end of the test day.
-wait_for_day_end() {
+# wait_until waits until room time reaches $1, in seconds since 1970, and fails after $2 real seconds.
+wait_until() {
   local waited=0
-  until [ "$(room_now)" -ge $((day_end + MARGIN_S)) ]; do
-    if [ "$waited" -ge "$TIMEOUT_S" ]; then
-      echo "FAIL: the day did not end within $TIMEOUT_S real seconds"
+  until [ "$(room_now)" -ge "$1" ]; do
+    if [ "$waited" -ge "$2" ]; then
+      echo "FAIL: room time did not reach $(TZ=$tz date -d "@$1" '+%F %H:%M') within $2 real seconds"
       exit 1
     fi
     sleep 5
     waited=$((waited + 5))
   done
+}
+
+# wait_for_day_end waits until room time lies MARGIN_S past the end of the test day.
+wait_for_day_end() {
+  wait_until $((day_end + MARGIN_S)) "$TIMEOUT_S"
 }
 
 # real_co2 prints the room's real CO2 over the test day as a JSON array, from the

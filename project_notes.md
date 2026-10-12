@@ -1829,6 +1829,13 @@ _(nothing yet)_
   not remove it. Trade-off: a backup and restore between the two weeks,
   and the stored history afterwards continues from whichever week ran
   last. Decided and run 2026-10-09.
+  - **Decided: the rerun on the final code repeats the same week from the
+    same snapshot, at the same speed**, so any change in the figures comes
+    from the code alone. `eval/run_comparison.sh` runs both weeks and every
+    script after them in one command. Rejected: a fresh week after the
+    stored history, whose occupancy and room-model fit would differ from
+    the first run's, so a change in the figures couldn't be put down to the
+    code. Decided 2026-10-12.
   - **Result: NFR-2 holds on every day; the room model used 0.137 of
     damper level over the day on average, against the switch's 0.153.**
     Means over Monday to Friday 2026-11-23 to 27, per-day figures in
