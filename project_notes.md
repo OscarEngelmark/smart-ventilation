@@ -66,19 +66,28 @@ _(nothing yet)_
   | FR-1 | Functional | Must | CO2 readings and head counts are saved in the history store; a full simulated weekday has a stored CO2 reading for every 10 s and a head count for every room minute | Comparison week |
   | FR-2 | Functional | Must | The decision service sets the damper in BuildSim from the CO2 readings, in time to hold the threshold; after a reading above the target, the damper is fully open within 2 min of room time | End-to-end test |
   | FR-3 | Functional | Must | A damper change shows in the CO2 readings that follow | End-to-end test |
-  | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; a request returns exactly that room's rows from that time on, oldest first; commands are led by the one in force at that time | Unit tests, `internal/store` |
-  | FR-5 | Functional | Must | The room-model service fits the room model to the stored history; the fit gives no room model when the history can't separate the rates | Unit tests, `internal/roommodel` |
-  | FR-6 | Functional | Must | Without a room model, the damper opens and closes on CO2 alone | Unit tests, `internal/planner` |
+  | FR-4 | Functional | Must | Other components can fetch a room's stored readings and commands from a given time on; the storage service answers requests for them over REST, and the history store's query for one room from a given time returns exactly that room's rows from that time on, oldest first; commands are led by the one in force at that time | Unit tests, `internal/store`; end-to-end test |
+  | FR-5 | Functional | Must | The room-model service's fit learns the room's rates from a history of readings, head counts and damper levels; the fit gives no room model when the history can't separate the rates | Unit tests, `internal/roommodel` |
+  | FR-6 | Functional | Must | Without a room model, the decision service's choice of level follows CO2 alone | Unit tests, `internal/planner` |
   | FR-7 | Functional | Should | The dashboard shows CO2, head count and damper level over recent room time | Screenshot |
   | FR-8 | Functional | Must | The storage service keeps bad messages out of the history store; a message that fails its schema, a reading for another room than its topic names, and a second copy of a stored reading are not stored | Unit tests, `cmd/storage-service` and `internal/store` |
-  | FR-9 | Functional | Must | The occupancy simulator fills the room on a weekday schedule; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
-  | FR-10 | Functional | Must | The physical model's CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 903 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
+  | FR-9 | Functional | Must | The occupancy simulator's schedule fills the room on weekdays; nobody at night or at weekends, 3 people mid-morning and mid-afternoon, empty at 12:00, full (6) at 13:30, never over capacity | Unit tests, `internal/occupancy` |
+  | FR-10 | Functional | Must | In the physical model's mass balance, CO2 follows the people and the damper; with the damper closed, a full room settles at about 3640 ppm and one person at about 957 ppm; fully open, a full room settles at about 903 ppm; an empty room returns to the outdoor 420 ppm | Unit tests, `internal/co2` |
   | REG-1 | Regulatory | Must | CO2 stays under 1000 ppm through a full simulated weekday | Comparison week |
   | NFR-1 | Non-functional | Must | A killed container, once restarted, registers with BuildSim again and the loop resumes within 2 minutes | Crash test, at speed 1 |
   | NFR-2 | Non-functional | Should | The time-weighted mean damper level over a room day is lower than under the CO2-only fallback | Comparison week |
   | NFR-3 | Non-functional | Should | A frozen CO2 sensor or a downed broker doesn't push CO2 over 1000 ppm | Fault tests |
   | NFR-4 | Non-functional | Could | Time from a reading to its command stays under 2 min of room time | Delay measurement |
 
+  - **Decided: a requirement verified by unit tests names the logic its
+    tests check, not the service around it.** FR-5, FR-6, FR-9 and FR-10
+    once named a service ("the room-model service fits…"), claiming more
+    than a test of the logic inside it shows. FR-4 keeps its service-level
+    claim, since serving stored data is the pipeline's job, and is verified
+    in two parts: unit tests for the query, the end-to-end test for the
+    REST route it reads through. Rejected: a service-level test for each,
+    more tests for logic the services pass data through unchanged.
+    Decided 2026-10-12.
   - REG-1's threshold is general advice (FoHMFS 2014:18), not a binding
     rule; see *Threshold `C_threshold` = 1000 ppm*, §7.
   - FR-2's, NFR-1's and NFR-4's 2 minutes is derived, not from a source:

@@ -33,14 +33,16 @@
   {Other components can fetch a room's stored readings and commands from a
    given time on}
   {Must}
-  {A request for one room from a given time returns exactly that room's rows
-   from that time on, oldest first; commands are led by the one in force at
-   that time}
-  {Unit tests, \texttt{internal/store}}
+  {The Storage service answers requests for them over REST, and the History
+   store's query for one room from a given time returns exactly that room's
+   rows from that time on, oldest first; commands are led by the one in force
+   at that time}
+  {Unit tests, \texttt{internal/store}; end-to-end test}
 
 \defreq{FR-5}
   {Functional}
-  {The Room-model service fits the room model to the stored history}
+  {The Room-model service's fit learns the room's rates from a history of
+   readings, head counts and damper levels}
   {Must}
   {The fit recovers the room model's rates for a simulated room, and gives no room model
    when the history can't separate the rates
@@ -49,10 +51,11 @@
 
 \defreq{FR-6}
   {Functional}
-  {Without a room model, the damper opens and closes on CO₂ alone}
+  {Without a room model, the Decision service's choice of level follows CO₂
+   alone}
   {Must}
-  {With no room model, the damper opens fully at 950 ppm, closes below 800
-   ppm, and keeps its level in between}
+  {With no room model, the chosen level is fully open at 950 ppm, closed
+   below 800 ppm, and unchanged in between}
   {Unit tests, \texttt{internal/planner}}
 
 \defreq{FR-7}
@@ -73,7 +76,7 @@
 
 \defreq{FR-9}
   {Functional}
-  {The Occupancy simulator fills the room on a weekday schedule}
+  {The Occupancy simulator's schedule fills the room on weekdays}
   {Must}
   {Nobody at night or at weekends, 3 people mid-morning and mid-afternoon,
    empty at 12:00, full (6) at 13:30, never over capacity}
@@ -81,7 +84,8 @@
 
 \defreq{FR-10}
   {Functional}
-  {The Physical model's CO₂ follows the people and the damper}
+  {In the Physical model's mass balance, CO₂ follows the people and the
+   damper}
   {Must}
   {With the damper closed, a full room settles at about 3640 ppm and one
    person at about 957 ppm; fully open, a full room settles at about 903 ppm;

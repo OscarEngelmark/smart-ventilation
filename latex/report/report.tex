@@ -248,15 +248,15 @@ by being in the room; here they are simulated from a weekday schedule
 (Section~\ref{sec:simulation}). Neither actor is in control: the system runs without anyone
 acting on it.
 
-\textbf{A demo scenario.} For most of a weekday, $N = 3$ people
-work in A125, and the damper holds them under the Decision service's
+\textbf{A demo scenario.} For most of a weekday, three people
+work in A125, and the damper holds the CO₂ under the Decision service's
 950 ppm target (Section~\ref{sec:decision-logic}) at $d \approx 0.4$. At 13:00
-a meeting fills the room to its maximum of $N = 6$ for an hour. With
-$N = 6$, the room needs $d \approx 0.9$, most of what the ventilation can
+a meeting fills the room to its maximum of six occupants for an hour. The room then
+ needs $d \approx 0.9$, most of what the ventilation can
 give, so the meeting is the hardest case the Decision service has to
 hold under the threshold. The Occupancy sensor reports $N = 6$, and the
 Decision service raises the damper to the lowest level its room model
-predicts will keep CO₂ under the target with $N = 6$. When the meeting ends,
+predicts will keep CO₂ under the target. When the meeting ends,
 the level drops back. Room time, the simulated clock all of the
 project's own programs share, can run faster than the wall clock, so a
 demo shows the whole
@@ -264,8 +264,8 @@ meeting in a few minutes. Section~\ref{sec:evaluation} reports whether the thres
 holds.
 
 \textbf{Why it matters.} The system's goals pull against each other. The
-ventilation must be able to hold a full room under 1000 ppm, since a room
-can fill without warning, yet for most of the day A125 holds $N = 3$
+ventilation must be able to hold the CO₂ below 1000 ppm in a full room, since a room
+can fill without warning, yet for most of the day A125 holds 3
 people or none. Running the ventilation at the full-room setting all day keeps
 the air fresh at a cost in noise and energy. A fixed low setting is quiet
 but lets CO₂ pass the threshold when a meeting fills the room. The level
@@ -1373,8 +1373,9 @@ system & \req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10}
 End-to-end test & Writes 980~ppm into BuildSim on the running system and
 checks that the CO₂ sensor's next reading is stored, that a command to open the damper fully
 is stored and BuildSim holds the damper fully open within 2~min of that reading, and
-that the third reading after the command is lower than the first
-& \req{FR-2}, \req{FR-3} & Test output; stored data & Run \\
+that the third reading after the command is lower than the first,
+reading the stored data through the Storage service
+& \req{FR-2}, \req{FR-3}, \req{FR-4} & Test output; stored data & Run \\
 \midrule
 Crash test & Kills the CO₂ sensor and the Decision service, writes
 980~ppm into BuildSim while both are down, checks that Docker restarts
@@ -1451,7 +1452,11 @@ open & Met \\
 \req{FR-3} & The third reading after the command was 963.1~ppm, lower than the
 first at 973.8~ppm & Met \\
 \midrule
-\req{FR-4}, \req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 71 unit tests and subtests
+\req{FR-4} & The History store's query tests pass, and the end-to-end
+test read its readings and commands through the Storage service over REST
+& Met \\
+\midrule
+\req{FR-5}, \req{FR-6}, \req{FR-8}, \req{FR-9}, \req{FR-10} & All 71 unit tests and subtests
 pass & Met \\
 \midrule
 \req{FR-7} & CO₂, head count and damper level shown over the last
