@@ -1401,7 +1401,7 @@ CO₂ reading before it, over both methods' days of the comparison week
 (\texttt{eval/\allowbreak delay.py}) & \req{NFR-4} & Stored data & Run \\
 \midrule
 Frozen-sensor test & Runs one weekday with the CO₂ sensor repeating its
-first reading, 420~ppm in the empty room, and judges it by the room's
+first reading (420~ppm in the empty room) and judges it by the room's
 actual CO₂, taken from the Physical model's log
 & \req{NFR-3} & Test output; stored data; real CO₂ & Run \\
 \midrule
@@ -1453,8 +1453,8 @@ Table~\ref{tab:requirements}.}\label{tab:results}\\
 after the one before, and 1440 head counts, one for every room minute & Met \\
 \midrule
 \req{FR-2} & After a 979~ppm reading, a command to open the damper fully was
-stored in the same room second, and BuildSim then held the damper fully
-open & Met \\
+stored in the same room second, and BuildSim held the damper fully open
+when checked, under a second later & Met \\
 \midrule
 \req{FR-3} & The third reading after the command was 963.1~ppm, lower than the
 first at 973.8~ppm & Met \\
@@ -1479,7 +1479,7 @@ the damper fully open 0.5~s after the kill; 10.8~s in an earlier run, where the 
 Decision service subscribed just after the CO₂ sensor's first reading
 and decided on the next one, 10~s later & Met \\
 \midrule
-\req{NFR-2} & Mean damper level over a room day 0.137 with the room model,
+\req{NFR-2} & Mean damper level over a room day was 0.137 with the room model,
 0.153 with the CO₂-only switch; lower on every day & Met \\
 \midrule
 \req{NFR-3} & The room's real CO₂ stayed under 1000~ppm, peaking at
