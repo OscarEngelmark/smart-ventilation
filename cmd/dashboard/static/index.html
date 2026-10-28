@@ -15,6 +15,7 @@
   .now div { color: #9d9d9d; font-size: 0.9rem; }
   .now span { display: block; color: #d4d4d4; font-size: 1.6rem; }
   .now span.speed { display: inline; color: inherit; font-size: inherit; }
+  .no-time-legend .u-legend .u-series:first-child { display: none; }
 </style>
 </head>
 <body>
@@ -42,6 +43,22 @@ const stepped = uPlot.paths.stepped({ align: 1 }); // each value holds until the
 const axis = { stroke: "#9d9d9d", grid: { stroke: "#333" }, ticks: { stroke: "#333" } };
 const unlabeledTimes = { ...axis, values: (u, splits) => splits.map(() => ""), size: 10 }; // grid lines only
 
+// fixed makes a legend formatter that writes a value with the given number of decimals.
+const fixed = decimals => (u, v) => v == null ? "–" : v.toFixed(decimals);
+
+// cursorTime writes the time under the cursor, not that of the point shown.
+const cursorTime = (u, v) => v == null ? "–" : formatTime(u.posToVal(u.cursor.left, "x"));
+
+// lastAtOrBefore picks the stored point the cursor shows: the last one at or
+// before the cursor's time, since each value holds until the next.
+function lastAtOrBefore(u, seriesIdx, closestIdx, xValue) {
+  const xs = u.data[0];
+  if (closestIdx > 0 && xs[closestIdx] > xValue) {
+    return closestIdx - 1;
+  }
+  return closestIdx;
+}
+
 // seconds turns a stored timestamp into Unix seconds, the time unit uPlot uses.
 const seconds = ts => Date.parse(ts) / 1000;
 
@@ -66,18 +83,25 @@ function held(points, since, latest) {
   return [xs, ys];
 }
 
-// makeChart draws an empty chart inside the element with the given id; only
-// a chart with showTimes labels its time axis, since all share one time span.
+// makeChart draws an empty chart inside the element with the given id. Its
+// legend shows the values under the cursor, which moves on every chart at once;
+// only a chart with showTimes labels its time axis and shows the cursor's time,
+// since all share one time span.
 function makeChart(id, series, yRange, showTimes) {
   const el = document.getElementById(id);
   const opts = {
     width: el.clientWidth,
     height: chartHeight,
+    class: showTimes ? undefined : "no-time-legend",
     tzDate: ts => uPlot.tzDate(new Date(ts * 1000), tz),
     scales: { x: { time: true }, y: { range: yRange } },
-    series: [{}, ...series],
+    series: [{ label: "Room time", value: cursorTime }, ...series],
     axes: [showTimes ? axis : unlabeledTimes, axis], // x axis, then y axis
-    legend: { show: series.length > 1, live: false }, // a lone line is named by its heading
+    cursor: {
+      sync: { key: "room" }, // charts sharing a key share the cursor
+      dataIdx: lastAtOrBefore,
+    },
+    legend: { live: true },
   };
   const empty = [[], ...series.map(() => [])];
   return new uPlot(opts, empty, el);
@@ -152,15 +176,15 @@ function setStatus(text, isError) {
 function main() {
   const charts = {
     co2: makeChart("co2", [
-      { label: "CO2", stroke: "#58a6ff", width: 2 },
-      { label: "Target", stroke: "#d29922", dash: [6, 4] },
-      { label: "Threshold", stroke: "#f85149", dash: [6, 4] },
+      { label: "CO2", stroke: "#58a6ff", width: 2, value: fixed(0) },
+      { label: "Target", stroke: "#d29922", dash: [6, 4], value: fixed(0) },
+      { label: "Threshold", stroke: "#f85149", dash: [6, 4], value: fixed(0) },
     ], (u, min, max) => [Math.min(400, min), Math.max(1100, max + 50)], false),
     people: makeChart("people", [
-      { label: "People", stroke: "#3fb950", width: 2, paths: stepped },
+      { label: "People", stroke: "#3fb950", width: 2, paths: stepped, value: fixed(0) },
     ], (u, min, max) => [0, Math.max(1, max) + 1], false),
     damper: makeChart("damper", [
-      { label: "Damper level", stroke: "#a371f7", width: 2, paths: stepped },
+      { label: "Damper level", stroke: "#a371f7", width: 2, paths: stepped, value: fixed(2) },
     ], [0, 1.05], true),
   };
   window.addEventListener("resize", () => {
