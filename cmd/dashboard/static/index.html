@@ -41,6 +41,12 @@ const refreshMs = 5000; // real time between refreshes
 const chartHeight = 160;
 const stepped = uPlot.paths.stepped({ align: 1 }); // each value holds until the next
 const axis = { stroke: "#9d9d9d", grid: { stroke: "#333" }, ticks: { stroke: "#333" } };
+// Time-axis labels per tick spacing (s): label, then a line added at a new year, month or day.
+const timeLabels = [
+  [86400, "{D} {MMM}", "\n{YYYY}", null, null, null, null, null, 1],
+  [60, "{HH}:{mm}", "\n{D} {MMM} {YYYY}", null, "\n{D} {MMM}", null, null, null, 1],
+];
+const times = { ...axis, values: timeLabels };
 const unlabeledTimes = { ...axis, values: (u, splits) => splits.map(() => ""), size: 10 }; // grid lines only
 
 // fixed makes a legend formatter that writes a value with the given number of decimals.
@@ -96,7 +102,7 @@ function makeChart(id, series, yRange, showTimes) {
     tzDate: ts => uPlot.tzDate(new Date(ts * 1000), tz),
     scales: { x: { time: true }, y: { range: yRange } },
     series: [{ label: "Room time", value: cursorTime }, ...series],
-    axes: [showTimes ? axis : unlabeledTimes, axis], // x axis, then y axis
+    axes: [showTimes ? times : unlabeledTimes, axis], // x axis, then y axis
     cursor: {
       sync: { key: "room" }, // charts sharing a key share the cursor
       dataIdx: lastAtOrBefore,
